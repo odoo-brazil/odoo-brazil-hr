@@ -71,7 +71,10 @@ class HrEmployee(osv.osv):
         'ctps_serie' : fields.char('Série'),
         'ctps_data' : fields.date('Data de emissão'),
         'creservista': fields.char('Certificado de Reservista'),
-        'cr_categ': fields.char('Categoria'),
+        'crresv_categ': fields.char('Categoria'),
+        'cr_categ': fields.selection([('estagiario', 'Estagiario'), ('junior', 'Júnior'),
+                                        ('pleno', 'Pleno'), ('sênior', 'Sênior')], 'Categoria'
+                                    , help="Escolha a Categoria de Instrução:"),
         'ginstru': fields.selection([('fundamental_incompleto', 'Ensino fundamental incompleto'), ('fundamental', 'Ensino fundamental completo '),
                     ('medio_incompleto', 'Ensino médio incompleto'),
                     ('medio', 'Ensino médio completo'),
@@ -83,9 +86,17 @@ class HrEmployee(osv.osv):
         
         'nome_conju': fields.char("Nome do Cônjuge"),
         'tem_filhos': fields.boolean("Possui dependentes"),  
-        
         'filhos_ids': fields.one2many('hr.employee.childs', 'employee_id', 'Employee'),
-        
+        'rg': fields.char('RG', help='Número do RG'),
+        'orgao_exp': fields.char("Orgão de Expedição"),
+        'rg_emissao': fields.date('Data de Emissão'),
+        'titulo': fields.char('Título', help='Número do Título Eleitor'),
+        'zona': fields.char('Zona'),
+        'secao': fields.date('Seção'),
+        'cart_motorista': fields.char('Carteira de Motorista', help='Numero da Carteira Motorista'),
+        'categ_mot':fields.char('Categoria'),
+        'nome_pai': fields.char('Nome do Pai'),
+        'nome_mae': fields.char('Nome da Mãe')
     }
 
     _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']]] 
@@ -104,6 +115,7 @@ class HrEmployeeChilds(osv.Model):
         'employee_id' : fields.many2one('hr.employee', 'Employee'),
         'filho_nome' : fields.char('Name', size=64, required=True, translate=True),
         'filho_idade' : fields.date('Birthday', required=True, translate=True),
+        'pensao_alimenticia': fields.char('Pensão Alimenticia', required=True, translate=True),
         'disable_children': fields.boolean('Deficiente')
         }
 
