@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+	    <record model="ir.ui.view" id="view_l10n_br_hr_employee_form">
+	        <field name="name">l10n_br_hr_employee.form</field>
+	        <field name="model">hr.employee</field>
+	        <field name="inherit_id" ref="hr.view_employee_form" />
+	        <field name="type">form</field>
+	        <field name="arch" type="xml">              
+	        	<xpath expr="//page[@string='HR Settings']" position="after">
+	        		<page string="Documentos">
+	        			<form string="Documentos" version="7.0">	
+	        				<group> 						
+		        				<group string="CTPS">
+		    						<field name="ctps" string="Número"/>
+		    						<field name="ctps_serie" />
+		    						<field name="ctps_data"/>
+		    					</group>
+	    						<group string="PIS/PASEP">
+									<field name="pis_pasep" placeholder="XXX.XXXXX.XX-X" />
+								</group>
+							</group>		
+						</form>								
+	        		</page>
+	        		<page string="Cônjuge e Descendentes">
+	        			<form string="Cônjuge e Descendentes" version="7.0">
+		        			<group colspan="4" col="4">
+	        					<field name="nome_conju" />
+	        					<field name="tem_filhos"/>
+	        				</group>
+	        				<field name="filhos_ids"  widget="one2many_list" nolabel="1" attrs="{'invisible':[('tem_filhos', '!=', True)]}">
+	        					<tree>
+							        <field name="filho_nome" />
+							        <field name="filho_idade"/>                                
+							    </tree>
+							    <form>
+							        <field name="filho_nome" />
+							        <field name="filho_idade"/>
+							    </form>
+	        				</field>	        			
+		        		</form>
+	        		</page>
+	        	</xpath>    	
+	        </field>
+	    </record>    
+    </data>
+</openerp>
+
