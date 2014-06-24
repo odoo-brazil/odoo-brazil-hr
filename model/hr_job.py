@@ -20,30 +20,13 @@
 #
 ##############################################################################
 
-{
-    'name' : 'Brazilian Localization HR Payroll',
-    'description' : """
-Brazilian Localization HT Payroll""",
-    'category' : 'Localization',
-    'author' : 'KMEE',
-    'maintainer': 'KMEE',
-    'website' : 'http://www.kmee.com.br',
-    'version' : '0.1',
-    'depends' : ['hr_payroll','l10n_br','l10n_br_base'],
-    'init_xml': [
-            'data/l10n_br_hr.cbo.csv',
-                ],
-    'data': [
-             'security/ir.model.access.csv',
-             'view/l10n_br_hr_cbo_view.xml',
-             'view/hr_employee_view.xml',
-             'view/hr_job_view.xml',
-             ],
-    'update_xml' : [
-    ],
-    'test': [],
-    'installable': True,
-    'images': [],
-    'auto_install': False,
-    'license': 'AGPL-3',
-}
+from openerp.osv import orm, fields
+from tools.translate import _
+
+class HrJob(orm.Model):
+    
+    _inherit = 'hr.job'
+
+    _columns = {
+            'cbo_id' : fields.many2one('l10n_br_hr.cbo', 'CBO'),
+    }
