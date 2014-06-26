@@ -1,13 +1,14 @@
-    # -*- coding: utf-8 -*-
+# -*- encoding: utf-8 -*-
 ##############################################################################
 #
-#    Copyright (C) 2013 - KMEE- Rafael da Silva Lima (<http://www.kmee.com.br>)
-#                              
+#    Brazillian Human Resources Payroll module for OpenERP
+#    Copyright (C) 2014 KMEE (http://www.kmee.com.br)
+#    @author Matheus Felix <matheus.felix@kmee.com.br>
 #
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as published
-#    by the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
 #
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -68,9 +69,9 @@ class HrEmployee(osv.osv):
         'company_id': fields.many2one('res.company', 'Company', required=True),   
         'pis_pasep': fields.char(u'PIS/PASEP', size=15),
         'ctps' : fields.char('CTPS', help='Número da carteira de trabalho profissional de serviço'), 
-        'ctps_serie' : fields.char('Série'),
-        'ctps_data' : fields.date('Data de emissão'),
-        'creservista': fields.char('Certificado de Reservista'),
+        'ctps_series' : fields.char('Série'),
+        'ctps_date' : fields.date('Data de emissão'),
+        'creservist': fields.char('Certificado de Reservista'),
         'crresv_categ': fields.char('Categoria'),
         'cr_categ': fields.selection([('estagiario', 'Estagiario'), ('junior', 'Júnior'),
                                         ('pleno', 'Pleno'), ('sênior', 'Sênior')], 'Categoria'
@@ -84,39 +85,39 @@ class HrEmployee(osv.osv):
                     ('doutorado', 'Doutorado')], 'Nível de Escolaridade',
                                 help="Escolha o grau de instrução"),
         
-        'nome_conju': fields.char("Nome do Cônjuge"),
-        'tem_filhos': fields.boolean("Possui dependentes"),  
-        'filhos_ids': fields.one2many('hr.employee.childs', 'employee_id', 'Employee'),
+        'have_dependent': fields.boolean("Associados"),  
+        'dependent_ids': fields.one2many('hr.employee.dependent', 'employee_id', 'Employee'),
         'rg': fields.char('RG', help='Número do RG'),
-        'orgao_exp': fields.char("Orgão de Expedição"),
-        'rg_emissao': fields.date('Data de Emissão'),
-        'titulo': fields.char('Título', help='Número do Título Eleitor'),
-        'zona': fields.char('Zona'),
-        'secao': fields.date('Seção'),
-        'cart_motorista': fields.char('Carteira de Motorista', help='Numero da Carteira Motorista'),
-        'categ_mot':fields.char('Categoria'),
-        'nome_pai': fields.char('Nome do Pai'),
-        'nome_mae': fields.char('Nome da Mãe')
+        'organ_exp': fields.char("Orgão de Expedição"),
+        'rg_emission': fields.date('Data de Emissão'),
+        'title_voter': fields.char('Título', help='Número do Título Eleitor'),
+        'zone_voter': fields.char('Zona'),
+        'session_voter': fields.date('Seção'),
+        'driver_license': fields.char('Carteira de Motorista', help='Numero da Carteira Motorista'),
+        'driver_categ':fields.char('Categoria'),
+        'father_name': fields.char('Nome do Pai'),
+        'mother_name': fields.char('Nome da Mãe')
     }
 
     _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']]] 
     
-class HrEmployeeChilds(osv.Model):
-    _name = 'hr.employee.childs'
-    _description='Employee\'s Childs'
+class HrEmployeeDependent(osv.Model):
+    _name = 'hr.employee.dependent'
+    _description='Employee\'s Dependents'
     
     def _check_birth(self, cr, uid, ids, context=None):
         obj = self.browse(cr, uid, ids[0], context=context)
-        if datetime.strptime(obj.filho_idade, DEFAULT_SERVER_DATE_FORMAT).date() > datetime.now().date():
+        if datetime.strptime(obj.dependent_age, DEFAULT_SERVER_DATE_FORMAT).date() > datetime.now().date():
             return False
         return True
 
     _columns = {
         'employee_id' : fields.many2one('hr.employee', 'Employee'),
-        'filho_nome' : fields.char('Name', size=64, required=True, translate=True),
-        'filho_idade' : fields.date('Birthday', required=True, translate=True),
-        'pensao_alimenticia': fields.char('Pensão Alimenticia', required=True, translate=True),
-        'disable_children': fields.boolean('Deficiente')
+        'dependent_name' : fields.char('Name', size=64, required=True, translate=True),
+        'dependent_age' : fields.date('Birthday', required=True, translate=True),
+        'dependent_type': fields.char('Tipo do Associoado', required=True),
+        'pension_benefits': fields.float('Pensão Alimenticia', required=False, translate=True),
+        'dependent_verification': fields.boolean('É dependente', required=False),
         }
 
-    _constraints = [[_check_birth, u'Data de Nascimento está no futuro!', ['filho_idade']]] 
+    _constraints = [[_check_birth, u'Data de Nascimento está no futuro!', ['dependent_age']]] 

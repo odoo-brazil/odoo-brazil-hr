@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+	    <record model="ir.ui.view" id="view_l10n_br_hr_contract_form">
+	        <field name="name">l10n_br_hr_contract.form</field>
+	        <field name="model">hr.contract</field>
+	        <field name="inherit_id" ref="hr_contract.hr_contract_view_form" />
+	        <field name="type">form</field>
+	        <field name="arch" type="xml">        
+	        	<xpath expr="//field[@name='wage']" position="after">
+					<field name="food_voucher_amount" />
+					<field name="meal_voucher_amount" />					
+					<field name="transportation_voucher" />					
+					<field name="health_insurance_father" />
+					<field name="health_insurance_dependent" />	                   
+                </xpath>
+	        </field>
+	    </record>    
+    </data>
+</openerp>
