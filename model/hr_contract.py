@@ -22,30 +22,11 @@
 from openerp.osv import orm, fields
 from tools.translate import _
 from datetime import datetime
+import time
 import openerp.addons.decimal_precision as dp
 
 class HrContract(orm.Model):
-    
-    def calc_wage_inss(self, cr, uid, ids, context=None):
-
-        if context is None:
-            context = {}
-                    
-        contract = self.pool.get('hr.contract')
-        dependents_ids = context and context.get('active_ids') or []
-        domain = [('dependent_ids','=','employee_id'),('dependent_verification', '=', True)]
-        number_dependent = len(contract.search(cr, uid, domain))
-        print number_dependent, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-        result = (contract.wage-(number_dependent*179.71))         
-        return result
-    
-    def _check_date(self, cr, uid, ids, context=None):
-        contract = self.pool.get('hr.contract')
-        
-        if datetime.strptime('%Y-04-01').date() > contract.date_start.date():
-            return True
-        return False
-    
+       
     _inherit='hr.contract'
     
     _columns = {
@@ -55,8 +36,15 @@ class HrContract(orm.Model):
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
         'health_insurance_dependent' : fields.float('Plano de Saúde do Dependente', help='Plano de Saúde para os Cônjugues e Dependentes'),
         'dependents_ids': fields.one2many('hr.employee.dependent','employee_id', 'Dependent'),
-        'wage_inss': fields.function(calc_wage_inss),
-        'comp_date': fields.function(_check_date, type="date", string="Comp Data"),
         }
+  
+    comp_date = time.strftime('%Y-04-01')
+    comp_date2 = time.strftime('%Y-02-28')   
+
+    domain = [('dependent_verification', '=', True)]
+    number_dependent=0
+    for item in domain:
+        number_dependent = number_dependent+1         
+    wage_inss = number_dependent*179.71
     
     

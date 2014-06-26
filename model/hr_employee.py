@@ -101,7 +101,7 @@ class HrEmployee(osv.osv):
 
     _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']]] 
     
-class HrEmployeeDependent(osv.Model):
+class HrEmployeeDependent(osv.osv):
     _name = 'hr.employee.dependent'
     _description='Employee\'s Dependents'
     
@@ -110,7 +110,7 @@ class HrEmployeeDependent(osv.Model):
         if datetime.strptime(obj.dependent_age, DEFAULT_SERVER_DATE_FORMAT).date() > datetime.now().date():
             return False
         return True
-
+    
     _columns = {
         'employee_id' : fields.many2one('hr.employee', 'Employee'),
         'dependent_name' : fields.char('Name', size=64, required=True, translate=True),
@@ -118,6 +118,7 @@ class HrEmployeeDependent(osv.Model):
         'dependent_type': fields.char('Tipo do Associoado', required=True),
         'pension_benefits': fields.float('Pensão Alimenticia', required=False, translate=True),
         'dependent_verification': fields.boolean('É dependente', required=False),
-        }
-
+       }
+    
     _constraints = [[_check_birth, u'Data de Nascimento está no futuro!', ['dependent_age']]] 
+    

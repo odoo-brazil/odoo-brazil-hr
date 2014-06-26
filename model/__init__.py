@@ -4,6 +4,7 @@
 #    Brazillian Human Resources Payroll module for OpenERP
 #    Copyright (C) 2014 KMEE (http://www.kmee.com.br)
 #    @author Luis Felipe Mileo <mileo@kmee.com.br>
+#    @author Matheus Lima Felix <matheus.felix@kmee.com.br>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
