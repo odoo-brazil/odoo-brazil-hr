@@ -38,6 +38,8 @@ Brazilian Localization HT Payroll""",
              'view/l10n_br_hr_cbo_view.xml',
              'view/hr_employee_view.xml',
              'view/hr_job_view.xml',
+             'view/hr_contract_view.xml',
+             'view/l10n_br_hr_payroll_data.xml',
              ],
     'update_xml' : [
     ],
