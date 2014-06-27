@@ -47,10 +47,7 @@
             <field name="name">INSS</field>
             <field name="category_id" ref="hr_payroll.DED"/>           
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = (-482.93 if ((contract.wage - contract.wage_inss) &gt;= 4390.25) 
-else (-((contract.wage - contract.wage_inss) * 0.11)) if ((contract.wage - contract.wage_inss) &gt;= 2195.13) and ((contract.wage - contract.wage_inss) &lt;= 4390.24) 
-else (-((contract.wage - contract.wage_inss) * 0.09)) if ((contract.wage - contract.wage_inss) &gt;= 1317.08) and ((contract.wage - contract.wage_inss) &lt;= 2195.12) 
-else -((contract.wage - contract.wage_inss) * 0.08))</field>
+			<field name="amount_python_compute">result =(-482.93 if ((contract.wage - (employee.number_dependent * 179.71)) &gt;= 4390.25) else -((contract.wage - (employee.number_dependent * 179.71)) * 0.11) if ((contract.wage - (employee.number_dependent*179.71)) &gt;= 2195.13) and ((contract.wage - (employee.number_dependent * 179.71)) &lt;= 4390.24) else -((contract.wage - (employee.number_dependent*179.71)) * 0.09) if ((contract.wage - (employee.number_dependent * 179.71)) &gt;= 1317.08) and ((contract.wage - (employee.number_dependent*179.71)) &lt;= 2195.12) else -((contract.wage - (employee.number_dependent * 179.71)) * 0.08))</field>
             <field name="sequence" eval="101"/>
             <field name="register_id" ref="hr_inss_contribution_register"/>
             <field name="note">INSS</field>
@@ -140,8 +137,8 @@ else 0))</field>
 	        <field name="sequence">70</field>
             <field name="register_id" ref="hr_vr_contribution_register"/> 	        
 	        <field name="condition_select">python</field>
-	        <field name="condition_python">result = bool(contract.meal_voucher_amount)</field>
-	        <field name="amount_python_compute">result = contract.meal_voucher_amount</field>
+	        <field name="condition_python">result = bool(contract.meal_voucher_amount * contract.workeddays)</field>
+	        <field name="amount_python_compute">result = contract.meal_voucher_amount * contract.workeddays</field>
             <field name="register_id" ref="hr_vr_contribution_register"/> 
 	        <field name="note">Vale Refeição</field>
     	</record>
@@ -151,12 +148,12 @@ else 0))</field>
             <field name="name">Vale Alimentação</field>
             <field name="category_id" ref="hr_payroll.COMP"/>
             <field name="condition_select">python</field>
-            <field name="condition_python">result = bool(contract.food_voucher_amount)</field>
+            <field name="condition_python">result = bool(contract.food_voucher_amount * contract.workeddays)</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.food_voucher_amount</field>
+            <field name="amount_python_compute">result = contract.food_voucher_amount * contract.workeddays</field>
             <field name="sequence" eval="80"/>
             <field name="register_id" ref="hr_va_contribution_register"/>           
             <field name="note">Vale Alimentação</field>
-        </record>
+        </record>  
     </data>
 </openerp>

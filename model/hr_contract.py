@@ -26,25 +26,21 @@ import time
 import openerp.addons.decimal_precision as dp
 
 class HrContract(orm.Model):
-       
+              
     _inherit='hr.contract'
     
-    _columns = {
+    _columns = { 
         'food_voucher_amount': fields.float('Vale Alimentação', digits_compute=dp.get_precision('Payroll')),
         'meal_voucher_amount': fields.float('Vale Refeição', digits_compute=dp.get_precision('Payroll')),
+        'workeddays': fields.float('Dias Trabalhados'),
         'transportation_voucher': fields.float('Vale Transporte'),  
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
         'health_insurance_dependent' : fields.float('Plano de Saúde do Dependente', help='Plano de Saúde para os Cônjugues e Dependentes'),
         'dependents_ids': fields.one2many('hr.employee.dependent','employee_id', 'Dependent'),
         }
-  
+    
+    
     comp_date = time.strftime('%Y-04-01')
-    comp_date2 = time.strftime('%Y-02-28')   
+    comp_date2 = time.strftime('%Y-02-28')
+    
 
-    domain = [('dependent_verification', '=', True)]
-    number_dependent=0
-    for item in domain:
-        number_dependent = number_dependent+1         
-    wage_inss = number_dependent*179.71
-    
-    

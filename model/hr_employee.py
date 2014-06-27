@@ -85,7 +85,7 @@ class HrEmployee(osv.osv):
                     ('doutorado', 'Doutorado')], 'Nível de Escolaridade',
                                 help="Escolha o grau de instrução"),
         
-        'have_dependent': fields.boolean("Associados"),  
+        'have_dependent': fields.boolean("Associados"),
         'dependent_ids': fields.one2many('hr.employee.dependent', 'employee_id', 'Employee'),
         'rg': fields.char('RG', help='Número do RG'),
         'organ_exp': fields.char("Orgão de Expedição"),
@@ -96,8 +96,9 @@ class HrEmployee(osv.osv):
         'driver_license': fields.char('Carteira de Motorista', help='Numero da Carteira Motorista'),
         'driver_categ':fields.char('Categoria'),
         'father_name': fields.char('Nome do Pai'),
-        'mother_name': fields.char('Nome da Mãe')
-    }
+        'mother_name': fields.char('Nome da Mãe'),
+        'number_dependent': fields.float("Dependentes"),
+    }    
 
     _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']]] 
     
