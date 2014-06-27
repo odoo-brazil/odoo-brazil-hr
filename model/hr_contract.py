@@ -4,6 +4,7 @@
 #    Brazillian Human Resources Payroll module for OpenERP
 #    Copyright (C) 2014 KMEE (http://www.kmee.com.br)
 #    @author Matheus Felix <matheus.felix@kmee.com.br>
+#            Rafael da Silva Lima <rafael.lima@kmee.com.br>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
@@ -21,26 +22,38 @@
 ##############################################################################
 from openerp.osv import orm, fields
 from tools.translate import _
-from datetime import datetime
-import time
 import openerp.addons.decimal_precision as dp
 
 class HrContract(orm.Model):
               
     _inherit='hr.contract'
     
+    def _get_worked_days(self, cr, uid, ids, fields, arg, context=None):
+        res = {}
+        days = 0
+    
+        obj_worked_days = self.pool.get('hr.payslip.worked_days')
+        worked_ids =  obj_worked_days.search(cr, uid, [('contract_id', '=', ids[0])])
+        worked = obj_worked_days.browse(cr, uid, worked_ids[0])
+        
+        if worked.number_of_days:
+            days += worked.number_of_days
+                
+        res[ids[0]] = days
+        
+        return res
+        
+    
+    
     _columns = { 
         'food_voucher_amount': fields.float('Vale Alimentação', digits_compute=dp.get_precision('Payroll')),
         'meal_voucher_amount': fields.float('Vale Refeição', digits_compute=dp.get_precision('Payroll')),
-        'workeddays': fields.float('Dias Trabalhados'),
+        'workeddays': fields.function(_get_worked_days, type='float'),
         'transportation_voucher': fields.float('Vale Transporte'),  
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
         'health_insurance_dependent' : fields.float('Plano de Saúde do Dependente', help='Plano de Saúde para os Cônjugues e Dependentes'),
         'dependents_ids': fields.one2many('hr.employee.dependent','employee_id', 'Dependent'),
         }
-    
-    
-    comp_date = time.strftime('%Y-04-01')
-    comp_date2 = time.strftime('%Y-02-28')
+
     
 

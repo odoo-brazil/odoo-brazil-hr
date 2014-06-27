@@ -25,3 +25,4 @@ from . import l10n_br_hr_cbo
 from . import hr_employee
 from . import hr_job
 from . import hr_contract
+

@@ -3,7 +3,8 @@
 #
 #    Brazillian Human Resources Payroll module for OpenERP
 #    Copyright (C) 2014 KMEE (http://www.kmee.com.br)
-#    @author Matheus Felix <matheus.felix@kmee.com.br>
+#    @author Rafael da Silva Lima <rafael.lima@kmee.com.br>
+#            Matheus Felix <matheus.felix@kmee.com.br>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
@@ -25,7 +26,22 @@ from datetime import datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 
 class HrEmployee(osv.osv):
-
+    
+    
+    def _check_number_dependent(self, cr, uid, ids):
+        employee = self.browse(cr, uid, ids[0])
+        obj_childs = self.pool.get('hr.employee.dependent')
+        
+        dependents = obj_childs.search(cr, uid, [
+                        ('dependent_verification','=', True), 
+                        ('employee_id', '=', ids[0])])
+        
+        if not employee.number_dependent == len(dependents):
+            return False
+        else:
+            return True
+        
+        
     def _validate_pis_pasep(self, cr, uid, ids):
         employee = self.browse(cr, uid, ids[0])
 
@@ -97,10 +113,12 @@ class HrEmployee(osv.osv):
         'driver_categ':fields.char('Categoria'),
         'father_name': fields.char('Nome do Pai'),
         'mother_name': fields.char('Nome da Mãe'),
-        'number_dependent': fields.float("Dependentes"),
+        'number_dependent': fields.integer("Dependentes"),
     }    
 
-    _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']]] 
+    _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']],
+                    [_check_number_dependent, u'Quantidade de dependentes inválida', ['number_dependent']]] 
+    
     
 class HrEmployeeDependent(osv.osv):
     _name = 'hr.employee.dependent'
