@@ -23,6 +23,8 @@
 from openerp.osv import orm, fields
 from tools.translate import _
 import openerp.addons.decimal_precision as dp
+from datetime import datetime
+import time
 
 class HrContract(orm.Model):
               
@@ -55,5 +57,7 @@ class HrContract(orm.Model):
         'dependents_ids': fields.one2many('hr.employee.dependent','employee_id', 'Dependent'),
         }
 
+    comp_date = time.strftime('%Y-04-01')
+    comp_date2 = time.strftime('%Y-02-28')
     
 
