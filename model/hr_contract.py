@@ -45,11 +45,11 @@ class HrContract(orm.Model):
         
         return res
         
-    
-    
     _columns = { 
-        'food_voucher_amount': fields.float('Vale Alimentação', digits_compute=dp.get_precision('Payroll')),
-        'meal_voucher_amount': fields.float('Vale Refeição', digits_compute=dp.get_precision('Payroll')),
+        'voucher_amount': fields.selection([('va', 'Vale Alimentação'),
+                    ('vr', 'Vale Refeição'),],
+                    'Tipo de Vale'),
+        'value_amount': fields.float('Valor', help='Valor Diário do Benefício'),        
         'workeddays': fields.function(_get_worked_days, type='float'),
         'transportation_voucher': fields.float('Vale Transporte'),  
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
