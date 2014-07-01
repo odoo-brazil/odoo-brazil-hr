@@ -107,11 +107,12 @@ else 0))</field>
         <record id="hr_salary_rule_pensao_alimenticia" model="hr.salary.rule">
             <field name="code">Pensão Alimentícia</field>
             <field name="name">Pensão Alimentícia</field>
-            <field name="category_id" ref="hr_payroll.DED"/>           
-            <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = 0</field>            
-            <field name="sequence" eval="133"/>
-            <field name="register_id" ref="hr_pal_contribution_register"/>            
+            <field name="category_id" ref="hr_payroll.DED"/> 
+          	<field name="condition_select">python</field>          
+            <field name="amount_select">code</field>    
+            <field name="condition_python">result = -(employee.pension_benefit*employee.number_dependent)</field>
+            <field name="amount_python_compute">result =  -(employee.pension_benefit*employee.number_dependent) if employee.pension_benefit else 0</field>        
+            <field name="sequence" eval="133"/>    
             <field name="note">Empregado terá desconto sobre Pensão Alimenticia</field>
         </record> 
                                   
@@ -120,7 +121,8 @@ else 0))</field>
             <field name="name">Contribuição Sindical</field>
             <field name="category_id" ref="hr_payroll.DED"/>           
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = (-(contract.wage * 0.035) if (contract.date_from &lt;= contract.comp_date) and (contract.date_from &gt;= contract.comp_date2) else 0)</field>
+            <field name="condition_python">result = bool(contract.calc_date)</field>
+            <field name="amount_python_compute">result = -0.035*contract.wage if contract.calc_date else 0</field>
             <field name="sequence" eval="104"/>
             <field name="register_id" ref="hr_csd_contribution_register"/>
             <field name="note">Empregado terá um desconto de 3.5% em um dia do ano.</field>
@@ -148,8 +150,8 @@ else 0))</field>
 	        <field name="sequence">70</field>
             <field name="register_id" ref="hr_vr_contribution_register"/> 	        
 	        <field name="condition_select">python</field>
-	        <field name="condition_python">result = bool(contract.value_amount * contract.workeddays)</field>
-	        <field name="amount_python_compute">result = contract.value_amount * contract.workeddays</field>
+	        <field name="condition_python">result = (contract.check_amount * contract.workeddays)</field>
+	        <field name="amount_python_compute">result = contract.check_amount * contract.workeddays</field>
             <field name="register_id" ref="hr_vr_contribution_register"/> 
 	        <field name="note">Vale Refeição</field>
     	</record>
@@ -159,9 +161,9 @@ else 0))</field>
             <field name="name">Vale Alimentação</field>
             <field name="category_id" ref="hr_payroll.COMP"/>
             <field name="condition_select">python</field>
-            <field name="condition_python">result = bool(contract.value_amount * contract.workeddays)</field>
+            <field name="condition_python">result = (contract.check_amount * contract.workeddays)</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.value_amount * contract.workeddays</field>
+            <field name="amount_python_compute">result = contract.check_amount * contract.workeddays</field>
             <field name="sequence" eval="80"/>
             <field name="register_id" ref="hr_va_contribution_register"/>           
             <field name="note">Vale Alimentação</field>

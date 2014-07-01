@@ -27,6 +27,42 @@ from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 
 class HrEmployee(osv.osv):
     
+    ant_id = """e na qual reside nos últimos 05 anos)
+        - quando aplicável ao projeto
+    """
+    cneg_id = """
+        Certidões Negativas cíveis e criminais da 
+        Justiça Federal (Da Cidade na qual reside nos últimos 05 anos) 
+        - quando aplicável ao projeto
+    """
+    cnasc_id = """
+        Certidões de Nascimento dos Filhos de até 14 anos
+    """
+    polcivil = """
+        Certificado de Antecedentes expedido pela Polícia Civil - 
+        Quando aplicável ao projeto
+        Nada consta de antecedentes criminais cíveis, 
+        de protestos de título de interdição e de turelas
+        (cartório de distribuição da cidade na qual residiu nos últimos 05 anos)
+
+    """
+    cant_id = """
+        Certificado de Antecedentes expedido pela 
+        Polícia Federal (da cidade na qual reside nos últimos 05 anos)
+        - quando aplicável ao projeto
+    """
+    cneg_id = """
+        Certidões Negativas cíveis e criminais da 
+        Justiça Federal (Da Cidade na qual reside nos últimos 05 anos) 
+        - quando aplicável ao projeto
+    """
+    cnasc_id = """
+        Certidões de Nascimento dos Filhos de até 14 anos
+    """
+    polcivil = """
+        Certificado de Antecedentes expedido pela Polícia Civil - 
+        Quando aplicável ao projeto
+    """
     
     def _check_number_dependent(self, cr, uid, ids):
         employee = self.browse(cr, uid, ids[0])
@@ -40,8 +76,7 @@ class HrEmployee(osv.osv):
             return False
         else:
             return True
-        
-        
+
     def _validate_pis_pasep(self, cr, uid, ids):
         employee = self.browse(cr, uid, ids[0])
 
@@ -77,7 +112,21 @@ class HrEmployee(osv.osv):
         if rest != 0:
             rest = 11 - rest
         return (rest == digits[10])
-
+    
+    def _get_pension(self, cr, uid, ids, fields, arg, context=None):
+        
+        res = {}
+        obj_pension = self.pool.get('hr.employee.dependent')
+        pension_ids = obj_pension.search(cr, uid, [('employee_id', '=', ids[0]),
+                                               ('pension_benefits', '>', 0),])
+        pens = obj_pension.browse(cr, uid, pension_ids[0], context)    
+        
+        if pension_ids:
+            res[ids[0]] = pens.pension_benefits
+            return res    
+        else:
+            res[ids[0]] = 0
+            return res 
     
     _inherit='hr.employee'
 
@@ -114,6 +163,53 @@ class HrEmployee(osv.osv):
         'father_name': fields.char('Nome do Pai'),
         'mother_name': fields.char('Nome da Mãe'),
         'number_dependent': fields.integer("Dependentes"),
+        'pension_benefit': fields.function(_get_pension, type='float'),
+        
+        'check_cpolcivil': fields.boolean(polcivil),
+        'check_casamento': fields.boolean('Certidão de Casamento'),
+        'check_vacinacao': fields.boolean('Cartões de vacinação dos filhos com idades de até 06 anos'),
+        'check_diploma': fields.boolean('Diplomas e Certificados que comprovem a formação acadêmica (Original e Cópia)'),
+        'check_creservista': fields.boolean('Certificado de Reservista (Original e Cópia)'),
+        'check_rg': fields.boolean('Carteira de Identidade (Original e Cópia)'),
+        'check_cpf': fields.boolean('CPF (Original e Cópia)'),
+        'check_eleitor': fields.boolean('Título de Eleitor (Original e Cópia)'),
+        'check_ultvotacao': fields.boolean('Comprovante de Votação da Última Eleição (Original e Cópia)'),
+        'check_ctecnica' : fields.boolean('Certificações Técnicas (Cópia Autenticada)'),
+        'check_cquali': fields.boolean('Certificados de Qualificação e Aperfeiçoamento (Original e Cópia)'),
+        'check_cres': fields.boolean('Comprovante de Residência (Original e Cópia)'),
+        'check_cv' : fields.boolean('Currículo Vitae, Datado e Assinado'),
+        'check_fotos' : fields.boolean('Duas Fotos 3x4 (Iguais e recentes com identificação no verso)'),
+        'check_examedem' : fields.boolean('Exame Demissional (Último Empregador)'),
+        'check_examead' : fields.boolean('Exame Admissional (Clínica do Convênio)'),
+        'check_pis_pasep' : fields.boolean('PIS/PAESP N.º'),
+        'check_cnasc' : fields.boolean('Certidões de Nascimento dos Filhos de até 14 anos'),
+        'check_antecrim' : fields.boolean(ant_id),
+        'check_cante' : fields.boolean(cant_id),
+        'check_cnegciveis' : fields.boolean(cneg_id),
+        'check_ctps': fields.boolean('Carteira de Trabalho com baixa do último empregador (Original e Cópia)'),
+        'check_rg_obs': fields.char("Observação"),
+        'check_ctps_obs': fields.char("Observação"),
+        'check_cpf_obs': fields.char("Observação"),
+        'check_antecrim_obs': fields.char("Observação"),
+        'check_eleitor_obs': fields.char("Observação"),
+        'check_ultvotacao_obs': fields.char("Observação"),
+        'check_ctecnica_obs': fields.char("Observação"),
+        'check_cquali_obs': fields.char("Observação"),
+        'check_cres_obs': fields.char("Observação"),
+        'check_cv_obs': fields.char("Observação"),
+        'check_fotos_obs': fields.char("Observação"),
+        'check_examead_obs': fields.char("Observação"),
+        'check_examedem_obs': fields.char("Observação"),
+        'check_pis_pasep_obs': fields.char("Observação"),
+        'check_cnasc_obs': fields.char("Observação"),
+        'check_antecrim_obs': fields.char("Observação"),
+        'check_cante_obs': fields.char("Observação"),
+        'check_cnegciveis_obs': fields.char("Observação"),
+        'check_cpolcivil_obs': fields.char("Observação"),
+        'check_casamento_obs': fields.char("Observação"),
+        'check_vacinacao_obs': fields.char("Observação"),
+        'check_diploma_obs': fields.char("Observação"),
+        'check_creservista_obs': fields.char("Observação"),
     }    
 
     _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']],
@@ -133,7 +229,7 @@ class HrEmployeeDependent(osv.osv):
     _columns = {
         'employee_id' : fields.many2one('hr.employee', 'Employee'),
         'dependent_name' : fields.char('Name', size=64, required=True, translate=True),
-        'dependent_age' : fields.date('Birthday', required=True, translate=True),
+        'dependent_age' : fields.date('Data de Nascimento', required=True),
         'dependent_type': fields.char('Tipo do Associoado', required=True),
         'pension_benefits': fields.float('Pensão Alimenticia', required=False, translate=True),
         'dependent_verification': fields.boolean('É dependente', required=False),

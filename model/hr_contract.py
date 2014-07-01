@@ -30,21 +30,50 @@ class HrContract(orm.Model):
               
     _inherit='hr.contract'
     
-    def _get_worked_days(self, cr, uid, ids, fields, arg, context=None):
+    def _get_worked_days(self, cr, uid, ids, fields, arg, context=None):   
         res = {}
-        days = 0
     
         obj_worked_days = self.pool.get('hr.payslip.worked_days')
         worked_ids =  obj_worked_days.search(cr, uid, [('contract_id', '=', ids[0])])
-        worked = obj_worked_days.browse(cr, uid, worked_ids[0])
+        if worked_ids:
+            worked = obj_worked_days.browse(cr, uid, worked_ids[0])
+            res[ids[0]] = worked.number_of_days
+            return res
+        else:
+            res[ids[0]] = 0
+            return res
+    
+    def _check_date(self, cr, uid, ids, fields, arg, context=None):
+        res = {}
         
-        if worked.number_of_days:
-            days += worked.number_of_days
-                
-        res[ids[0]] = days
+        comp_date_from = time.strftime('%Y-04-01')
+        comp_date_to = time.strftime('%Y-02-28')
+        obj_payslip = self.pool.get('hr.payslip')
+        payslip_ids = obj_payslip.search(cr, uid, [('contract_id', '=', ids[0]),
+                                                   ('date_from', '<', comp_date_from),
+                                                   ('date_to', '>', comp_date_to)])
+        if payslip_ids:
+            res[ids[0]] = True
+            return res    
+        else:
+            res[ids[0]] = False
+            return res 
         
-        return res
+    def _check_amount(self, cr, uid, ids, fields, arg, context=None):
+
+        res = {}
+        obj_contract = self.pool.get('hr.contract')
+        amount_ids = obj_contract.search(cr, uid, [
+                                               ('value_amount', '>', 0)])
+        pens = self.browse(cr, uid, amount_ids[0], context)    
         
+        if pens.voucher_amount==pens.vr:
+            res[ids[0]] = pens.value_amount
+            return res    
+        else:
+            res[ids[0]] = pens.value_amount
+            return res  
+           
     _columns = { 
         'voucher_amount': fields.selection([('va', 'Vale Alimentação'),
                     ('vr', 'Vale Refeição'),],
@@ -55,9 +84,16 @@ class HrContract(orm.Model):
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
         'health_insurance_dependent' : fields.float('Plano de Saúde do Dependente', help='Plano de Saúde para os Cônjugues e Dependentes'),
         'dependents_ids': fields.one2many('hr.employee.dependent','employee_id', 'Dependent'),
+        
+        'calc_date': fields.function(_check_date, type='boolean'),
+        'check_amount': fields.function(_check_amount, type='float')
+        
         }
+    
+   
+    
+    
 
-    comp_date = time.strftime('%Y-04-01')
-    comp_date2 = time.strftime('%Y-02-28')
+   
     
 
