@@ -45,11 +45,10 @@
 							</group>		
 						</form>								
 	        		</page>
-	        		<page string="Cônjuge e Descendentes">
-	        			<form string="Cônjuge e Descendentes" version="7.0">
+	        		<page string="Cônjuge e Dependentes">
+	        			<form string="Cônjuge e Dependentes" version="7.0">
 		        			<group colspan="4" col="4">
-	        					<field name="have_dependent"/>
-	       						<field name="number_dependent"/> 					       						        					
+	        					<field name="have_dependent"/>				       						        					
 	        				</group>
 	        				<field name="dependent_ids"  widget="one2many_list" nolabel="1" attrs="{'invisible':[('have_dependent', '!=', True)]}">
 	        					<tree>
@@ -57,6 +56,7 @@
 							        <field name="dependent_age"/>
 									<field name="dependent_type"/>							        
 							        <field name="pension_benefits"/>
+							        <field name="health_verification"/>
 							        <field name="dependent_verification"/>	                               
 							    </tree>
 							    <form>
@@ -64,6 +64,7 @@
 							        <field name="dependent_age"/>
 									<field name="dependent_type"/>							        
 									<field name="pension_benefits"/>
+									<field name="health_verification"/>
 									<field name="dependent_verification"/>								        
 							    </form>
 	        				</field>      			

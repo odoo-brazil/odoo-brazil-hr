@@ -82,12 +82,20 @@ else 0)</field>
         <record id="hr_salary_rule_plano_saude" model="hr.salary.rule">
             <field name="code">Plano Saúde</field>
             <field name="name">Plano Saúde</field>
-            <field name="category_id" ref="hr_payroll.DED"/>           
+            <field name="category_id" ref="hr_payroll.DED"/>   
+            <field name="condition_select">none</field>             
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = (-((contract.health_insurance_father * employee.number_dependent) * 0.6) if (contract.wage &gt;= 2384.01) 
-else (-((contract.health_insurance_father * employee.number_dependent) * 0.5)) if (contract.wage &gt;= 1430.01) and (contract.wage &lt;= 2384.00) 
-else (-((contract.health_insurance_father * employee.number_dependent) * 0.4) if (contract.wage &gt;= 0.01) and (contract.wage &lt;= 1430.00) 
-else 0))</field>
+            <field name="amount_python_compute">result = 0
+health = contract.health_insurance_father
+
+if contract.wage &gt; 2384.01:
+    result = health*0.6
+elif (contract.wage &gt; 1430.01) and (contract.wage &lt; 2384.00):
+    result = health*0.5
+elif (contract.wage &gt; 0.01) and (contract.wage &lt; 1430.00):
+    result = health *0.4
+else:
+    result = 0</field>
             <field name="sequence" eval="107"/>
             <field name="register_id" ref="hr_ps_contribution_register"/>            
             <field name="note">Valor do Plano de Saúde</field>
@@ -96,9 +104,12 @@ else 0))</field>
         <record id="hr_salary_rule_plano_saude_dependente" model="hr.salary.rule">
             <field name="code">Plano Saúde Dependente</field>
             <field name="name">Plano Saúde Dependente</field>
-            <field name="category_id" ref="hr_payroll.DED"/>           
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="condition_select">none</field>            
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = (-((contract.health_insurance_dependent * employee.number_dependent) * 1))</field>            
+            <field name="amount_python_compute">result = 0
+for dependent in employee.dependent_ids: result -= contract.health_insurance_dependent if (dependent.health_verification) else 0
+            </field>       
             <field name="sequence" eval="110"/>
             <field name="register_id" ref="hr_psd_contribution_register"/>            
             <field name="note">Empregado terá desconto sobre seu Plano de Saúde mediante a Dependente</field>
@@ -110,7 +121,9 @@ else 0))</field>
             <field name="category_id" ref="hr_payroll.DED"/> 
           	<field name="condition_select">none</field>          
             <field name="amount_select">code</field>    
-            <field name="amount_python_compute">result =  -(employee.pension_benefit*employee.number_dependent) if employee.pension_benefit else 0</field>        
+            <field name="amount_python_compute">result = 0
+for dependent in employee.dependent_ids: result -= dependent.pension_benefits if (dependent.dependent_verification) else 0
+			</field>        
             <field name="sequence" eval="133"/>    
             <field name="note">Empregado terá desconto sobre Pensão Alimenticia</field>
         </record> 

@@ -67,10 +67,9 @@ class HrContract(orm.Model):
         'value_va': fields.float('Valor', help='Valor Diário do Benefício'),        
         'value_vr': fields.float('Valor', help='Valor Diário do Benefício'),  
         'workeddays': fields.function(_get_worked_days, type='float'),
-        'transportation_voucher': fields.float('Vale Transporte'),  
+        'transportation_voucher': fields.float('Vale Transporte', help='Porcentagem de desconto mensal'),  
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
         'health_insurance_dependent' : fields.float('Plano de Saúde do Dependente', help='Plano de Saúde para os Cônjugues e Dependentes'),
-        'dependents_ids': fields.one2many('hr.employee.dependent','employee_id', 'Dependent'),
         'calc_date': fields.function(_check_date, type='boolean')
         }
     
@@ -80,16 +79,19 @@ class HrContract(orm.Model):
     }
 
     def onchange_voucher(self, cr, uid, ids, value_va, value_vr, context=None):        
-        voucher = self.browse(cr, uid, ids[0])
-        va = value_va
-        vr = value_vr
-        
-        if voucher.voucher_amount == 'va':
-            vr = 0
-        elif voucher.voucher_amount == 'vr':
-            va = 0
-        
-        return { 'value' : {'value_va' : va, 'value_vr': vr } }
+        if ids:
+            voucher = self.browse(cr, uid, ids[0])
+            va = value_va
+            vr = value_vr
+            
+            if voucher.voucher_amount == 'va':
+                vr = 0
+            elif voucher.voucher_amount == 'vr':
+                va = 0
+            
+            return { 'value' : {'value_va' : va, 'value_vr': vr } }
+        else:
+            return { 'value' : {'value_va' : 0, 'value_vr': 0} }
    
     
     

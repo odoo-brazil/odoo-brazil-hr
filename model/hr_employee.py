@@ -24,6 +24,7 @@
 from osv import fields,osv
 from datetime import datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
+from IPython.parallel.controller.dependency import depend
 
 class HrEmployee(osv.osv):
     
@@ -64,18 +65,7 @@ class HrEmployee(osv.osv):
         Quando aplicável ao projeto
     """
     
-    def _check_number_dependent(self, cr, uid, ids):
-        employee = self.browse(cr, uid, ids[0])
-        obj_childs = self.pool.get('hr.employee.dependent')
-        
-        dependents = obj_childs.search(cr, uid, [
-                        ('dependent_verification','=', True), 
-                        ('employee_id', '=', ids[0])])
-        
-        if not employee.number_dependent == len(dependents):
-            return False
-        else:
-            return True
+    
 
     def _validate_pis_pasep(self, cr, uid, ids):
         employee = self.browse(cr, uid, ids[0])
@@ -149,8 +139,7 @@ class HrEmployee(osv.osv):
         'father_name': fields.char('Nome do Pai'),
         'mother_name': fields.char('Nome da Mãe'),
         'number_dependent': fields.integer("Dependentes"),
-        'pension_benefit': fields.related('dependent_ids', 'pension_benefits', type='float'),
-        
+                
         'check_cpolcivil': fields.boolean(polcivil),
         'check_casamento': fields.boolean('Certidão de Casamento'),
         'check_vacinacao': fields.boolean('Cartões de vacinação dos filhos com idades de até 06 anos'),
@@ -198,10 +187,10 @@ class HrEmployee(osv.osv):
         'check_creservista_obs': fields.char("Observação"),
     }    
 
-    _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']],
-                    [_check_number_dependent, u'Quantidade de dependentes inválida', ['number_dependent']]] 
+    _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']]] 
     
-    
+   
+
 class HrEmployeeDependent(osv.osv):
     _name = 'hr.employee.dependent'
     _description='Employee\'s Dependents'
@@ -212,13 +201,15 @@ class HrEmployeeDependent(osv.osv):
             return False
         return True
     
+     
     _columns = {
         'employee_id' : fields.many2one('hr.employee', 'Employee'),
         'dependent_name' : fields.char('Name', size=64, required=True, translate=True),
         'dependent_age' : fields.date('Data de Nascimento', required=True),
         'dependent_type': fields.char('Tipo do Associoado', required=True),
-        'pension_benefits': fields.float('Pensão Alimenticia', required=False, translate=True),
+        'pension_benefits': fields.float('Pensão Alimenticia'),
         'dependent_verification': fields.boolean('É dependente', required=False),
+        'health_verification': fields.boolean('Plano de Saúde', required=False),
        }
     
     _constraints = [[_check_birth, u'Data de Nascimento está no futuro!', ['dependent_age']]] 
