@@ -8,8 +8,9 @@
 	        <field name="type">form</field>
 	        <field name="arch" type="xml">        
 	        	<xpath expr="//field[@name='wage']" position="after">
-					<field name="voucher_amount" attrs="{'invisible':[('value_amount','=','')], 'required':[('value_amount','=',True)],}"/>
-					<field name="value_amount" attrs="{'required':[('voucher_amount','=',True)],'invisible':[('voucher_amount','=',False)]}"  />	
+					<field name="voucher_amount" on_change="onchange_voucher(value_va, value_vr)"/>
+					<field name='value_va'  attrs="{'invisible':[('voucher_amount', '!=', 'va')]}"/>
+					<field name='value_vr'  attrs="{'invisible':[('voucher_amount', '!=', 'vr')]}"/>
 					<field name="transportation_voucher" />					
 					<field name="health_insurance_father" />
 					<field name="health_insurance_dependent" />	           

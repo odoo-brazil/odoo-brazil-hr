@@ -113,20 +113,6 @@ class HrEmployee(osv.osv):
             rest = 11 - rest
         return (rest == digits[10])
     
-    def _get_pension(self, cr, uid, ids, fields, arg, context=None):
-        
-        res = {}
-        obj_pension = self.pool.get('hr.employee.dependent')
-        pension_ids = obj_pension.search(cr, uid, [('employee_id', '=', ids[0]),
-                                               ('pension_benefits', '>', 0),])
-        pens = obj_pension.browse(cr, uid, pension_ids[0], context)    
-        
-        if pension_ids:
-            res[ids[0]] = pens.pension_benefits
-            return res    
-        else:
-            res[ids[0]] = 0
-            return res 
     
     _inherit='hr.employee'
 
@@ -163,7 +149,7 @@ class HrEmployee(osv.osv):
         'father_name': fields.char('Nome do Pai'),
         'mother_name': fields.char('Nome da Mãe'),
         'number_dependent': fields.integer("Dependentes"),
-        'pension_benefit': fields.function(_get_pension, type='float'),
+        'pension_benefit': fields.related('dependent_ids', 'pension_benefits', type='float'),
         
         'check_cpolcivil': fields.boolean(polcivil),
         'check_casamento': fields.boolean('Certidão de Casamento'),

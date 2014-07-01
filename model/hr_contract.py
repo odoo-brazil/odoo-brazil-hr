@@ -59,37 +59,37 @@ class HrContract(orm.Model):
             res[ids[0]] = False
             return res 
         
-    def _check_amount(self, cr, uid, ids, fields, arg, context=None):
-
-        res = {}
-        obj_contract = self.pool.get('hr.contract')
-        amount_ids = obj_contract.search(cr, uid, [
-                                               ('value_amount', '>', 0)])
-        pens = self.browse(cr, uid, amount_ids[0], context)    
-        
-        if pens.voucher_amount==pens.vr:
-            res[ids[0]] = pens.value_amount
-            return res    
-        else:
-            res[ids[0]] = pens.value_amount
-            return res  
            
     _columns = { 
         'voucher_amount': fields.selection([('va', 'Vale Alimentação'),
                     ('vr', 'Vale Refeição'),],
                     'Tipo de Vale'),
-        'value_amount': fields.float('Valor', help='Valor Diário do Benefício'),        
+        'value_va': fields.float('Valor', help='Valor Diário do Benefício'),        
+        'value_vr': fields.float('Valor', help='Valor Diário do Benefício'),  
         'workeddays': fields.function(_get_worked_days, type='float'),
         'transportation_voucher': fields.float('Vale Transporte'),  
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
         'health_insurance_dependent' : fields.float('Plano de Saúde do Dependente', help='Plano de Saúde para os Cônjugues e Dependentes'),
         'dependents_ids': fields.one2many('hr.employee.dependent','employee_id', 'Dependent'),
-        
-        'calc_date': fields.function(_check_date, type='boolean'),
-        'check_amount': fields.function(_check_amount, type='float')
-        
+        'calc_date': fields.function(_check_date, type='boolean')
         }
     
+    _defaults = {
+        'value_va' : 0, 
+        'value_vr' : 0  
+    }
+
+    def onchange_voucher(self, cr, uid, ids, value_va, value_vr, context=None):        
+        voucher = self.browse(cr, uid, ids[0])
+        va = value_va
+        vr = value_vr
+        
+        if voucher.voucher_amount == 'va':
+            vr = 0
+        elif voucher.voucher_amount == 'vr':
+            va = 0
+        
+        return { 'value' : {'value_va' : va, 'value_vr': vr } }
    
     
     
