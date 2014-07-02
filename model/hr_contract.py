@@ -59,13 +59,22 @@ class HrContract(orm.Model):
             res[ids[0]] = False
             return res 
         
+    def _check_voucher(self, cr, uid, ids, context=None):    
+        user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
            
+        for contract in self.browse(cr, uid, ids):
+            if user.company_id.check_benefits:
+                return True
+            else:
+                if contract.value_va == 0 or contract.value_vr == 0:
+                    return True
+                else:
+                    return False
+        return True           
+          
     _columns = { 
-        'voucher_amount': fields.selection([('va', 'Vale Alimentação'),
-                    ('vr', 'Vale Refeição'),],
-                    'Tipo de Vale'),
-        'value_va': fields.float('Valor', help='Valor Diário do Benefício'),        
-        'value_vr': fields.float('Valor', help='Valor Diário do Benefício'),  
+        'value_va': fields.float('Vale Alimentação', help='Valor Diário do Benefício'),        
+        'value_vr': fields.float('Vale Refeição', help='Valor Diário do Benefício'),  
         'workeddays': fields.function(_get_worked_days, type='float'),
         'transportation_voucher': fields.float('Vale Transporte', help='Porcentagem de desconto mensal'),  
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
@@ -73,28 +82,14 @@ class HrContract(orm.Model):
         'calc_date': fields.function(_check_date, type='boolean')
         }
     
+    _constraints = [[_check_voucher, u'As configurações da empresa não permitem o uso de vale alimentação e refeição simultâneos', ['value_va', 'value_vr']]]
+    
     _defaults = {
         'value_va' : 0, 
         'value_vr' : 0  
     }
 
-    def onchange_voucher(self, cr, uid, ids, value_va, value_vr, context=None):        
-        if ids:
-            voucher = self.browse(cr, uid, ids[0])
-            va = value_va
-            vr = value_vr
-            
-            if voucher.voucher_amount == 'va':
-                vr = 0
-            elif voucher.voucher_amount == 'vr':
-                va = 0
-            
-            return { 'value' : {'value_va' : va, 'value_vr': vr } }
-        else:
-            return { 'value' : {'value_va' : 0, 'value_vr': 0} }
    
-    
-    
 
    
     

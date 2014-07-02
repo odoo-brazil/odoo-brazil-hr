@@ -32,6 +32,7 @@ Brazilian Localization HT Payroll""",
     'depends' : ['hr_payroll','l10n_br','l10n_br_base'],
     'init_xml': [
             'data/l10n_br_hr.cbo.csv',
+            'data/l10n_br_hr_payroll_data.xml',
                 ],
     'data': [
              'security/ir.model.access.csv',
@@ -39,7 +40,6 @@ Brazilian Localization HT Payroll""",
              'view/hr_employee_view.xml',
              'view/hr_job_view.xml',
              'view/hr_contract_view.xml',
-             'view/l10n_br_hr_payroll_data.xml',
              ],
     'update_xml' : [
     ],
