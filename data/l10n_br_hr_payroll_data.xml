@@ -38,7 +38,11 @@
         
         <record id="hr_va_contribution_register" model="hr.contribution.register">
             <field name="name">Adicional do Vale Alimentação</field>
-        </record>                               
+        </record>    
+ 
+        <record id="hr_psal_contribution_register" model="hr.contribution.register">
+            <field name="name">Valor da Pensão Alimentícia</field>
+        </record>                            
         
         <!-- Regras de Salário -->
 
@@ -60,8 +64,8 @@
             <field name="amount_select">code</field>
             <field name="amount_python_compute">result = (-(contract.wage * 0.275) if (contract.wage &gt;= 4463.81) 
 else (-(contract.wage * 0.225)) if ((contract.wage &lt;= 4463.80) and (contract.wage &gt;= 3572.44)) 
-else (-(contract.wage * 0.15)) if ((contract.wage &lt;= 2679.30) and (contract.wage &gt;= 3572.43)) 
-else (-(contract.wage * 0.075)) if ((contract.wage &lt;= 1787.78) and (contract.wage &gt;= 2679.29)) 
+else (-(contract.wage * 0.15)) if ((contract.wage &gt;= 2679.30) and (contract.wage &lt;= 3572.43)) 
+else (-(contract.wage * 0.075)) if ((contract.wage &gt;= 1787.78) and (contract.wage &lt;= 2679.29)) 
 else 0)</field>
             <field eval="102" name="sequence"/>
             <field name="register_id" ref="hr_ir_contribution_register"/>            
@@ -125,6 +129,7 @@ for dependent in employee.dependent_ids: result -= contract.health_insurance_dep
 for dependent in employee.dependent_ids: result -= dependent.pension_benefits if (dependent.dependent_verification) else 0
 			</field>        
             <field name="sequence" eval="133"/>    
+            <field name="register_id" ref="hr_psal_contribution_register"/>
             <field name="note">Empregado terá desconto sobre Pensão Alimenticia</field>
         </record> 
                                   
