@@ -63,7 +63,17 @@ class HrEmployee(osv.osv):
         if rest != 0:
             rest = 11 - rest
         return (rest == digits[10])
-    
+
+#     def _calc_inss(self, cr, uid, ids, fields, arg, context=None):   
+#         res = {}
+#         obj_contract = self.pool.get('hr.contract')
+#         contract1 = obj_contract.search(cr, uid, [('contract_id', '=', ids[0])])
+#         contract = contract1.browse(cr, uid, contract1[0])
+#         if contract:
+#             res[ids[0]] = (-482.93 if ((contract.wage) >= 4390.25) else -((contract.wage) * 0.11) if ((contract.wage) >= 2195.13) and ((contract.wage) <= 4390.24) else -((contract.wage) * 0.09) if ((contract.wage) >= 1317.08) and ((contract.wage) <= 2195.12) else -((contract.wage) * 0.08))
+#             return res
+#         else:
+#             return 0
     
     _inherit='hr.employee'
 

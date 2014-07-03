@@ -51,7 +51,7 @@
             <field name="name">INSS</field>
             <field name="category_id" ref="hr_payroll.DED"/>           
             <field name="amount_select">code</field>
-			<field name="amount_python_compute">result =(-482.93 if ((contract.wage - (employee.number_dependent * 179.71)) &gt;= 4390.25) else -((contract.wage - (employee.number_dependent * 179.71)) * 0.11) if ((contract.wage - (employee.number_dependent*179.71)) &gt;= 2195.13) and ((contract.wage - (employee.number_dependent * 179.71)) &lt;= 4390.24) else -((contract.wage - (employee.number_dependent*179.71)) * 0.09) if ((contract.wage - (employee.number_dependent * 179.71)) &gt;= 1317.08) and ((contract.wage - (employee.number_dependent*179.71)) &lt;= 2195.12) else -((contract.wage - (employee.number_dependent * 179.71)) * 0.08))</field>
+			<field name="amount_python_compute">result =(-482.93 if ((contract.wage) &gt;= 4390.25) else -((contract.wage) * 0.11) if ((contract.wage) &gt;= 2195.13) and ((contract.wage) &lt;= 4390.24) else -((contract.wage) * 0.09) if ((contract.wage) &gt;= 1317.08) and ((contract.wage) &lt;= 2195.12) else -((contract.wage) * 0.08))</field>
             <field name="sequence" eval="101"/>
             <field name="register_id" ref="hr_inss_contribution_register"/>
             <field name="note">INSS</field>
@@ -62,12 +62,26 @@
             <field name="name">Imposto de Renda</field>
             <field name="category_id" ref="hr_payroll.DED"/>                
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = (-(contract.wage * 0.275) if (contract.wage &gt;= 4463.81) 
-else (-(contract.wage * 0.225)) if ((contract.wage &lt;= 4463.80) and (contract.wage &gt;= 3572.44)) 
-else (-(contract.wage * 0.15)) if ((contract.wage &gt;= 2679.30) and (contract.wage &lt;= 3572.43)) 
-else (-(contract.wage * 0.075)) if ((contract.wage &gt;= 1787.78) and (contract.wage &lt;= 2679.29)) 
-else 0)</field>
-            <field eval="102" name="sequence"/>
+            <field name="amount_python_compute">result = 0
+wage = contract.wage
+dependent = employee.number_dependent*179.71
+varx = (wage - dependent + INSS)
+var_one = -(0.275*(varx) - 826.15)
+var_two = -(0.225*(varx) - 602.96)
+var_three = -(0.150*(varx) - 335.03)
+var_four = -(0.075*(varx) - 134.08)
+ 
+if (varx &gt; 4463.81):
+    result = var_one
+elif (varx &lt; 4463.80) and (varx &gt; 3572.44):
+    result = var_two 
+elif (varx &lt; 3572.43) and (varx &gt; 2679.30):
+	result = var_three
+elif (varx &lt; 2679.29) and (varx &gt; 1787.78):
+	result = var_four
+else:
+	result = 0 </field>           
+            <field name="sequence" eval="102" />
             <field name="register_id" ref="hr_ir_contribution_register"/>            
             <field name="note">Imposto de Renda Salarial</field>
         </record> 
@@ -84,7 +98,7 @@ else 0)</field>
         </record>
 
         <record id="hr_salary_rule_plano_saude" model="hr.salary.rule">
-            <field name="code">Plano Saúde</field>
+            <field name="code">PS</field>
             <field name="name">Plano Saúde</field>
             <field name="category_id" ref="hr_payroll.DED"/>   
             <field name="condition_select">none</field>             
@@ -106,7 +120,7 @@ else:
         </record>
 
         <record id="hr_salary_rule_plano_saude_dependente" model="hr.salary.rule">
-            <field name="code">Plano Saúde Dependente</field>
+            <field name="code">PSD</field>
             <field name="name">Plano Saúde Dependente</field>
             <field name="category_id" ref="hr_payroll.DED"/>
             <field name="condition_select">none</field>            
@@ -120,7 +134,7 @@ for dependent in employee.dependent_ids: result -= contract.health_insurance_dep
         </record> 
         
         <record id="hr_salary_rule_pensao_alimenticia" model="hr.salary.rule">
-            <field name="code">Pensão Alimentícia</field>
+            <field name="code">PA</field>
             <field name="name">Pensão Alimentícia</field>
             <field name="category_id" ref="hr_payroll.DED"/> 
           	<field name="condition_select">none</field>          

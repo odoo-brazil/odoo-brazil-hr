@@ -42,6 +42,8 @@ class HrContract(orm.Model):
         else:
             res[ids[0]] = 0
             return res
+         
+
     
     def _check_date(self, cr, uid, ids, fields, arg, context=None):
         res = {}
@@ -70,7 +72,7 @@ class HrContract(orm.Model):
                     return True
                 else:
                     return False
-        return True           
+        return True       
           
     _columns = { 
         'value_va': fields.float('Vale Alimentação', help='Valor Diário do Benefício'),        
@@ -79,7 +81,7 @@ class HrContract(orm.Model):
         'transportation_voucher': fields.float('Vale Transporte', help='Porcentagem de desconto mensal'),  
         'health_insurance_father' : fields.float('Plano de Saúde do Empregado', help='Plano de Saúde do Funcionário'),
         'health_insurance_dependent' : fields.float('Plano de Saúde do Dependente', help='Plano de Saúde para os Cônjugues e Dependentes'),
-        'calc_date': fields.function(_check_date, type='boolean')
+        'calc_date': fields.function(_check_date, type='boolean'),
         }
     
     _constraints = [[_check_voucher, u'As configurações da empresa não permitem o uso de vale alimentação e refeição simultâneos', ['value_va', 'value_vr']]]
@@ -88,8 +90,10 @@ class HrContract(orm.Model):
         'value_va' : 0, 
         'value_vr' : 0  
     }
+    
 
-   
+    
+     
 
    
     
