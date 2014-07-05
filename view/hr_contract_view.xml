@@ -18,6 +18,29 @@
 	        </field>
 	    </record>   
 	    
+        <record id="hr_hr_employee_view_form3" model="ir.ui.view">
+            <field name="name">hr.hr.employee.view.form3</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="hr_contract.hr_hr_employee_view_form2"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='medic_exam']" position="after">
+                	<field name="validade"/>
+                </xpath>
+            </field>
+        </record>
+	    
+        <record model="ir.ui.view" id="view_l10n_br_hr_employee2_form">
+	        <field name="name">l10n_br_hr_employee2.form</field>
+	        <field name="model">hr.employee</field>
+	        <field name="inherit_id" ref="hr_contract.hr_hr_employee_view_form2" />
+	        <field name="type">form</field>
+	        <field name="arch" type="xml">       
+		    	<field name="medic_exam" position="replace">
+		    		<label for="medic_exam" string="Realização do Exame Médico"/>
+		    		<field name="medic_exam" nolabel="1"/>
+				</field>	    	
+			</field> 
+	    </record>	    
 	    
 	    <record id="view_res_company_config" model="ir.ui.view">
             <field name="name">res.company.inherit</field>

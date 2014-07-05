@@ -98,6 +98,7 @@ class HrEmployee(osv.osv):
         'father_name': fields.char('Nome do Pai'),
         'mother_name': fields.char('Nome da Mãe'),
         'number_dependent': fields.integer("Dependentes"),
+        'validade': fields.date('Validade'),
     }    
 
     _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']]] 

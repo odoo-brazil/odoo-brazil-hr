@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <openerp>
     <data>
-	    <record model="ir.ui.view" id="view_l10n_br_hr_employee_form">
+    	<record model="ir.ui.view" id="view_l10n_br_hr_employee_form">
 	        <field name="name">l10n_br_hr_employee.form</field>
 	        <field name="model">hr.employee</field>
 	        <field name="inherit_id" ref="hr.view_employee_form" />
 	        <field name="type">form</field>
-	        <field name="arch" type="xml">             
+	        <field name="arch" type="xml">        
 	        	<xpath expr="//page[@string='HR Settings']" position="after">
 	        		<page string="Documentos">
 	        			<form string="Documentos" version="7.0">	
