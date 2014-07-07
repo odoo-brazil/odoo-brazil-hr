@@ -36,7 +36,7 @@
 	        <field name="type">form</field>
 	        <field name="arch" type="xml">       
 		    	<field name="medic_exam" position="replace">
-		    		<label for="medic_exam" string="Realização do Exame Médico"/>
+		    		<label for="medic_exam" string="Medical examination"/>
 		    		<field name="medic_exam" nolabel="1"/>
 				</field>	    	
 			</field> 

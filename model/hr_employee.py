@@ -68,40 +68,42 @@ class HrEmployee(osv.osv):
 
     _columns = {
         'pis_pasep': fields.char(u'PIS/PASEP', size=15),
-        'ctps' : fields.char('CTPS', help='Número da carteira de trabalho profissional de serviço'), 
-        'ctps_series' : fields.char('Série'),
-        'ctps_date' : fields.date('Data de emissão'),
-        'creservist': fields.char('Certificado de Reservista'),
-        'crresv_categ': fields.char('Categoria'),
-        'cr_categ': fields.selection([('estagiario', 'Estagiario'), ('junior', 'Júnior'),
-                                        ('pleno', 'Pleno'), ('sênior', 'Sênior')], 'Categoria'
-                                    , help="Escolha a Categoria de Instrução:"),
-        'ginstru': fields.selection([('fundamental_incompleto', 'Ensino Fundamental Incompleto'), ('fundamental', 'Ensino Fundamental Completo '),
-                    ('medio_incompleto', 'Ensino Médio Incompleto'),
-                    ('medio', 'Ensino Médio Completo'),
-                    ('superior_incompleto', 'Curso Superior Incompleto'),
-                    ('superior', 'Curso Superior Completo'),
-                    ('mestrado', 'Mestrado '),
-                    ('doutorado', 'Doutorado')], 'Nível de Escolaridade',
-                                help="Escolha o grau de instrução"),
+        'ctps' : fields.char('CTPS', help='Number of CTPS'), 
+        'ctps_series' : fields.char('Serie'),
+        'ctps_date' : fields.date('Date of issue'),
+        'creservist': fields.char('Certificate of Reservist'),
+        'crresv_categ': fields.char('Category'),
+        'cr_categ': fields.selection([('estagiario', 'Trainee'), ('junior', 'Junior'),
+                                        ('pleno', 'Full'), ('sênior', 'Senior')], 'Category'
+                                    , help="Choose work position"),
+        'ginstru': fields.selection([
+                    ('fundamental_incompleto', 'Basic Education incomplete'), 
+                    ('fundamental', 'Basic Education complete'),
+                    ('medio_incompleto', 'High School incomplete'),
+                    ('medio', 'High School complete'),
+                    ('superior_incompleto', 'College Degree incomplete'),
+                    ('superior', 'College Degree complete'),
+                    ('mestrado', 'Master'),
+                    ('doutorado', 'PhD')], 'Schooling',
+                                help="Select Education"),
         
-        'have_dependent': fields.boolean("Associados"),
+        'have_dependent': fields.boolean("Associated"),
         'dependent_ids': fields.one2many('hr.employee.dependent', 'employee_id', 'Employee'),
-        'rg': fields.char('RG', help='Número do RG'),
-        'organ_exp': fields.char("Orgão de Expedição"),
-        'rg_emission': fields.date('Data de Emissão'),
-        'title_voter': fields.char('Título', help='Número do Título Eleitor'),
-        'zone_voter': fields.char('Zona'),
-        'session_voter': fields.date('Seção'),
-        'driver_license': fields.char('Carteira de Motorista', help='Numero da Carteira Motorista'),
-        'driver_categ':fields.char('Categoria'),
-        'father_name': fields.char('Nome do Pai'),
-        'mother_name': fields.char('Nome da Mãe'),
-        'number_dependent': fields.integer("Dependentes"),
-        'validade': fields.date('Validade'),
+        'rg': fields.char('RG', help='Number of RG'),
+        'organ_exp': fields.char("Organ Shipping"),
+        'rg_emission': fields.date('Date of issue'),
+        'title_voter': fields.char('Title', help='Number Voter'),
+        'zone_voter': fields.char('Zone'),
+        'session_voter': fields.char('Section'),
+        'driver_license': fields.char('Driver License', help='Driver License number'),
+        'driver_categ':fields.char('Category'),
+        'father_name': fields.char('Father name'),
+        'mother_name': fields.char('Mother name'),
+        'number_dependent': fields.integer("Dependents"),
+        'validade': fields.date('Expiration'),
     }    
 
-    _constraints = [[_validate_pis_pasep, u'Número PIS/PASEP é inválido.', ['pis_pasep']]] 
+    _constraints = [[_validate_pis_pasep, u'PIS/PASEP is invalid.', ['pis_pasep']]] 
     
    
 
@@ -119,12 +121,12 @@ class HrEmployeeDependent(osv.osv):
     _columns = {
         'employee_id' : fields.many2one('hr.employee', 'Employee'),
         'dependent_name' : fields.char('Name', size=64, required=True, translate=True),
-        'dependent_age' : fields.date('Data de Nascimento', required=True),
-        'dependent_type': fields.char('Tipo do Associoado', required=True),
-        'pension_benefits': fields.float('Pensão Alimenticia'),
-        'dependent_verification': fields.boolean('É dependente', required=False),
-        'health_verification': fields.boolean('Plano de Saúde', required=False),
+        'dependent_age' : fields.date('Date of Birth', required=True),
+        'dependent_type': fields.char('Type Associate', required=True),
+        'pension_benefits': fields.float('Child Support'),
+        'dependent_verification': fields.boolean('Is dependent', required=False),
+        'health_verification': fields.boolean('Health Plan', required=False),
        }
     
-    _constraints = [[_check_birth, u'Data de Nascimento está no futuro!', ['dependent_age']]] 
+    _constraints = [[_check_birth, u'Wrong birthday date!', ['dependent_age']]] 
     

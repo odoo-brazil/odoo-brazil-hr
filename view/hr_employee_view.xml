@@ -8,45 +8,45 @@
 	        <field name="type">form</field>
 	        <field name="arch" type="xml">        
 	        	<xpath expr="//page[@string='HR Settings']" position="after">
-	        		<page string="Documentos">
-	        			<form string="Documentos" version="7.0">	
+	        		<page string="Documents">
+	        			<form string="Documents" version="7.0">	
 	        				<group> 						
 		        				<group string="CTPS">
-		    						<field name="ctps" string="Número"/>
+		    						<field name="ctps" string="Number"/>
 		    						<field name="ctps_series" />
 		    						<field name="ctps_date"/>   						
 		    					</group>
 		        				<group string="RG">
-		    						<field name="rg" string="Número"/>
+		    						<field name="rg" string="Number"/>
 		    						<field name="organ_exp"/>
 		    						<field name="rg_emission"/>  						
 		    					</group>
-		        				<group string="Reservista">
-		    						<field name="creservist" string="Número"/>
+		        				<group string="Reservist">
+		    						<field name="creservist" string="Number"/>
 		    						<field name="crresv_categ"/>   						
 		    					</group>
-		        				<group string="Título de Eleitor">
-		    						<field name="title_voter" string="Número"/>
+		        				<group string="Voter Registration">
+		    						<field name="title_voter" string="Number"/>
 		    						<field name="zone_voter"/>
 		    						<field name="session_voter"/>  						
 		    					</group>	
-		        				<group string="Carteira de Motorista">
-		    						<field name="driver_license" string="Número"/>
+		        				<group string="Driver License">
+		    						<field name="driver_license" string="Number"/>
 		    						<field name="driver_categ"/>
 		    						<field name="ginstru"/>  						
 		    					</group>		    						    					
 	    						<group string="PIS/PASEP">
 									<field name="pis_pasep" placeholder="XXX.XXXXX.XX-X" />
 								</group>
-								<group string="Nome dos Pais">
+								<group string="Parents names">
 									<field name="father_name"/>
 									<field name="mother_name"/>
 								</group>								
 							</group>		
 						</form>								
 	        		</page>
-	        		<page string="Cônjuge e Dependentes">
-	        			<form string="Cônjuge e Dependentes" version="7.0">
+	        		<page string="Spouse and Dependents">
+	        			<form string="Spouse and Dependents" version="7.0">
 		        			<group colspan="4" col="4">
 	        					<field name="have_dependent"/>				       						        					
 	        				</group>

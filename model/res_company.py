@@ -26,5 +26,5 @@ class ResCompany(osv.osv):
     _inherit = 'res.company'
   
     _columns = {
-        'check_benefits': fields.boolean('Vale Alimentação e Vale Refeição simultâneos', required=False),
+        'check_benefits': fields.boolean('Valley Food and Meal Valley simultaneous', required=False),
        }
