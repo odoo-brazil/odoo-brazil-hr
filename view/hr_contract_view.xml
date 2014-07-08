@@ -13,7 +13,8 @@
 					<field name="transportation_voucher" />					
 					<field name="health_insurance_father" />
 					<field name="health_insurance_dependent" />	           
-					<field name="workeddays" invisible='1' />       
+					<field name="workeddays" invisible='1' />     
+					<field name="sindicate" />  
                 </xpath>
 	        </field>
 	    </record>   

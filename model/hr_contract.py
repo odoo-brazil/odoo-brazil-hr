@@ -82,6 +82,7 @@ class HrContract(orm.Model):
         'health_insurance_father' : fields.float('Employee Health Plan', help='Health Plan of the Employee'),
         'health_insurance_dependent' : fields.float('Dependent Health Plan', help='Health Plan for Spouse and Dependents'),
         'calc_date': fields.function(_check_date, type='boolean'),
+        'sindicate': fields.char('Sindicato', help="Sigla do Sindicato"),
         }
     
     _constraints = [[_check_voucher, u'The company settings do not allow the use of food voucher and simultaneous meal', ['value_va', 'value_vr']]]
