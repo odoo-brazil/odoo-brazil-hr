@@ -14,7 +14,6 @@
 					<field name="health_insurance_father" />
 					<field name="health_insurance_dependent" />	           
 					<field name="workeddays" invisible='1' />     
-					<field name="sindicate" />  
                 </xpath>
 	        </field>
 	    </record>   
@@ -26,6 +25,9 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='medic_exam']" position="after">
                 	<field name="validade"/>
+                </xpath>
+                <xpath expr="//field[@name='vehicle_distance']" position="after">
+                	<field name="sindicate" placeholder="Sigla do Sindicato"/>
                 </xpath>
             </field>
         </record>
