@@ -26,8 +26,19 @@ from datetime import datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 
 
-class HrEmployee(osv.osv):
-     
+class HrEmployee(osv.osv):   
+    
+    def _get_dependents(self, cr, uid, ids, fields, arg, context=None):   
+        res = {}
+        dependent = self.pool.get('hr.employee.dependent')
+        dep_ids =  dependent.search(cr, uid, [('employee_id', '=', ids[0]),('dependent_verification','=',True)])
+        if dep_ids:
+            res[ids[0]] = len(dep_ids)
+            return res
+        else:
+            res[ids[0]] = 0
+            return res
+                
     def _validate_pis_pasep(self, cr, uid, ids):
         employee = self.browse(cr, uid, ids[0])
 
@@ -99,9 +110,9 @@ class HrEmployee(osv.osv):
         'driver_categ':fields.char('Category'),
         'father_name': fields.char('Father name'),
         'mother_name': fields.char('Mother name'),
-        'number_dependent': fields.integer("Dependents"),
         'validade': fields.date('Expiration'),
         'sindicate': fields.char('Sindicato', help="Sigla do Sindicato"),
+        'n_dependent': fields.function(_get_dependents, type="float")
     }    
 
     _constraints = [[_validate_pis_pasep, u'PIS/PASEP is invalid.', ['pis_pasep']]] 
