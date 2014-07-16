@@ -25,11 +25,53 @@ from tools.translate import _
 import openerp.addons.decimal_precision as dp
 from datetime import datetime
 import time
+from decimal import Decimal, ROUND_DOWN
 
 class HrContract(orm.Model):
               
     _inherit='hr.contract'
-    
+
+    def _get_wage_ir(self, cr, uid, ids, fields, arg, context=None):
+        res = {}
+        obj_employee = self.pool.get('hr.employee')
+        employee_ids = obj_employee.search(cr, uid, [('contract_ids.id','=', ids[0])])
+        employees = obj_employee.browse(cr, uid, employee_ids, context=context)
+        for employee in employees:
+            for contract in employee.contract_ids:
+                if employee_ids:    
+                    INSS =(-482.93 if ((contract.wage) >= 4390.25) else -((contract.wage) * 0.11) if ((contract.wage) >= 2195.13) and ((contract.wage) <= 4390.24) else -((contract.wage) * 0.09) if ((contract.wage) >= 1317.08) and ((contract.wage) <= 2195.12) else -((contract.wage) * 0.08))
+                    lane = (contract.wage - employee.n_dependent + INSS) 
+                    first_lane = (-(0.275*(lane) - 826.15)) 
+                    l1 = Decimal(str(first_lane))
+                    lane1 = l1.quantize(Decimal('1.10'), rounding=ROUND_DOWN)
+                    option_one = float(lane1)
+                    second_lane = (-(0.225*(lane) - 602.96))
+                    l2 = Decimal(str(second_lane))
+                    lane2 = l2.quantize(Decimal('1.10'), rounding=ROUND_DOWN) 
+                    option_two = float(lane2)
+                    third_lane = (-(0.150*(lane) - 335.03))
+                    l3 = Decimal(str(third_lane))
+                    lane3 = l3.quantize(Decimal('1.10'), rounding=ROUND_DOWN) 
+                    option_three = float(lane3)
+                    fourth_lane = (-(0.075*(lane) - 134.08))
+                    l4 = Decimal(str(fourth_lane))
+                    lane4 = l4.quantize(Decimal('1.10'), rounding=ROUND_DOWN) 
+                    option_four = float(lane4)
+                    if (lane >= 4463.81):
+                        res[ids[0]] = option_one
+                        return res
+                    elif (lane <= 4463.80) and (lane >= 3572.44):
+                        res[ids[0]] = option_two
+                        return res 
+                    elif (lane <= 3572.43) and (lane >= 2679.30):
+                        res[ids[0]] = option_three
+                        return res
+                    elif (lane <= 2679.29) and (lane >= 1787.78):
+                        res[ids[0]] = option_four
+                        return res
+                    else:
+                        return 0
+            
     def _get_worked_days(self, cr, uid, ids, fields, arg, context=None):   
         res = {}
     
@@ -42,8 +84,6 @@ class HrContract(orm.Model):
         else:
             res[ids[0]] = 0
             return res
-         
-
     
     def _check_date(self, cr, uid, ids, fields, arg, context=None):
         res = {}
@@ -81,7 +121,8 @@ class HrContract(orm.Model):
         'transportation_voucher': fields.float('Valley Transportation', help='Percentage of monthly deduction'),  
         'health_insurance_father' : fields.float('Employee Health Plan', help='Health Plan of the Employee'),
         'health_insurance_dependent' : fields.float('Dependent Health Plan', help='Health Plan for Spouse and Dependents'),
-        'calc_date': fields.function(_check_date, type='boolean')
+        'calc_date': fields.function(_check_date, type='boolean'),
+        'ir_value': fields.function(_get_wage_ir, type="float",digits_compute=dp.get_precision('Payroll')),
         }
     
     _constraints = [[_check_voucher, u'The company settings do not allow the use of food voucher and simultaneous meal', ['value_va', 'value_vr']]]
@@ -90,6 +131,8 @@ class HrContract(orm.Model):
         'value_va' : 0, 
         'value_vr' : 0  
     }
+
+
     
 
     
