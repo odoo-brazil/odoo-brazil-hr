@@ -24,6 +24,7 @@
 from osv import fields,osv
 from datetime import datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
+import openerp.addons.decimal_precision as dp
 
 
 class HrEmployee(osv.osv):   
@@ -33,7 +34,7 @@ class HrEmployee(osv.osv):
         dependent = self.pool.get('hr.employee.dependent')
         dep_ids =  dependent.search(cr, uid, [('employee_id', '=', ids[0]),('dependent_verification','=',True)])
         if dep_ids:
-            res[ids[0]] = len(dep_ids)
+            res[ids[0]] = len(dep_ids)*179.71
             return res
         else:
             res[ids[0]] = 0
@@ -112,7 +113,7 @@ class HrEmployee(osv.osv):
         'mother_name': fields.char('Mother name'),
         'validade': fields.date('Expiration'),
         'sindicate': fields.char('Sindicato', help="Sigla do Sindicato"),
-        'n_dependent': fields.function(_get_dependents, type="float")
+        'n_dependent': fields.function(_get_dependents, type="float", digits_compute=dp.get_precision('Payroll'))
     }    
 
     _constraints = [[_validate_pis_pasep, u'PIS/PASEP is invalid.', ['pis_pasep']]] 
