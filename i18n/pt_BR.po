@@ -393,16 +393,14 @@ msgid "Is dependent"
 msgstr "É dependente"
 
 #. module: timesheet_task
-#: code:_description:0
-#: model:ir.model,name:timesheet_task.model_account_analytic_line
-#, python-format
-msgid "Analytic Line"
-msgstr "Linha Analítica"
-
-#. module: timesheet_task
 #: constraint:account.analytic.line:0
 msgid "Error! Task must belong to the project."
 msgstr "Error! Task must belong to the project."
+
+#. module: timesheet_task
+#: model:ir.model,name:timesheet_task.model_hr_analytic_timesheet
+msgid "Timesheet Line"
+msgstr "Linha da Planilha de Horas"
 
 #. module: timesheet_task
 #: field:hr.analytic.timesheet,hr_analytic_timesheet_id:0
@@ -410,16 +408,12 @@ msgid "Related Timeline Id"
 msgstr "Related Timeline Id"
 
 #. module: timesheet_task
-#: code:_description:0
 #: field:account.analytic.line,task_id:0
 #: model:ir.model,name:timesheet_task.model_project_task
-#, python-format
 msgid "Task"
 msgstr "Tarefa"
 
 #. module: timesheet_task
-#: code:_description:0
-#: model:ir.model,name:timesheet_task.model_hr_analytic_timesheet
-#, python-format
-msgid "Timesheet Line"
-msgstr "Linha da Planilha de Horas"
+#: model:ir.model,name:timesheet_task.model_account_analytic_line
+msgid "Analytic Line"
+msgstr "Linha Analítica"
