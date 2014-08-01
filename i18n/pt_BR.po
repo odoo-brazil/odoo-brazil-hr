@@ -386,6 +386,10 @@ msgstr "Valor Diário do Benefício"
 msgid "Zone"
 msgstr "Zona"
 
+#. module: l10n_br_hr_payroll
+#: view:hr.employee:0
+msgid "Unregistered CPF of Partner: "
+msgstr "CPF do Parceiro não cadastrado: "
 
 #. module: l10n_br_hr_payroll
 #: field:hr.employee.dependent,dependent_verification:0

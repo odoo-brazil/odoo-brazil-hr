@@ -6,7 +6,14 @@
 	        <field name="model">hr.employee</field>
 	        <field name="inherit_id" ref="hr.view_employee_form" />
 	        <field name="type">form</field>
-	        <field name="arch" type="xml">  
+	        <field name="arch" type="xml">
+                <xpath expr="//field[@name='address_home_id']" position="attributes">
+					<attribute name="on_change">onchange_address_home_id(address_home_id)</attribute>
+				</xpath>
+                <xpath expr="//field[@name='identification_id']" position="replace">
+                    <field name="check_cpf" invisible="1"/>
+                    <field name="cpf"/>
+				</xpath>
 	        	<xpath expr="//page[@string='HR Settings']" position="after">
 	        		<page string="Documents">
 	        			<form string="Documents" version="7.0">	
@@ -75,4 +82,6 @@
 	    </record>
     </data>
 </openerp>
+
+
 

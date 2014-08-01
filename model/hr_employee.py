@@ -79,6 +79,7 @@ class HrEmployee(osv.osv):
     _inherit='hr.employee'
 
     _columns = {
+        'check_cpf': fields.boolean('Check CPF'),
         'pis_pasep': fields.char(u'PIS/PASEP', size=15),
         'ctps' : fields.char('CTPS', help='Number of CTPS'), 
         'ctps_series' : fields.char('Serie'),
@@ -102,6 +103,7 @@ class HrEmployee(osv.osv):
         'have_dependent': fields.boolean("Associated"),
         'dependent_ids': fields.one2many('hr.employee.dependent', 'employee_id', 'Employee'),
         'rg': fields.char('RG', help='Number of RG'),
+        'cpf': fields.related('address_home_id', 'cnpj_cpf', type='char', string='CPF', required=True),
         'organ_exp': fields.char("Organ Shipping"),
         'rg_emission': fields.date('Date of issue'),
         'title_voter': fields.char('Title', help='Number Voter'),
@@ -113,12 +115,42 @@ class HrEmployee(osv.osv):
         'mother_name': fields.char('Mother name'),
         'validade': fields.date('Expiration'),
         'sindicate': fields.char('Sindicato', help="Sigla do Sindicato"),
-        'n_dependent': fields.function(_get_dependents, type="float", digits_compute=dp.get_precision('Payroll'))
+        'n_dependent': fields.function(_get_dependents, type="float", digits_compute=dp.get_precision('Payroll')),
+
     }    
 
-    _constraints = [[_validate_pis_pasep, u'PIS/PASEP is invalid.', ['pis_pasep']]] 
-    
-   
+    _constraints = [[_validate_pis_pasep, u'PIS/PASEP is invalid.', ['pis_pasep']]]
+
+    _defaults = {
+        'check_cpf': True
+    }
+
+    def onchange_address_home_id(self, cr, uid, ids, address, context=None):
+        if address:
+            address = self.pool.get('res.partner').browse(cr, uid, address, context=context)
+
+            if address.cnpj_cpf:
+                return {'value': {'check_cpf': True, 'cpf': address.cnpj_cpf}}
+            else:
+                return {'value': {'check_cpf': False, 'cpf': False}}
+        return {'value': {}}
+
+    def onchange_no_cpf(self, cr, uid, ids, no_cpf, address_home_id, context=None):
+        if no_cpf:
+
+            partner = self.pool.get('res.partner').browse(cr, uid, address_home_id)
+
+
+    def onchange_user(self, cr, uid, ids, user_id, context=None):
+
+        res = super(HrEmployee, self).onchange_user(cr, uid, ids, user_id, context)
+
+        obj_partner = self.pool.get('res.partner')
+        partner_id = obj_partner.search(cr, uid, [('user_ids', '=', user_id)])[0]
+        partner = obj_partner.browse(cr, uid, partner_id)
+
+        res['value'].update({'address_home_id': partner.id, 'cpf': partner.cnpj_cpf})
+        return res
 
 class HrEmployeeDependent(osv.osv):
     _name = 'hr.employee.dependent'
