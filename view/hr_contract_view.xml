@@ -12,7 +12,8 @@
 					<field name='value_vr'/>
 					<field name="transportation_voucher" />					
 					<field name="health_insurance_father" />
-					<field name="health_insurance_dependent" />	           
+					<field name="health_insurance_dependent"/>
+                    <field name="aditional_benefits"/>
 					<field name="workeddays" invisible='1' />     
                 </xpath>
 	        </field>
