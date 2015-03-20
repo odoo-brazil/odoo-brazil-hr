@@ -34,7 +34,7 @@ class HrEmployee(osv.osv):
         dependent = self.pool.get('hr.employee.dependent')
         dep_ids =  dependent.search(cr, uid, [('employee_id', '=', ids[0]),('dependent_verification','=',True)])
         if dep_ids:
-            res[ids[0]] = len(dep_ids)*179.71
+            res[ids[0]] = len(dep_ids)*187.80  #TODO tornar dinamica a deducao por dependente (através de hr.salary.rule)
             return res
         else:
             res[ids[0]] = 0

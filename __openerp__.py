@@ -33,6 +33,7 @@ Brazilian Localization HT Payroll""",
     'init_xml': [
             'data/l10n_br_hr.cbo.csv',
             'data/l10n_br_hr_payroll_data.xml',
+            'data/l10n_br_hr_payroll_data_IR_rule.xml'
                 ],
     'data': [
              'security/ir.model.access.csv',

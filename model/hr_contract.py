@@ -39,7 +39,10 @@ class HrContract(orm.Model):
         for employee in employees:
             for contract in employee.contract_ids:
                 if employee_ids:    
-                    INSS =(-482.93 if ((contract.wage) >= 4390.25) else -((contract.wage) * 0.11) if ((contract.wage) >= 2195.13) and ((contract.wage) <= 4390.24) else -((contract.wage) * 0.09) if ((contract.wage) >= 1317.08) and ((contract.wage) <= 2195.12) else -((contract.wage) * 0.08))
+                    INSS =(-482.93 if ((contract.wage) >= 4390.25)
+                                else -((contract.wage) * 0.11) if ((contract.wage) >= 2195.13) and ((contract.wage) <= 4390.24)
+                                else -((contract.wage) * 0.09) if ((contract.wage) >= 1317.08) and ((contract.wage) <= 2195.12)
+                                else -((contract.wage) * 0.08))
                     lane = (contract.wage - employee.n_dependent + INSS) 
                     first_lane = (-(0.275*(lane) - 826.15)) 
                     l1 = Decimal(str(first_lane))

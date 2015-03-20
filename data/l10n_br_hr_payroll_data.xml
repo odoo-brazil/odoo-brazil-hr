@@ -51,7 +51,8 @@
             <field name="name">INSS</field>
             <field name="category_id" ref="hr_payroll.DED"/>           
             <field name="amount_select">code</field>
-			<field name="amount_python_compute">result =(-482.93 if ((contract.wage) &gt;= 4390.25) else -((contract.wage) * 0.11) if ((contract.wage) &gt;= 2195.13) and ((contract.wage) &lt;= 4390.24) else -((contract.wage) * 0.09) if ((contract.wage) &gt;= 1317.08) and ((contract.wage) &lt;= 2195.12) else -((contract.wage) * 0.08))</field>
+			<field name="amount_python_compute">result =(-513.01 if
+                ((contract.wage) &gt;= 4663.76) else -((contract.wage) * 0.11) if ((contract.wage) &gt;= 2331.89) and ((contract.wage) &lt;=4663.75) else -((contract.wage) * 0.09) if ((contract.wage) &gt;= 1399.13) and ((contract.wage) &lt;= 2331.88) else -((contract.wage) * 0.08))</field>
             <field name="sequence" eval="101"/>
             <field name="register_id" ref="hr_inss_contribution_register"/>
             <field name="note">INSS</field>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <!-- Regras de Imposto de Renda -->
+
+        <record id="hr_salary_rule_imp_renda_075p" model="hr.salary.rule">
+            <field name="code">IR1</field>
+            <field name="name">Imposto de Renda - 7,5%</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = 2799.86 >= (contract.wage-employee.n_dependent+INSS) >= 1868.23</field>
+            <field name="amount_select">code</field>
+			<field name="amount_python_compute">result=(-(((contract.wage-employee.n_dependent+INSS)*0.075)-140.12))</field>
+            <field eval="102" name="sequence"/>
+            <field name="register_id" ref="hr_ir_contribution_register"/>
+            <field name="note">Imposto de Renda Salarial
+                De R$1868.23 até R$2799.86
+                Alíquota de 7,50%
+                Parcela a deduzir R$140.12
+            </field>
+        </record>
+
+        <record id="hr_salary_rule_imp_renda_15p" model="hr.salary.rule">
+            <field name="code">IR2</field>
+            <field name="name">Imposto de Renda - 15%</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = 3733.19 >= (contract.wage-employee.n_dependent+INSS) >= 2799.87</field>
+            <field name="amount_select">code</field>
+			<field name="amount_python_compute">result=(-(((contract.wage-employee.n_dependent+INSS)*0.15)-350.11))</field>
+            <field eval="102" name="sequence"/>
+            <field name="register_id" ref="hr_ir_contribution_register"/>
+            <field name="note">Imposto de Renda Salarial
+                De R$2799.87 até R$3733.19
+                Alíquota de 15%
+                Parcela a deduzir R$350.11
+            </field>
+        </record>
+
+        <record id="hr_salary_rule_imp_renda_225p" model="hr.salary.rule">
+            <field name="code">IR3</field>
+            <field name="name">Imposto de Renda - 22,5%</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = 4664.68 >= (contract.wage-employee.n_dependent+INSS) >= 3733.20</field>
+            <field name="amount_select">code</field>
+			<field name="amount_python_compute">result=(-(((contract.wage-employee.n_dependent+INSS)*0.225)-630.10))</field>
+            <field eval="102" name="sequence"/>
+            <field name="register_id" ref="hr_ir_contribution_register"/>
+            <field name="note">Imposto de Renda Salarial
+                De R$3733.20 até R$4664.68
+                Alíquota de 22,5%
+                Parcela a deduzir R$630.10
+            </field>
+        </record>
+
+        <record id="hr_salary_rule_imp_renda_275p" model="hr.salary.rule">
+            <field name="code">IR4</field>
+            <field name="name">Imposto de Renda - 27,5%</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = (contract.wage-employee.n_dependent+INSS) >= 4664.68</field>
+            <field name="amount_select">code</field>
+			<field name="amount_python_compute">result=(-(((contract.wage-employee.n_dependent+INSS)*0.275)-863.33))</field>
+            <field eval="102" name="sequence"/>
+            <field name="register_id" ref="hr_ir_contribution_register"/>
+            <field name="note">Imposto de Renda Salarial
+                Acima de R$4664.68
+                Alíquota de 27,50%
+                Parcela a deduzir R$863.33
+            </field>
+        </record>
+
+    </data>
+</openerp>
