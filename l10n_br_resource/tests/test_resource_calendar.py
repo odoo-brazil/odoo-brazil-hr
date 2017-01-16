@@ -132,7 +132,24 @@ class TestResourceCalendar(test_common.SingleTransactionCase):
                          fields.Datetime.from_string('2016-12-19 00:00:01'),
                          'Partindo de um fds, próximo dia util inválido')
 
-    def test_07_data_eh_dia_util(self):
+    def test_07_get_dias_base(self):
+        """ Dado um intervalo de tempo, fornecer a quantidade de dias base
+        para cálculos da folha de pagamento"""
+        data_inicio = fields.Datetime.from_string('2017-01-01 00:00:01')
+        data_final = fields.Datetime.from_string('2017-01-31 23:59:59')
+
+        total = self.resource_calendar.get_dias_base(data_inicio, data_final)
+        self.assertEqual(total, 30,
+                         'Calculo de Dias Base de Jan incorreto')
+
+        data_inicio = fields.Datetime.from_string('2017-02-01 00:00:01')
+        data_final = fields.Datetime.from_string('2017-02-28 23:59:59')
+
+        total = self.resource_calendar.get_dias_base(data_inicio, data_final)
+        self.assertEqual(total, 28,
+                         'Calculo de Dias Base de Fev incorreto')
+
+    def test_08_data_eh_dia_util(self):
         """ Verificar se datas são dias uteis
         """
         segunda = fields.Datetime.from_string('2017-01-09 00:00:01')
@@ -171,3 +188,40 @@ class TestResourceCalendar(test_common.SingleTransactionCase):
         self.assertTrue(
             not self.municipal_calendar_id.data_eh_dia_util(feriado2),
             "ERRO: Feriado2 nao eh dia util!")
+
+    def test_09_quantidade_dia_util(self):
+        """ Calcular a qunatidade de dias uteis.
+        """
+        data_inicio = fields.Datetime.from_string('2017-01-01 00:00:01')
+        data_final = fields.Datetime.from_string('2017-01-31 23:59:59')
+
+        total_dias_uteis = self.resource_calendar.quantidade_dias_uteis(
+            data_inicio, data_final)
+        self.assertEqual(total_dias_uteis, 22,
+                         'ERRO: Total dias uteis mes Jan/2017 inválido')
+
+        data_inicio = fields.Datetime.from_string('2018-01-01 00:00:01')
+        data_final = fields.Datetime.from_string('2018-01-31 23:59:59')
+
+        total_dias_uteis = self.resource_calendar.quantidade_dias_uteis(
+            data_inicio, data_final)
+        self.assertEqual(total_dias_uteis, 23,
+                         'ERRO: Total dias uteis mes Jan/2018 inválido')
+
+    def test_10_data_eh_feriado_bancario(self):
+        """
+         Validar se data eh feriado bancário.
+        """
+        # adicionando feriado bancário
+        self.resource_leaves.create({
+            'name': 'Feriado Bancário',
+            'date_from': fields.Datetime.from_string('2017-01-13 00:00:00'),
+            'date_to': fields.Datetime.from_string('2017-01-13 23:59:59'),
+            'calendar_id': self.nacional_calendar_id.id,
+            'leave_type': 'B',
+            'abrangencia': 'N',
+        })
+        data = fields.Datetime.from_string('2017-01-13 01:02:03')
+        data_eh_feriado_bancario = self.nacional_calendar_id.\
+            data_eh_feriado_bancario(data)
+        self.assertTrue(data_eh_feriado_bancario)

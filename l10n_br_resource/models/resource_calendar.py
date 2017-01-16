@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016 KMEE - Luis Felipe Miléo <mileo@kmee.com.br>
+# Copyright 2016 KMEE - Hendrix Costa <hendrix.costa@kmee.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 import logging
@@ -72,7 +72,6 @@ class ResourceCalendar(models.Model):
                             end_datetime=None):
         """Get the leaves of the calendar. Leaves can be filtered on the
         resource, the start datetime or the end datetime.
-
         :param int resource_id: the id of the resource to take into account
                                 when computing the leaves. If not set,
                                 only general leaves are computed.
@@ -84,7 +83,6 @@ class ResourceCalendar(models.Model):
         :param datetime end_datetime: if provided, do not take into
                                         account leaves beginning
                                         after this date.
-
         :return list leaves: list of tuples (start_datetime, end_datetime) of
                              leave intervals
         """
@@ -143,15 +141,14 @@ class ResourceCalendar(models.Model):
         :return int leaves_count: +1 se for feriado bancário
                                    0 se a data nao for feriado bancário
         """
-        domain = [
-            ('date_from', '<=', data_referencia.strftime("%Y-%m-%d %H:%M:%S")),
-            ('date_to', '>=', data_referencia.strftime("%Y-%m-%d %H:%M:%S")),
-            ('leave_type', 'in', ['F', 'B']),
-        ]
-        leaves_count = self.env['resource.calendar.leaves'].search_count(
-            domain
-        )
-        return leaves_count
+        for leave in self.leave_ids:
+            if leave.date_from <= data_referencia.strftime(
+                    "%Y-%m-%d %H:%M:%S"):
+                if leave.date_to >= data_referencia.\
+                        strftime("%Y-%m-%d %H:%M:%S"):
+                    if leave.leave_type in ['F', 'B']:
+                        return True
+        return False
 
     @api.multi
     def data_eh_feriado_emendado(self, data_referencia=datetime.now()):
@@ -166,7 +163,6 @@ class ResourceCalendar(models.Model):
         """
         dia_antes = data_referencia - timedelta(days=2)
         dia_depois = data_referencia + timedelta(days=2)
-
         dia_antes_eh_util = \
             True if dia_antes.weekday() > 5 or self.data_eh_feriado(
                 dia_antes
@@ -218,6 +214,20 @@ class ResourceCalendar(models.Model):
             if self.data_eh_dia_util(data_referencia):
                 return data_referencia
             data_referencia += timedelta(days=1)
+
+    @api.multi
+    def get_dias_base(self, data_from=datetime.now(), data_to=datetime.now()):
+        """Calcular a quantidade de dias que devem ser remunerados em
+        determinado intervalo de tempo.
+        :param datetime data_from: Data inicial do intervalo de tempo.
+               datetime data_end: Data final do intervalo
+        :return int : quantidade de dias que devem ser remunerada
+       """
+        quantidade_dias = (data_to - data_from).days + 1
+        if quantidade_dias > 30:
+            return 30
+        else:
+            return quantidade_dias
 
 
 class ResourceCalendarLeave(models.Model):
