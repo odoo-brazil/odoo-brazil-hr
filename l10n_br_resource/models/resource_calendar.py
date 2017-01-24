@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Copyright 2016 KMEE - Luis Felipe Miléo <mileo@kmee.com.br>
 # Copyright 2016 KMEE - Hendrix Costa <hendrix.costa@kmee.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
@@ -72,6 +73,7 @@ class ResourceCalendar(models.Model):
                             end_datetime=None):
         """Get the leaves of the calendar. Leaves can be filtered on the
         resource, the start datetime or the end datetime.
+
         :param int resource_id: the id of the resource to take into account
                                 when computing the leaves. If not set,
                                 only general leaves are computed.
@@ -83,6 +85,7 @@ class ResourceCalendar(models.Model):
         :param datetime end_datetime: if provided, do not take into
                                         account leaves beginning
                                         after this date.
+
         :return list leaves: list of tuples (start_datetime, end_datetime) of
                              leave intervals
         """
@@ -117,16 +120,16 @@ class ResourceCalendar(models.Model):
                                     se a data esta dentro de algum leave do
                                     calendario corrente
                                     date_start <= data_referencia <= data_end
+
         :return boolean True se a data referencia for feriado
                         False se a data referencia nao for feriado
         """
         for leave in self.leave_ids:
             if leave.date_from <= data_referencia.strftime(
-                    "%Y-%m-%d %H:%M:%S"):
-                if leave.date_to >= data_referencia.\
-                        strftime("%Y-%m-%d %H:%M:%S"):
-                    if leave.leave_type == 'F':
-                        return True
+                    "%Y-%m-%d %H:%M:%S") and \
+                leave.date_to >= data_referencia.strftime("%Y-%m-%d %H:%M:%S") \
+                    and leave.leave_type == 'F':
+                return True
         return False
 
     @api.multi
@@ -138,17 +141,19 @@ class ResourceCalendar(models.Model):
                                     passada, verifique se a data esta
                                     dentro de algum leave
                                     date_start <= data_referencia <= data_end
+
         :return int leaves_count: +1 se for feriado bancário
                                    0 se a data nao for feriado bancário
         """
-        for leave in self.leave_ids:
-            if leave.date_from <= data_referencia.strftime(
-                    "%Y-%m-%d %H:%M:%S"):
-                if leave.date_to >= data_referencia.\
-                        strftime("%Y-%m-%d %H:%M:%S"):
-                    if leave.leave_type in ['F', 'B']:
-                        return True
-        return False
+        domain = [
+            ('date_from', '<=', data_referencia.strftime("%Y-%m-%d %H:%M:%S")),
+            ('date_to', '>=', data_referencia.strftime("%Y-%m-%d %H:%M:%S")),
+            ('leave_type', 'in', ['F', 'B']),
+        ]
+        leaves_count = self.env['resource.calendar.leaves'].search_count(
+            domain
+        )
+        return leaves_count
 
     @api.multi
     def data_eh_feriado_emendado(self, data_referencia=datetime.now()):
@@ -158,11 +163,12 @@ class ResourceCalendar(models.Model):
                                    Se a data referencia for passada, verifique
                                    se a data esta dentro de algum leave
                                    date_start <= data_referencia <= data_end
-        :return boolean:    True - Se for feriado emendado
-                            False - Se nao for feriado emendado
+
+        :return retorna True ou False
         """
         dia_antes = data_referencia - timedelta(days=2)
         dia_depois = data_referencia + timedelta(days=2)
+
         dia_antes_eh_util = \
             True if dia_antes.weekday() > 5 or self.data_eh_feriado(
                 dia_antes
@@ -207,7 +213,7 @@ class ResourceCalendar(models.Model):
         """Retornar o próximo dia util.
         :param datetime data_referencia: Se nenhuma data referencia for passada
                                    verifique se amanha é dia útil.
-        :return datetime: Próximo dia util a partir da data referencia
+        :return datetime Proximo dia util apartir da data referencia
         """
         data_referencia += timedelta(days=1)
         while data_referencia:
@@ -228,6 +234,26 @@ class ResourceCalendar(models.Model):
             return 30
         else:
             return quantidade_dias
+
+    @api.multi
+    def data_eh_feriado_bancario(self, data_referencia=datetime.now()):
+        """Verificar se uma data é feriado bancário.
+        :param datetime data_referencia: Se nenhuma data referencia for passada
+                                    verifique se hoje é feriado bancário.
+                                    Se a data referencia for passada, verifique
+                                    se a data esta dentro de algum leave
+                                    date_start <= data_referencia <= data_end
+
+        :return int leaves_count: +1 se for feriado bancário
+                                   0 se a data nao for feriado bancário
+        """
+        domain = [
+            ('date_from', '<=', data_referencia.strftime("%Y-%m-%d %H:%M:%S")),
+            ('date_to', '>=', data_referencia.strftime("%Y-%m-%d %H:%M:%S")),
+            ('leave_type', 'in', ['F', 'B']),
+        ]
+        leaves_count = self.env['resource.calendar.leaves'].search_count(domain)
+        return leaves_count
 
     @api.multi
     def data_eh_feriado_bancario(self, data_referencia=datetime.now()):
