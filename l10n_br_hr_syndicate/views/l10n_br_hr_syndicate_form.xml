@@ -1,0 +1,152 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<openerp>
+    <data>
+
+        <record  model="ir.ui.view" id="l10n_br_hr_syndicate_tree">
+            <field name="name">l10n.br.hr.syndicate.tree</field>
+            <field name="model">l10n.br.hr.syndicate</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Syndicates">
+                    <field name="syndicate" />
+                    <field name="dissidio_month"/>
+                    <field name="trct_code"/>
+                    <field name="trct_name"/>
+                </tree>
+            </field>
+        </record>
+
+        <record  model="ir.ui.view" id="l10n_br_hr_collectives_conventions_tree">
+            <field name="name">l10n.br.hr.collectives.conventions.tree</field>
+            <field name="model">l10n.br.hr.collectives.conventions</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Collectives Conventions">
+                    <field name="base_year" />
+                    <field name="agreement_date"/>
+                    <field name="process_number"/>
+                    <field name="vara"/>
+                    <field name="agreement_type"/>
+                </tree>
+            </field>
+        </record>
+
+        <record  model="ir.ui.view" id="l10n_br_hr_job_minimum_wage_tree">
+            <field name="name">l10n.br.hr.job.minimum.wage.tree</field>
+            <field name="model">l10n.br.hr.job.minimum.wage</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Job Minimum Wage">
+                    <field name="job_id" />
+                    <field name="date_beginning"/>
+                    <field name="preferential_workload"/>
+                    <field name="month_minimum_wage"/>
+                    <field name="hour_minimum_wage"/>
+                </tree>
+            </field>
+        </record>
+
+        <record  model="ir.ui.view" id="l10n_br_hr_job_minimum_wage_tree">
+            <field name="name">l10n.br.hr.job.minimum.wage.tree</field>
+            <field name="model">l10n.br.hr.job.minimum.wage</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Job Minimum Wage">
+                    <field name="job_id" />
+                    <field name="date_beginning"/>
+                    <field name="preferential_workload"/>
+                    <field name="month_minimum_wage"/>
+                    <field name="hour_minimum_wage"/>
+                </tree>
+            </field>
+        </record>
+
+        <record  model="ir.ui.view" id="l10n_br_hr_job_rubric_tree">
+            <field name="name">l10n.br.hr.job.rubric.tree</field>
+            <field name="model">l10n.br.hr.job.rubric</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Job Minimum Wage">
+                    <field name="rubric_id" />
+                    <field name="job_id"/>
+                    <field name="data_beginning"/>
+                    <field name="data_ending"/>
+                    <field name="reference"/>
+                    <field name="quantity"/>
+                    <field name="percentage"/>
+                    <field name="value"/>
+                </tree>
+            </field>
+        </record>
+
+        <record  model="ir.ui.view" id="l10n_br_hr_job_fix_rubric_tree">
+            <field name="name">l10n.br.hr.job.fix.rubric.tree</field>
+            <field name="model">l10n.br.hr.job.fix.rubric</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Job Fix Rubrics">
+                    <field name="rubric_id" />
+                    <field name="monthly_hourly"/>
+                    <field name="initial_wage"/>
+                    <field name="final_wage"/>
+                    <field name="date_beginning"/>
+                    <field name="date_ending"/>
+                    <field name="reference"/>
+                    <field name="quantity"/>
+                    <field name="percentage"/>
+                    <field name="value"/>
+                </tree>
+            </field>
+        </record>
+
+        <record  model="ir.ui.view" id="l10n_br_hr_syndicate_contribution_tree">
+            <field name="name">l10n.br.hr.syndicate.contribution.tree</field>
+            <field name="model">l10n.br.hr.syndicate.contribution</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Syndicate Contribution">
+                    <field name="social_capital_class" />
+                    <field name="aliquot"/>
+                    <field name="additional_portion"/>
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="l10n_br_hr_syndicate_form">
+            <field name="name">l10n.br.hr.syndicate.form</field>
+            <field name="model">l10n.br.hr.syndicate</field>
+            <field name="arch" type="xml">
+                <form string="Syndicate">
+                    <sheet string="Syndicate">
+                        <h2><field name="syndicate"/></h2>
+                        <group string="Syndicate">
+                            <group>
+                                <field name="dissidio_month"/>
+                                <field name="trct_code"/>
+                                <field name="trct_name"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Collectives Conventions">
+                                <field name="collectives_conventions_ids" />
+                            </page>
+                            <page string="Job Minimum Wage">
+                                <field name="job_minimum_wage_ids" />
+                            </page>
+                            <page string="Job Rubrics">
+                                <field name="job_rubric_ids" />
+                            </page>
+                            <page string="Job Fix Rubrics">
+                                <field name="job_fix_rubric_ids" />
+                            </page>
+                            <page string="Syndicate Contribution">
+                                <field name="syndicate_contribution_ids" />
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</openerp>
