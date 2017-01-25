@@ -40,9 +40,11 @@ class L10nBrHrSocialTax(models.Model):
             for faixa in tabela_vigente:
                 if BASE_INSS < faixa.max_wage:
                     return BASE_INSS * faixa.rate / 100.00
-            return BASE_INSS * tabela_vigente[-1].rate / 100.00
+            return \
+                tabela_vigente[-1].max_wage * tabela_vigente[-1].rate / 100.00
 
         else:
             raise exceptions.Warning(
                 _('Tabela de INSS do ano Vigente Não encontrada!'))
-            # print("Nao encontrada tabelas de INSS do ano de " + ano)
+            _logger.info(
+		"Nao encontrada tabelas de INSS do ano de " + ano)
