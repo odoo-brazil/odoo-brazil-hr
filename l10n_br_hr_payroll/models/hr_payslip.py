@@ -95,25 +95,31 @@ class HrPayslip(models.Model):
             quantidade_dias_ferias = self.env['resource.calendar'].\
                 get_quantidade_dias_ferias(hr_contract.employee_id.id,
                                            date_from, date_to)
-            if quantidade_dias_ferias:
-                result += [self.get_attendances(u'Quantidade dias em Férias',
-                                                6, u'FERIAS',
-                                                quantidade_dias_ferias, 0.0,
-                                                contract_id)]
-            return result
+
+            result += [self.get_attendances(u'Quantidade dias em Férias',
+                                            6, u'FERIAS',
+                                            quantidade_dias_ferias, 0.0,
+                                            contract_id)]
+        return result
 
     def INSS(self, BASE_INSS):
         tabela_inss_obj = self.env['l10n_br.hr.social.security.tax']
-        inss = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
-        return inss
+        if BASE_INSS:
+            inss = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
+            return inss
+        else:
+            return 0
 
     def IRRF(self, BASE_IR, BASE_INSS):
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
-        inss = self.INSS(BASE_INSS)
-        irrf = tabela_irrf_obj._compute_irrf(
-            BASE_IR, self.employee_id.id, inss, self.date_from
-        )
-        return irrf
+        if BASE_INSS and BASE_IR:
+            inss = self.INSS(BASE_INSS)
+            irrf = tabela_irrf_obj._compute_irrf(
+                BASE_IR, self.employee_id.id, inss, self.date_from
+            )
+            return irrf
+        else:
+            return 0
 
     @api.model
     def get_contract_specific_rubrics(self, contract_id, rule_ids):
@@ -131,8 +137,8 @@ class HrPayslip(models.Model):
         for rubrica in self.contract_id.specific_rule_ids:
             if rubrica.rule_id.id == rubrica_id:
                 return rubrica.specific_quantity * \
-                       (rubrica.specific_percentual/100) * \
-                       rubrica.specific_amount
+                    rubrica.specific_percentual/100 * \
+                    rubrica.specific_amount
 
     @api.multi
     def get_payslip_lines(self, payslip_id):
@@ -291,12 +297,20 @@ class HrPayslip(models.Model):
                         tot_rule = amount * qty * rate / 100.0
                         localdict[rule.code] = tot_rule
                         rules[rule.code] = rule
-                        if rule.compoe_base_INSS:
-                            localdict['BASE_INSS'] += tot_rule
-                        if rule.compoe_base_IR:
-                            localdict['BASE_IR'] += tot_rule
-                        if rule.compoe_base_FGTS:
-                            localdict['BASE_FGTS'] += tot_rule
+                        if rule.category_id.code == 'DEDUCAO':
+                            if rule.compoe_base_INSS:
+                                localdict['BASE_INSS'] -= tot_rule
+                            if rule.compoe_base_IR:
+                                localdict['BASE_IR'] -= tot_rule
+                            if rule.compoe_base_FGTS:
+                                localdict['BASE_FGTS'] -= tot_rule
+                        else:
+                            if rule.compoe_base_INSS:
+                                localdict['BASE_INSS'] += tot_rule
+                            if rule.compoe_base_IR:
+                                localdict['BASE_IR'] += tot_rule
+                            if rule.compoe_base_FGTS:
+                                localdict['BASE_FGTS'] += tot_rule
                         # sum the amount for its salary category
                         localdict = _sum_salary_rule_category(
                             localdict, rule.category_id,
@@ -329,11 +343,9 @@ class HrPayslip(models.Model):
                             'rate': rate,
                         }
                     else:
-                        salary_obj = self.env['hr.salary.rule']
-                        # blacklist this rule and its children
-                        blacklist += \
-                            [id for id, seq in
-                             salary_obj._recursive_search_of_rules([rule])]
+                        rules_seq = rule._model._recursive_search_of_rules(
+                            self._cr, self._uid, rule, self._context)
+                        blacklist += [id for id, seq in rules_seq]
 
             result = [value for code, value in result_dict.items()]
             return result

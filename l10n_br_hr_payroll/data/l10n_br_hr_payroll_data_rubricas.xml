@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2017 - KMEE
+     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
+
 <openerp>
     <data>
 
@@ -134,7 +137,8 @@
             <field name="name">Rubrica de FERIAS</field>
             <field name="category_id" ref="hr_payroll.BASIC"/>
             <field name="amount_select">code</field>
-            <field name="condition_select">none</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = worked_days.FERIAS.number_of_days > 0</field>
             <field name="amount_python_compute">result = worked_days.FERIAS.number_of_days * contract.wage / 30</field>
             <field name="sequence" eval="5"/>
         </record>
@@ -169,6 +173,9 @@
             <field name="condition_select">none</field>
             <field name="amount_python_compute">result = worked_days.DIAS_BASE.number_of_days * contract.wage/30</field>
             <field name="sequence" eval="101" />
+            <field name="compoe_base_INSS" eval="True"/>
+            <field name="compoe_base_IR" eval="True"/>
+            <field name="compoe_base_FGTS" eval="True"/>
         </record>
 
         <!--INSS - Regra-->
@@ -193,6 +200,31 @@
             <field name="sequence" eval="102"/>
         </record>
 
+        <record id="hr_salary_rule_ADIANTAMENTO_13" model="hr.salary.rule">
+            <field name="code">ADIANTAMENTO_13</field>
+            <field name="name">Adiantamento 13 Salario</field>
+            <field name="category_id" ref="hr_payroll.PROVENTO"/>
+            <field name="amount_select">percentage</field>
+            <field name="amount_percentage_base">contract.wage</field>
+            <field name="quantity">1.0</field>
+            <field name="amount_percentage">50.00</field>
+            <field name="sequence" eval="104"/>
+            <field name="compoe_base_FGTS" eval="True"/>
+        </record>
+
+        <record id="hr_salary_rule_SEGUNDA_PARCELA_13" model="hr.salary.rule">
+            <field name="code">SEGUNDA_PARCELA_13</field>
+            <field name="name">Segunda parcela 13 Salário</field>
+            <field name="category_id" ref="hr_payroll.PROVENTO"/>
+            <field name="amount_select">percentage</field>
+            <field name="amount_percentage_base">contract.wage</field>
+            <field name="quantity">1.0</field>
+            <field name="amount_percentage">50.00</field>
+            <field name="sequence" eval="105"/>
+            <field name="compoe_base_INSS" eval="True"/>
+            <field name="compoe_base_IR" eval="True"/>
+            <field name="compoe_base_FGTS" eval="True"/>
+        </record>
         <!--ESTRUTURAS DE SALARIOS-->
 
         <!--Estrutura de salario para ferias-->
@@ -223,7 +255,15 @@
         <record id="hr_salary_structure_FUNCAO_COMISSIONADA" model="hr.payroll.structure">
             <field name="code">FUNCAO_COMISSIONADA</field>
             <field name="name">Função Comissionada</field>
-            <field name="rule_ids" eval="[(6, 0, [ref('hr_salary_rule_FUNCAO_COMISSIONADA')])]" />
+            <field name="rule_ids" eval="[(6, 0, [ref('hr_salary_rule_ADIANTAMENTO_13')])]" />
+            <field name="company_id" ref="base.main_company" />
+            <field name="parent_id" eval="ref('hr_salary_structure_BASE_FGTS')" />
+        </record>
+
+        <record id="hr_salary_structure_BASE_13" model="hr.payroll.structure">
+            <field name="code">BASE_13</field>
+            <field name="name">Base para 13 Salário</field>
+            <field name="rule_ids" eval="[(6, 0, [ref('hr_salary_rule_ADIANTAMENTO_13'), ref('hr_salary_rule_SEGUNDA_PARCELA_13')])]" />
             <field name="company_id" ref="base.main_company" />
             <field name="parent_id" eval="ref('hr_salary_structure_BASE_FGTS')" />
         </record>
