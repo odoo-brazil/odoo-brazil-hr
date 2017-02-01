@@ -2,8 +2,10 @@
 # Copyright 2016 KMEE - Hendrix Costa <hendrix.costa@kmee.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+from datetime import datetime, timedelta
+
+from dateutil.relativedelta import relativedelta
 from openerp import api, fields, models
-from datetime import timedelta
 
 
 class ResourceCalendar(models.Model):
@@ -97,7 +99,9 @@ class ResourceCalendar(models.Model):
         :return int : quantidade de dias de ferias do funcionario
         """
         quantidade_dias_ferias = 0
-        holiday_status_id = self.env.ref('hr_holidays.holiday_status_cl')
+        quantidade_dias_abono = 0
+        holiday_status_id = \
+            self.env.ref('l10n_br_hr_vacation.holiday_status_vacation')
         domain = [
             ('state', '=', 'validate'),
             ('employee_id', '=', employee_id),
@@ -109,6 +113,19 @@ class ResourceCalendar(models.Model):
         ferias_holidays_ids = self.env['hr.holidays'].search(domain)
 
         for holiday in ferias_holidays_ids:
-            quantidade_dias_ferias += holiday.number_of_days_temp
+            quantidade_dias_ferias += holiday.vacations_days
+            quantidade_dias_abono += holiday.sold_vacations_days
 
-        return quantidade_dias_ferias
+        return quantidade_dias_ferias, quantidade_dias_abono
+
+    @api.multi
+    def get_ultimo_dia_mes(self, mes, ano):
+        """ Verificar o ultimo dia do mes referencia
+        :param mes:  int - Mês de referencia
+        :return: int : ultimo dia do mes
+        relativedelta(months=+1, days=-1)
+        """
+        data_mes = datetime.strptime(str(mes) + '-' + str(ano), '%m-%Y')
+        data_final = \
+            data_mes + relativedelta(months=1) - relativedelta(days=1)
+        return data_final

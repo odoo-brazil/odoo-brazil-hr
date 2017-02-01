@@ -43,17 +43,17 @@ class L10nBrHrIncomeTax(models.Model):
         deducao_dependente_value = deducao_dependente_obj.search(
             [('year', '=', ano)]
         )
+        dependent_values = 0
+        if employee.have_dependent:
+            dependent_values = deducao_dependente_value.amount * len(
+                employee.dependent_ids
+            )
 
         if tabela_vigente:
             for faixa in tabela_vigente:
                 if BASE_IRRF > faixa.max_wage:
-                    return (
-                               BASE_IRRF - inss - (
-                                   deducao_dependente_value.amount * len(
-                                       employee.dependent_ids
-                                   )
-                               )) * (faixa.rate/ 100.00) - faixa.deductable
-
+                    return (BASE_IRRF - inss - dependent_values) * \
+                           (faixa.rate/100.00) - faixa.deductable
         else:
             raise Warning(
                 _('Tabela de IRRF do ano Vigente Não encontrada!')
