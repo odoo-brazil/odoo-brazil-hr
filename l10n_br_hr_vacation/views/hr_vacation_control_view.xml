@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="view_l10n_br_hr_vacation_contract_form" model="ir.ui.view">
+            <field name="name">l10n_br_hr_vacation.contract.form</field>
+            <field name="model">hr.contract</field>
+            <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@string='Work Permit']" position="after">
+                    <page string="Controle de Férias">
+                        <field name="vacation_control_ids">
+                            <tree string="Férias">
+                                <field name="inicio_aquisitivo" widget="date"/>
+                                <field name="fim_aquisitivo" widget="date"/>
+                                <field name="inicio_concessivo" widget="date"/>
+                                <field name="fim_concessivo" widget="date"/>
+                                <field name="inicio_gozo" widget="date"/>
+                                <field name="fim_gozo" widget="date"/>
+                                <field name="data_aviso" widget="date"/>
+                                <field name="limite_gozo" widget="date"/>
+                                <field name="limite_aviso" widget="date"/>
+                                <field name="faltas"/>
+                                <field name="afastamentos"/>
+                                <field name="dias"/>
+                                <field name="saldo"/>
+                                <field name="avos"/>
+                                <field name="proporcional"/>
+                                <field name="vencida"/>
+                                <field name="pagamento_dobro"/>
+                                <field name="dias_pagamento_dobro"/>
+                                <field name="perdido_afastamento"/>
+                            </tree>
+                        </field>
+                        <button name="atualizar_controle_ferias"
+                                string="Gerar período aquisitivo"
+                                type="object" class="oe_highlight"/>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</openerp>
