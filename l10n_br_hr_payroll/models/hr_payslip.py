@@ -2,22 +2,35 @@
 # Copyright (C) 2016 KMEE (http://www.kmee.com.br)
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
-from openerp import api, fields, models, exceptions, _
 from datetime import datetime
 
+from dateutil.relativedelta import relativedelta
+from openerp import api, fields, models, exceptions, _
+from lxml import etree
+
 MES_DO_ANO = [
-    (1, u'Jan'),
-    (2, u'Fev'),
-    (3, u'Mar'),
-    (4, u'Abr'),
-    (5, u'Mai'),
-    (6, u'Jun'),
-    (7, u'Jul'),
-    (8, u'Ago'),
-    (9, u'Set'),
-    (10, u'Out'),
-    (11, u'Nov'),
-    (12, u'Dez'),
+    (1, u'Janeiro'),
+    (2, u'Fevereiro'),
+    (3, u'Marco'),
+    (4, u'Abril'),
+    (5, u'Maio'),
+    (6, u'Junho'),
+    (7, u'Julho'),
+    (8, u'Agosto'),
+    (9, u'Setembro'),
+    (10, u'Outubro'),
+    (11, u'Novembro'),
+    (12, u'Dezembro'),
+]
+
+TIPO_DE_FOLHA = [
+    ('normal', u'Folha normal'),
+    ('rescisao', u'Rescisão'),
+    ('ferias', u'Férias'),
+    ('decimo_terceiro', u'Décimo terceiro (13º)'),
+    ('licenca_maternidade', u'Licença maternidade'),
+    ('auxilio_doenca', u'Auxílio doença'),
+    ('auxílio_acidente_trabalho', u'Auxílio acidente de trabalho'),
 ]
 
 
@@ -46,6 +59,12 @@ class HrPayslip(models.Model):
                 lines.append(line.id)
         self.line_resume_ids = lines
 
+    tipo_de_folha = fields.Selection(
+        selection=TIPO_DE_FOLHA,
+        string=u'Tipo de folha',
+        default='normal',
+    )
+
     struct_id_readonly = fields.Many2one(
         string=u'Estrutura de Salário',
         comodel_name='hr.payroll.structure',
@@ -64,9 +83,20 @@ class HrPayslip(models.Model):
         default=datetime.now().year,
     )
 
+    data_mes_ano = fields.Char(
+        string=u'Mês/Ano',
+        compute='computar_mes_ano',
+    )
+
     total_folha = fields.Float(
         string="Total",
         default=0.00
+    )
+
+    medias_proventos = fields.One2many(
+        string=u'Linhas das medias dos proventos',
+        comodel_name='l10n_br.hr.medias',
+        inverse_name='holerite_id',
     )
 
     line_resume_ids = fields.One2many(
@@ -74,6 +104,21 @@ class HrPayslip(models.Model):
         inverse_name='slip_id',
         compute=_buscar_payslip_line,
         string="Holerite Resumo",
+    )
+
+    @api.depends('contract_id')
+    def _get_periodo_aquisitivo(self):
+        for holerite in self:
+            if holerite.contract_id:
+                controles_ferias = holerite.contract_id.vacation_control_ids
+                holerite.periodo_aquisitivo = controles_ferias[0]
+
+    periodo_aquisitivo = fields.Many2one(
+        comodel_name='hr.vacation.control',
+        default='_get_periodo_aquisitivo',
+        string="Período Aquisitivo",
+        domain="[('contract_id','=',contract_id)]",
+        store=True,
     )
 
     def get_attendances(self, nome, sequence, code, number_of_days,
@@ -145,14 +190,12 @@ class HrPayslip(models.Model):
             quantidade_dias_ferias, quantidade_dias_abono = \
                 self.env['resource.calendar'].get_quantidade_dias_ferias(
                     hr_contract.employee_id.id, date_from, date_to)
-
             result += [
                 self.get_attendances(
                     u'Quantidade dias em Férias', 6, u'FERIAS',
                     quantidade_dias_ferias, 0.0, contract_id
                 )
             ]
-
             result += [
                 self.get_attendances(
                     u'Quantidade dias Abono Pecuniario', 7,
@@ -160,10 +203,21 @@ class HrPayslip(models.Model):
                     0.0, contract_id
                 )
             ]
+            if hr_contract.vacation_control_ids[0].saldo:
+                saldo_ferias = hr_contract.vacation_control_ids[0].saldo
+            else:
+                saldo_ferias = 0
+            result += [
+                self.get_attendances(
+                    u'Saldo de dias máximo para Férias', 8,
+                    u'SALDO_FERIAS', saldo_ferias,
+                    0.0, contract_id
+                )
+            ]
 
             # get Dias Trabalhados
             quantidade_dias_trabalhados = \
-                dias_mes - leaves['quantidade_dias_faltas_nao_remuneradas'] - \
+                30 - leaves['quantidade_dias_faltas_nao_remuneradas'] - \
                 quantity_DSR_discount - quantidade_dias_ferias
             result += [self.get_attendances(u'Dias Trabalhados', 34,
                                             u'DIAS_TRABALHADOS',
@@ -223,10 +277,8 @@ class HrPayslip(models.Model):
     def get_contract_specific_rubrics(self, contract_id, rule_ids):
         contract = self.env['hr.contract'].browse(contract_id.id)
         for rule in contract.specific_rule_ids:
-            if datetime.strftime(
-                    datetime.now(), '%Y-%m-%d') >= rule.date_start:
-                if not rule.date_stop or datetime.strftime(
-                        datetime.now(), '%Y-%m-%d') <= rule.date_stop:
+            if self.date_from >= rule.date_start:
+                if not rule.date_stop or self.date_to <= rule.date_stop:
                     rule_ids.append((rule.rule_id.id, rule.rule_id.sequence))
         return rule_ids
 
@@ -257,6 +309,61 @@ class HrPayslip(models.Model):
             raise exceptions.Warning(
                 _('Can\'t find this year values in Rat Fap Table')
             )
+
+    @api.multi
+    def buscar_estruturas_salario(self):
+        if self.tipo_de_folha == "normal":
+            return self.contract_id.struct_id
+        elif self.tipo_de_folha == "decimo_terceiro":
+            if self.mes_do_ano < 12:
+                estrutura_decimo_terceiro = self.env.ref(
+                    'l10n_br_hr_payroll.'
+                    'hr_salary_structure_PRIMEIRA_PARCELA_13'
+                )
+                return estrutura_decimo_terceiro
+            else:
+                estrutura_decimo_terceiro = self.env.ref(
+                    'l10n_br_hr_payroll.'
+                    'hr_salary_structure_SEGUNDA_PARCELA_13'
+                )
+                return estrutura_decimo_terceiro
+        elif self.tipo_de_folha == "ferias":
+            estrutura_decimo_terceiro = self.env.ref(
+                'l10n_br_hr_payroll.'
+                'hr_salary_structure_FERIAS'
+            )
+            return estrutura_decimo_terceiro
+
+    # @api.multi
+    # def buscar_media_rubrica(self, rubrica_id):
+    #     rubrica = self.env['hr.salary.rule'].browse(rubrica_id)
+    #     for media in self.medias_proventos:
+    #         if rubrica.name == media.nome_rubrica:
+    #             return media.media
+
+    @api.multi
+    def BUSCAR_PRIMEIRA_PARCELA(self):
+        primeira_parcela_struct_id = self.env.ref(
+            'l10n_br_hr_payroll.hr_salary_structure_PRIMEIRA_PARCELA_13'
+        )
+        primeira_parcela_id = self.env.ref(
+            'l10n_br_hr_payroll.hr_salary_rule_PRIMEIRA_PARCELA_13'
+        )
+        payslip_id = self.env['hr.payslip'].search(
+            [
+                ('contract_id', '=', self.contract_id.id),
+                ('date_from', '>=', str(self.ano) + '-01-01'),
+                ('date_to', '<=', str(self.ano) + '-11-30'),
+                ('struct_id', '=', primeira_parcela_struct_id.id)
+            ]
+        )
+        if len(payslip_id) > 1:
+            raise exceptions.Warning(
+                _('Existe mais de um holerite da primeira parcela do 13º!')
+            )
+        for line in payslip_id.line_ids:
+            if line.salary_rule_id.id == primeira_parcela_id.id:
+                return line.total
 
     @api.multi
     def get_payslip_lines(self, payslip_id):
@@ -358,11 +465,16 @@ class HrPayslip(models.Model):
         inputs = {}
         for input_line in payslip.input_line_ids:
             inputs[input_line.code] = input_line
-
+        medias = {}
+        for media in payslip.medias_proventos:
+            medias[media.rubrica_id.code] = media
         input_obj = InputLine(payslip.employee_id.id, inputs)
         worked_days_obj = WorkedDays(payslip.employee_id.id, worked_days)
         payslip_obj = Payslips(payslip.employee_id.id, payslip)
         rules_obj = BrowsableObject(payslip.employee_id.id, rules)
+        medias_obj = BrowsableObject(payslip.employee_id.id, medias) \
+            if payslip.tipo_de_folha in ["ferias", "decimo_terceiro"] \
+            else False
         categories_obj = \
             BrowsableObject(payslip.employee_id.id, categories_dict)
 
@@ -376,19 +488,20 @@ class HrPayslip(models.Model):
             'payslip': payslip_obj, 'worked_days': worked_days_obj,
             'inputs': input_obj, 'rubrica': None, 'SALARIO_MES': salario_mes,
             'SALARIO_DIA': salario_dia, 'SALARIO_HORA': salario_hora,
-            'RAT_FAP': rat_fap,
+            'RAT_FAP': rat_fap, 'MEDIAS': medias_obj,
         }
 
         for contract_ids in self:
             # get the ids of the structures on the contracts
             # and their parent id as well
-            structure_ids = self.env['hr.contract'].browse(
-                contract_ids.ids).get_all_structures()
+            # structure_ids = self.env['hr.contract'].browse(
+            #     contract_ids.ids).get_all_structures()
+            structure_ids = payslip.struct_id._get_parent_structure()
 
             # get the rules of the structure and thier children
             rule_ids = self.env['hr.payroll.structure'].browse(
                 structure_ids).get_all_rules()
-            rule_ids = self.get_contract_specific_rubrics(
+            rule_ids = payslip.get_contract_specific_rubrics(
                 contract_ids, rule_ids)
 
             # run the rules by sequence
@@ -405,12 +518,17 @@ class HrPayslip(models.Model):
                     localdict['result_qty'] = 1.0
                     localdict['result_rate'] = 100
                     localdict['rubrica'] = rule
-                    # check if the rule can be applied
                     if obj_rule.satisfy_condition(rule.id, localdict) \
                             and rule.id not in blacklist:
                         # compute the amount of the rule
                         amount, qty, rate = \
                             obj_rule.compute_rule(rule.id, localdict)
+                        # se ja tiver sido calculado a media dessa rubrica,
+                        # utilizar valor da media e multiplicar pela reinciden.
+                        if medias.get(rule.code):
+                            amount = medias.get(rule.code).media/12
+                            qty = medias.get(rule.code).meses
+
                         # check if there is already a rule computed
                         # with that code
                         previous_amount = \
@@ -421,6 +539,7 @@ class HrPayslip(models.Model):
                         tot_rule = amount * qty * rate / 100.0
                         localdict[rule.code] = tot_rule
                         rules[rule.code] = rule
+
                         if rule.category_id.code == 'DEDUCAO':
                             if rule.compoe_base_INSS:
                                 localdict['BASE_INSS'] -= tot_rule
@@ -435,6 +554,7 @@ class HrPayslip(models.Model):
                                 localdict['BASE_IR'] += tot_rule
                             if rule.compoe_base_FGTS:
                                 localdict['BASE_FGTS'] += tot_rule
+
                         # sum the amount for its salary category
                         localdict = _sum_salary_rule_category(
                             localdict, rule.category_id,
@@ -443,7 +563,8 @@ class HrPayslip(models.Model):
                         result_dict[key] = {
                             'salary_rule_id': rule.id,
                             'contract_id': contract.id,
-                            'name': rule.name,
+                            'name': u'Média de ' + rule.name
+                            if medias_obj else rule.name,
                             'code': rule.code,
                             'category_id': rule.category_id.id,
                             'sequence': rule.sequence,
@@ -473,10 +594,6 @@ class HrPayslip(models.Model):
 
             result = [value for code, value in result_dict.items()]
             return result
-
-    def _computar_ano(self):
-        ano = datetime.now().year
-        return ano
 
     @api.multi
     def onchange_employee_id(self, date_from, date_to, contract_id):
@@ -523,15 +640,16 @@ class HrPayslip(models.Model):
     @api.onchange('contract_id')
     def set_employee_id(self):
         for record in self:
-            record.struct_id = record.contract_id.struct_id
+            record.struct_id = record.buscar_estruturas_salario()
             record.struct_id_readonly = record.struct_id
-            self.set_dates()
+            record.set_dates()
             if record.contract_id:
                 record.employee_id = record.contract_id.employee_id
                 record.employee_id_readonly = record.employee_id
+            record._get_periodo_aquisitivo()
 
     @api.multi
-    @api.onchange('mes_do_ano')
+    @api.onchange('mes_do_ano', 'ano')
     def buscar_datas_periodo(self):
         for record in self:
             record.set_dates()
@@ -540,71 +658,116 @@ class HrPayslip(models.Model):
                     record.date_from, record.date_to, record.contract_id.id
                 )
 
+    def computar_mes_ano(self):
+        for record in self:
+            record.data_mes_ano = MES_DO_ANO[record.mes_do_ano-1][1][:3] + \
+                '/' + str(record.ano)
+
     def set_dates(self):
         for record in self:
-            ultimo_dia_do_mes = self.env['resource.calendar']. \
-                get_ultimo_dia_mes(record.mes_do_ano, record.ano)
+            ultimo_dia_do_mes = str(
+                self.env['resource.calendar'].get_ultimo_dia_mes(
+                    record.mes_do_ano, record.ano))
 
-            primeiro_dia_do_mes = \
+            primeiro_dia_do_mes = str(
                 datetime.strptime(str(record.mes_do_ano) + '-' +
-                                  str(record.ano), '%m-%Y')
+                                  str(record.ano), '%m-%Y'))
 
-            if not record.contract_id.date_start:
-                continue
+            record.date_from = primeiro_dia_do_mes
+            record.date_to = ultimo_dia_do_mes
 
-            date_start = record.contract_id.date_start
+            data_de_inicio = record.contract_id.date_start
+            data_final = record.contract_id.date_end
 
-            if str(primeiro_dia_do_mes) < date_start:
-                date_from = record.contract_id.date_start
-            else:
-                date_from = str(primeiro_dia_do_mes)
+            if data_de_inicio and primeiro_dia_do_mes < data_de_inicio:
+                record.date_from = record.contract_id.date_start
 
-            record.date_from = date_from
-
-            date_end = record.contract_id.date_end
-
-            if not date_end:
-                record.date_to = str(ultimo_dia_do_mes)
-            elif str(ultimo_dia_do_mes) > record.contract_id.date_end:
+            if data_final and ultimo_dia_do_mes > data_final:
                 record.date_to = record.contract_id.date_end
-            else:
-                record.date_to = str(ultimo_dia_do_mes)
 
     @api.multi
     def compute_sheet(self):
+        if self.tipo_de_folha in ["decimo_terceiro", "ferias"]:
+            hr_medias_ids, data_de_inicio, data_final = \
+                self.gerar_media_dos_proventos()
+
+            if not hr_medias_ids:
+                raise exceptions.Warning(
+                    _('Nenhum Holerite encontrado para médias nesse período!')
+                )
+
+            self.validacao_holerites_anteriores(
+                data_de_inicio, fields.Date.today(), self.contract_id)
         super(HrPayslip, self).compute_sheet()
         self._valor_total_folha()
         return True
 
+    def validacao_holerites_anteriores(self, data_inicio, data_fim, contrato):
+        """
+        VAlida se existe todos os holerites calculados e confirmados em
+        determinado período.
+        :param date_from:
+        :param date_to:
+        :return:
+        """
+        folha_obj = self.env['hr.payslip']
+        domain = [
+            ('date_from', '>=', data_inicio),
+            ('date_to', '<=', data_fim),
+            ('contract_id', '=', contrato.id),
+            ('state', '=', 'done'),
+        ]
+        folhas_periodo = folha_obj.search(domain)
 
-class HrPayslipeLine(models.Model):
-    _inherit = "hr.payslip.line"
+        folhas_sorted = folhas_periodo.sorted(key=lambda r: r.date_from)
+        mes = fields.Date.from_string(data_inicio)
+
+        for folha in folhas_sorted:
+            if folha.mes_do_ano != mes.month:
+                raise exceptions.ValidationError(_(
+                    "Não foi encontrado holerite confirmado do mês de %s"
+                ) % MES_DO_ANO[folha.mes_do_ano-1][1])
+            mes = mes + relativedelta(months=1)
+
+        if mes.month != fields.Date.from_string(data_fim).month:
+            raise exceptions.ValidationError(_(
+                "Não foi encontrado holerite confirmado do mês de %s"
+            ) % MES_DO_ANO[mes.month-1][1])
+
+    @api.multi
+    def gerar_media_dos_proventos(self):
+        medias_obj = self.env['l10n_br.hr.medias']
+        if self.tipo_de_folha == 'ferias':
+            periodo_aquisitivo = self.periodo_aquisitivo
+            data_de_inicio = str(fields.Date.from_string(
+                periodo_aquisitivo.inicio_aquisitivo))
+            data_final = str(fields.Date.from_string(
+                periodo_aquisitivo.fim_aquisitivo))
+        elif self.tipo_de_folha == 'decimo_terceiro':
+            if self.contract_id.date_start > str(self.ano) + '-01-01':
+                data_de_inicio = self.contract_id.date_start
+            else:
+                data_de_inicio = str(self.ano) + '-01-01'
+            data_final = self.date_to
+        hr_medias_ids = medias_obj.gerar_media_dos_proventos(
+            data_de_inicio, data_final, self)
+        return hr_medias_ids, data_de_inicio, data_final
 
     @api.model
-    def _valor_provento(self):
-        for record in self:
-            if record.salary_rule_id.category_id.code == "PROVENTO":
-                record.valor_provento = record.total
-            else:
-                record.valor_provento = 0.00
-
-    @api.model
-    def _valor_deducao(self):
-        for record in self:
-            if record.salary_rule_id.category_id.code in ["DEDUCAO"] \
-                    or record.salary_rule_id.code == "INSS" \
-                    or record.salary_rule_id.code == "IRPF":
-                record.valor_deducao = record.total
-            else:
-                record.valor_deducao = 0.00
-
-    valor_provento = fields.Float(
-        string="Provento",
-        compute=_valor_provento,
-        default=0.00,
-    )
-    valor_deducao = fields.Float(
-        string="Dedução",
-        compute=_valor_deducao,
-        default=0.00,
-    )
+    def fields_view_get(self, view_id=None, view_type='form',
+                        toolbar=False, submenu=False):
+        res = super(HrPayslip, self).fields_view_get(
+            view_id=view_id, view_type=view_type, toolbar=toolbar,
+            submenu=submenu
+        )
+        if view_type == 'form':
+            doc = etree.XML(res['arch'])
+            for sheet in doc.xpath("//sheet"):
+                parent = sheet.getparent()
+                index = parent.index(sheet)
+                for child in sheet:
+                    parent.insert(index, child)
+                    index += 1
+                parent.remove(sheet)
+            res['arch'] = etree.tostring(doc)
+        return res
