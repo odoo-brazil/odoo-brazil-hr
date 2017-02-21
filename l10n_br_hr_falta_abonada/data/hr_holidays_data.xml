@@ -1,0 +1,13 @@
+<openerp>
+    <data>
+        <record id="ir_cron_scheduler_atualizar_credito_faltas_abonadas" model="ir.cron">
+            <field name="name">Atualizar créditos de faltas abonadas</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">years</field>
+            <field name="numbercall">-1</field>
+            <field eval="'hr.contract'" name="model"/>
+            <field eval="'%s-01-01' % (Datetime.now() + timedelta(years=1).year" name="nextcall"/>
+            <field eval="'gerar_credito_faltas_abonadas'" name="function"/>
+        </record>
+    </data>
+</openerp>
