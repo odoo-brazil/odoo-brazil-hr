@@ -135,3 +135,269 @@ class HrContract(models.Model):
         string='Empresa',
         required=True,
     )
+
+    # Admissão
+    tipo_do_contrato = fields.Selection(
+        selection=[],
+        string="Tipo do contrato"
+    )
+
+    tipo_de_admissao = fields.Selection(
+        selection=[],
+        string="Tipo de admissão"
+    )
+
+    indicativo_de_admissao = fields.Selection(
+        selection=[('transferencia', u'Trasferência'),
+                   ('normal', u'Normal')],
+        string="Indicativo da admissão"
+    )
+
+    contrato_transferido = fields.Selection(
+        selection=[],
+        string="Contrato transferido"
+    )
+
+    data_da_transferencia = fields.Date(
+        string="Data da transferencia"
+    )
+
+    seguro_desemprego = fields.Boolean(
+        string="Em Seguro Desemprego?"
+    )
+
+    primeiro_emprego = fields.Boolean(
+        string="Primeiro emprego?"
+    )
+
+    primeira_experiencia = fields.Integer(
+        string="Tempo em dias do 1º período de experiência"
+    )
+
+    data_primeira_experiencia = fields.Date(
+        string="Início da primeira experiência"
+    )
+
+    segunda_experiencia = fields.Integer(
+        string="Tempo em dias do 2º período de experiência"
+    )
+
+    data_segunda_experiencia = fields.Date(
+        string="Início da segunda experiência"
+    )
+
+    # Lotação
+    departamento_lotacao = fields.Selection(
+        selection=[],
+        string="Departamento/lotação"
+    )
+
+    lotacao_cliente_fornecedor = fields.Selection(
+        selection=[],
+        string="Lotação/cliente/fornecedor"
+    )
+
+    # Jornada
+    tipo_de_jornada = fields.Selection(
+        selection=[],
+        string="Tipo de jornada de trabalho"
+    )
+
+    jornada_seg_sex = fields.Selection(
+        selection=[],
+        string="Jornada padrão de segunda a sexta-feira"
+    )
+
+    jornada_sab = fields.Selection(
+        selection=[],
+        string="Jornada no sábado"
+    )
+
+    # Aba Vínculos Anteriores e cedentes
+    # Vínculo anterior
+    cnpj_empregador_anterior = fields.Char(
+        string="CNPJ do empregador anterior"
+    )
+
+    matricula_anterior = fields.Char(
+        string="Matrícula anterior"
+    )
+
+    data_admissao_anterior = fields.Date(
+        string="Data de admissão no vínculo anterior"
+    )
+
+    observacoes_vinculo_anterior = fields.Text(
+        string="Observações do vínculo anterior"
+    )
+
+    # Vínculo cedente
+    cnpj_empregador_cedente = fields.Char(
+        string="CNPJ do empregador cedente"
+    )
+
+    matricula_cedente = fields.Char(
+        string="Matrícula cedente"
+    )
+
+    data_admissao_cedente = fields.Date(
+        string="Data de admissão no vínculo cedente"
+    )
+
+    onus_vinculo_cedente = fields.Selection(
+        selection=[],
+        string="Ônus para o cedente"
+    )
+
+    # Aba Saúde ocupacional
+    data_atestado_saude = fields.Date(
+        string="Data do atestado de saúde ocupacional"
+    )
+
+    numero_crm = fields.Integer(
+        string="CRM nº"
+    )
+
+    nome_medico_encarregado = fields.Char(
+        string="Nome do médico encarregado"
+    )
+
+    estado_crm = fields.Selection(
+        selection=[],
+        string="Estado do CRM"
+    )
+
+    # Tree Exames
+    exame_ids = fields.One2many(
+        comodel_name='hr.exame.medico',
+        inverse_name='contract_id',
+        string="Exames"
+    )
+
+    # Aba Processo judicial
+    numero_processo = fields.Integer(
+        string="Nº processo judicial"
+    )
+
+    nome_advogado_autor = fields.Char(
+        string="Advogado do autor do processo"
+    )
+
+    nome_advogado_empresa = fields.Char(
+        string="Advogado da empresa"
+    )
+
+    observacoes_processo = fields.Text(
+        string="Observações do processo judicial"
+    )
+
+    # Aba Cursos e treinamentos
+    curso_ids = fields.One2many(
+        comodel_name='hr.curso',
+        inverse_name='contract_id',
+        string="Cursos"
+    )
+
+    # Aba Afastamentos
+    afastamento_ids = fields.One2many(
+        comodel_name='hr.holidays',
+        inverse_name='contrato_id',
+        string="Afastamentos"
+    )
+
+
+class Exame(models.Model):
+    _name = 'hr.exame.medico'
+
+    name = fields.Char(
+        string="Exame"
+    )
+
+    data_do_exame = fields.Date(
+        string="Data do exame"
+    )
+
+    data_de_validade = fields.Date(
+        string="Data de validade"
+    )
+
+    contract_id = fields.Many2one(
+        comodel_name='hr.contract',
+    )
+
+
+class Curso(models.Model):
+    _name = 'hr.curso'
+
+    name = fields.Char(
+        string="Curso"
+    )
+
+    carga_horaria = fields.Integer(
+        string="Carga horária"
+    )
+
+    inicio_curso = fields.Date(
+        string="Início"
+    )
+
+    fim_curso = fields.Date(
+        string="Encerramento"
+    )
+
+    situacao = fields.Selection(
+        selection=[],
+        string="Situação"
+    )
+
+    contract_id = fields.Many2one(
+        comodel_name='hr.contract',
+    )
+
+
+class HrHoliday(models.Model):
+    _inherit = 'hr.holidays'
+
+    rubrica = fields.Char(
+        string="Rubrica"
+    )
+
+    periodo = fields.Char(
+        string="Data de afastamento"
+    )
+
+    valor_inss = fields.Float(
+        string="Valor INSS"
+    )
+
+    contrato_id = fields.Many2one(
+        comodel_name='hr.contract',
+    )
+
+
+class HrContractSalaryUnit(models.Model):
+    _inherit = 'hr.contract.salary.unit'
+
+    @api.multi
+    def name_get(self):
+        result = []
+        for record in self:
+            name = record['name']
+            if name == 'Monthly':
+                name = 'Por mês'
+            elif name == 'Biweekly':
+                name = 'Por 15 dias'
+            elif name == 'Weekly':
+                name = 'Por semana'
+            elif name == 'Daily':
+                name = 'Por dia'
+            elif name == 'Hourly':
+                name = 'Por hora'
+            elif name == 'Task':
+                name = 'Por tarefa'
+            elif name == 'Others':
+                name = 'Outros'
+            elif record['code']:
+                name = record['code'] + ' - ' + name
+            result.append((record['id'], name))
+        return result
