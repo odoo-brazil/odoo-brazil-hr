@@ -35,6 +35,7 @@ TIPO_DE_FOLHA = [
     ('rescisao', u'Rescisão'),
     ('ferias', u'Férias'),
     ('decimo_terceiro', u'Décimo terceiro (13º)'),
+    ('aviso_previo', u'Aviso Prévio'),
     ('licenca_maternidade', u'Licença maternidade'),
     ('auxilio_doenca', u'Auxílio doença'),
     ('auxílio_acidente_trabalho', u'Auxílio acidente de trabalho'),
@@ -43,6 +44,22 @@ TIPO_DE_FOLHA = [
 
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
+
+    @api.multi
+    def _buscar_dias_aviso_previo(self):
+        for payslip in self:
+            if payslip.tipo_de_folha == 'aviso_previo':
+                periodos_aquisitivos = self.env['hr.vacation.control'].search(
+                    [
+                        ('contract_id', '=', payslip.contract_id.id),
+                        ('fim_aquisitivo', '<', payslip.date_to)
+                    ]
+                )
+                if periodos_aquisitivos:
+                    payslip.dias_aviso_previo = 30 + len(
+                        periodos_aquisitivos) * 3
+                else:
+                    payslip.dias_aviso_previo = 30
 
     @api.multi
     def _valor_total_folha(self):
@@ -122,6 +139,12 @@ class HrPayslip(models.Model):
         string=u'Funcionário',
         comodel_name='hr.employee',
         compute='set_employee_id',
+    )
+    is_simulacao = fields.Boolean(
+        string=u"Simulação",
+    )
+    dias_aviso_previo = fields.Integer(
+        string="Dias de Aviso Prévio",
     )
 
     @api.depends('line_ids')
@@ -508,7 +531,8 @@ class HrPayslip(models.Model):
 
     @api.multi
     def buscar_estruturas_salario(self):
-        if self.tipo_de_folha == "normal":
+        if self.tipo_de_folha == "normal" \
+                or self.tipo_de_folha == "aviso_previo":
             return self.contract_id.struct_id
         elif self.tipo_de_folha == "decimo_terceiro":
             if self.mes_do_ano < 12:
@@ -657,7 +681,12 @@ class HrPayslip(models.Model):
         payslip = payslip_obj.browse(payslip_id)
         worked_days = {}
         for worked_days_line in payslip.worked_days_line_ids:
-            worked_days[worked_days_line.code] = worked_days_line
+            if payslip.tipo_de_folha == "aviso_previo" \
+                    and worked_days_line.code == u'DIAS_TRABALHADOS':
+                worked_days_line.number_of_days = payslip.dias_aviso_previo
+                worked_days[worked_days_line.code] = worked_days_line
+            else:
+                worked_days[worked_days_line.code] = worked_days_line
         inputs = {}
         for input_line in payslip.input_line_ids:
             inputs[input_line.code] = input_line
@@ -882,11 +911,12 @@ class HrPayslip(models.Model):
 
     @api.multi
     def compute_sheet(self):
-        if self.tipo_de_folha in ["decimo_terceiro", "ferias"]:
+        if self.tipo_de_folha in ["decimo_terceiro", "ferias", "aviso_previo"]:
             hr_medias_ids, data_de_inicio, data_final = \
                 self.gerar_media_dos_proventos()
 
-            if not hr_medias_ids:
+            if not hr_medias_ids \
+                    and self.tipo_de_folha in ["decimo_terceiro", "ferias"]:
                 raise exceptions.Warning(
                     _('Nenhum Holerite encontrado para médias nesse período!')
                 )
@@ -932,7 +962,8 @@ class HrPayslip(models.Model):
     @api.multi
     def gerar_media_dos_proventos(self):
         medias_obj = self.env['l10n_br.hr.medias']
-        if self.tipo_de_folha == 'ferias':
+        if self.tipo_de_folha == 'ferias' \
+                or self.tipo_de_folha == 'aviso_previo':
             periodo_aquisitivo = self.periodo_aquisitivo
             data_de_inicio = str(fields.Date.from_string(
                 periodo_aquisitivo.inicio_aquisitivo))
