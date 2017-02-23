@@ -3,10 +3,10 @@
    :alt: License: AGPL-3
 
 ========================
-L10n Br Hr Falta Abonada
+L10n Br Hr Allowance
 ========================
 
-5 faltas abonadas todo ano
+This module extends the functionality of holidays to support brazilian allowance
 
 Installation
 ============
