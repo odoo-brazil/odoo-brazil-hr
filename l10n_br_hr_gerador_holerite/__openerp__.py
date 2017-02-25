@@ -15,6 +15,7 @@
     ],
     'data': [
         'views/hr_payslip_gerador.xml',
+        'security/ir.model.access.csv',
     ],
     'installable': True,
     'auto_install': False,
