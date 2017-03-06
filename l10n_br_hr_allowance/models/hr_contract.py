@@ -38,7 +38,8 @@ class HrContract(models.Model):
                     soma += abono.number_of_days
                     abono.holiday_status_id = historico_abono_status_id
                 if soma > 0:
-                    contrato.abonos.number_of_days_temp -= soma
+                    pass
+                    # contrato.abonos.number_of_days_temp -= soma
             contrato.adicionar_abonos()
 
     def adicionar_abonos(self):
@@ -56,7 +57,6 @@ class HrContract(models.Model):
             'ano': datetime.now().year,
         })
         abono.state = 'validate'
-        self.abonos = abono
 
     @api.model
     def create(self, vals):
