@@ -10,6 +10,7 @@ class HrHolidays(models.Model):
 
     contrato_id = fields.Many2one(
         comodel_name='hr.contract',
+        ondelete='cascade',
         string=u'Contrato associado',
         required=True,
     )
