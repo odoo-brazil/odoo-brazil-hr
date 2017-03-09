@@ -47,7 +47,7 @@ class HrPayslipGenerator(models.Model):
         wd_model = self.env['hr.payslip.worked_days']
         input_model = self.env['hr.payslip.input']
 
-        holerite.set_employee_id()
+        holerite._compute_set_employee_id()
 
         res = holerite.onchange_employee_id(
             holerite.date_from, holerite.date_to, holerite.contract_id.id)

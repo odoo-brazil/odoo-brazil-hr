@@ -2,7 +2,6 @@
 <!-- Copyright 2017 - KMEE
      License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
 
-
 <openerp>
     <data>
         <record id="l10n_br_hr_income_tax_2016_rate_1" model="l10n_br.hr.income.tax">

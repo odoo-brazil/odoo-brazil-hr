@@ -3,7 +3,7 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from openerp import api, fields, models, _
-from openerp.exceptions import Warning
+from openerp.exceptions import Warning as UserError
 
 
 class L10nBrHrIncomeTax(models.Model):
@@ -55,6 +55,6 @@ class L10nBrHrIncomeTax(models.Model):
                     return (BASE_IRRF - inss - dependent_values) * \
                            (faixa.rate/100.00) - faixa.deductable
         else:
-            raise Warning(
+            raise UserError(
                 _('Tabela de IRRF do ano Vigente Não encontrada!')
             )
