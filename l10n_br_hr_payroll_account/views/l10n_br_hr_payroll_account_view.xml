@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<openerp>
+    <data>
+
+        <record id="l10n_br_hr_salary_rule_form_inherit" model="ir.ui.view">
+            <field name="name">l10n.br.hr.salary.rule.form.inherit</field>
+                <field name="model">hr.salary.rule</field>
+                <field name="inherit_id" ref="hr_payroll.hr_salary_rule_form"/>
+                <field name="arch" type="xml">
+                <xpath expr="/form/notebook/page[@string='Child Rules']" position="after">
+                    <page string="Accounting">
+                        <group colspan="4">
+                            <field name="account_debit" />
+                            <field name="account_credit"/>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</openerp>
