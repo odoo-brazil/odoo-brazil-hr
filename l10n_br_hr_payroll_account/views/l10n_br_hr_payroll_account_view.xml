@@ -2,6 +2,28 @@
 <openerp>
     <data>
 
+         <record id="view_hr_payslip_form" model="ir.ui.view">
+            <field name="name">hr.payslip.form</field>
+            <field name="model">hr.payslip</field>
+            <field name="inherit_id" ref="l10n_br_hr_payroll.hr_payslip_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Contabilização">
+                        <button type="object" name="processar_folha" string="Gerar contabilização"/>
+                        <group>
+                            <field name="journal_id"/>
+                        </group>
+                        <group>
+                            <field name="move_id"/>
+                        </group>
+                        <group>
+                            <field name="move_lines_id"/>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
         <record id="l10n_br_hr_salary_rule_form_inherit" model="ir.ui.view">
             <field name="name">l10n.br.hr.salary.rule.form.inherit</field>
                 <field name="model">hr.salary.rule</field>
