@@ -56,6 +56,28 @@ class L10nBrHrPayslip(models.Model):
     )
 
     @api.multi
+    def _verificar_lancamentos_anteriores(self, tipo_folha):
+        for payslip in self:
+            move_id = self.env['account.move'].search(
+                [
+                    ('name', 'like', NOME_LANCAMENTO[payslip.tipo_de_folha]),
+                    ('name', 'like', payslip.contract_id.nome_contrato),
+                ],
+                limit=1
+            )
+            if not move_id:
+                return False
+            else:
+                return move_id
+
+    @api.multi
+    def _retorna_valor_lancamento_anterior_rubrica(self, move_id, rubrica_id):
+        for line in move_id.line_id:
+            if rubrica_id.name == line.name:
+                return line.debit, line.credit, line.period_id
+        return 0, 0, 0
+
+    @api.multi
     def processar_folha(self):
         move_obj = self.env['account.move']
         period_obj = self.env['account.period']
@@ -92,6 +114,9 @@ class L10nBrHrPayslip(models.Model):
                     'period_id': period_id.id,
                     'payslip_id': slip.id,
                 }
+            move_anterior_id = self._verificar_lancamentos_anteriores(
+                slip.tipo_de_folha
+            )
             for line in slip.details_by_salary_rule_category:
                 if line.salary_rule_id.account_debit.id \
                         or line.salary_rule_id.account_credit.id:
@@ -104,7 +129,40 @@ class L10nBrHrPayslip(models.Model):
                         or default_partner_id
                     debit_account_id = line.salary_rule_id.account_debit.id
                     credit_account_id = line.salary_rule_id.account_credit.id
-
+                    if move_anterior_id:
+                        debito, credito, periodo_anterior_id = \
+                            self._retorna_valor_lancamento_anterior_rubrica(
+                                move_anterior_id, line
+                            )
+                        if debito or credito:
+                            line_anterior = (0, 0, {
+                                'name': line.name + " (Anterior)",
+                                'date': timenow,
+                                'partner_id':
+                                    (
+                                        line.salary_rule_id.register_id.
+                                        partner_id or line.salary_rule_id.
+                                        account_debit.type in (
+                                            'receivable', 'payable'
+                                        )
+                                    ) and partner_id or False,
+                                'account_id': debit_account_id if debito else
+                                credit_account_id,
+                                'journal_id': slip.journal_id.id,
+                                'period_id': periodo_anterior_id.id,
+                                'debit': credito or 0.0,
+                                'credit': debito or 0.0,
+                                'payslip_id': slip.id,
+                            })
+                            line_ids.append(line_anterior)
+                            if debito:
+                                debit_sum += \
+                                    line_anterior[2]['debit'] - line_anterior[
+                                        2]['credit']
+                            else:
+                                credit_sum += \
+                                    line_anterior[2]['credit'] - line_anterior[
+                                        2]['debit']
                     if debit_account_id:
                         debit_line = (0, 0, {
                             'name': line.name,
