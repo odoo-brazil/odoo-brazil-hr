@@ -16,6 +16,7 @@
     ],
     'data': [
         'views/l10n_br_hr_payroll_account_view.xml',
+        'views/l10n_br_hr_payrull_run_account_view.xml',
     ],
     'demo': [
     ],

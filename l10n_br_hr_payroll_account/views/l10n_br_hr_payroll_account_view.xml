@@ -11,7 +11,7 @@
                     <page string="Contabilização">
                         <button type="object" name="processar_folha" string="Gerar contabilização"/>
                         <group>
-                            <field name="journal_id"/>
+                            <field name="journal_id" required="True"/>
                         </group>
                         <group>
                             <field name="move_id"/>
