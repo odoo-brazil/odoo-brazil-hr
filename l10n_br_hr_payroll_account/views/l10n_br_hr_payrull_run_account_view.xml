@@ -9,11 +9,40 @@
             <field name="inherit_id" ref="l10n_br_hr_payroll.hr_payslip_run_form_view"/>
             <field name="arch" type="xml">
                 <xpath expr="//separator[@string='Contratos']" position="before">
-                    <group>
+                    <group id="journal">
                         <group>
                             <field name="journal_id"/>
                         </group>
                     </group>
+                </xpath>
+                <separator string="Contratos" position="replace"/>
+                <field name="contract_id" invisible="1" position="replace"/>
+                <field name="contract_id_readonly" readonly="1" position="replace"/>
+                <separator string="Payslips" position="replace"/>
+                <field name="slip_ids" position="replace"/>
+                <xpath expr="//group[@id='journal']" position="after">
+                    <notebook>
+                        <page string="Contratos e Holerites">
+                            <separator string="Contratos"/>
+                            <field name="contract_id" invisible="1"/>
+                            <field name="contract_id_readonly" readonly="1"/>
+                            <separator string="Payslips"/>
+                            <field name="slip_ids"/>
+                        </page>
+                        <page string="Contabilização">
+                            <button type="object" name="processar_folha" string="Gerar contabilização"/>
+                            <group>
+                                <field name="account_debit"/>
+                            </group>
+                            <group>
+                                <field name="account_credit"/>
+                            </group>
+                            <group>
+                                <field name="move_id" readonly="1"/>
+                            </group>
+                            <field name="move_lines_id"/>
+                        </page>
+                    </notebook>
                 </xpath>
             </field>
         </record>

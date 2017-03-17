@@ -9,6 +9,7 @@ from openerp.exceptions import Warning
 
 NOME_LANCAMENTO = {
     'provisao_ferias': u'Provisão de Férias - ',
+    'provisao_decimo_terceiro': u'Provisão de Décimo Terceiro - ',
 }
 
 
@@ -42,12 +43,13 @@ class L10nBrHrPayslip(models.Model):
     )
 
     @api.multi
-    def _verificar_lancamentos_anteriores(self, tipo_folha):
+    def _verificar_lancamentos_anteriores(self, tipo_folha, period_id):
         for payslip in self:
             move_id = self.env['account.move'].search(
                 [
-                    ('name', 'like', NOME_LANCAMENTO[payslip.tipo_de_folha]),
+                    ('name', 'like', NOME_LANCAMENTO[tipo_folha]),
                     ('name', 'like', payslip.contract_id.nome_contrato),
+                    ('period_id', '!=', period_id)
                 ],
                 limit=1
             )
@@ -101,7 +103,7 @@ class L10nBrHrPayslip(models.Model):
                     'payslip_id': slip.id,
                 }
             move_anterior_id = self._verificar_lancamentos_anteriores(
-                slip.tipo_de_folha
+                slip.tipo_de_folha, period_id.id
             )
             for line in slip.details_by_salary_rule_category:
                 if line.salary_rule_id.account_debit.id \
@@ -115,12 +117,14 @@ class L10nBrHrPayslip(models.Model):
                         or default_partner_id
                     debit_account_id = line.salary_rule_id.account_debit.id
                     credit_account_id = line.salary_rule_id.account_credit.id
-                    if slip.tipo_de_folha in ['provisao_ferias']:
+                    if slip.tipo_de_folha in [
+                        'provisao_ferias', 'provisao_decimo_terceiro'
+                    ]:
                         if move_anterior_id:
-                            debito, credito, periodo_anterior_id = self.\
-                                _retorna_valor_lancamento_anterior_rubrica(
-                                move_anterior_id, line
-                            )
+                            debito, credito, periodo_anterior_id = self\
+                                ._retorna_valor_lancamento_anterior_rubrica(
+                                    move_anterior_id, line
+                                )
                             if debito or credito:
                                 line_anterior = (0, 0, {
                                     'name': line.name + " (Anterior)",
