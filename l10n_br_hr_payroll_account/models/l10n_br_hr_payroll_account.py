@@ -66,6 +66,17 @@ class L10nBrHrPayslip(models.Model):
         return 0, 0, 0
 
     @api.multi
+    def _buscar_contas(self, salary_rule):
+        if self.tipo_de_folha == "provisao_ferias":
+            return salary_rule.provisao_ferias_account_debit, salary_rule.\
+                provisao_ferias_account_credit
+        elif self.tipo_de_folha == "provisao_decimo_terceiro":
+            return salary_rule.provisao_13_account_debit, salary_rule.\
+                provisao_13_account_credit
+        else:
+            return False, False
+
+    @api.multi
     def processar_folha(self):
         move_obj = self.env['account.move']
         period_obj = self.env['account.period']
@@ -77,7 +88,6 @@ class L10nBrHrPayslip(models.Model):
             debit_sum = 0.0
             credit_sum = 0.0
             period_id = period_obj.find(slip.date_to)
-            default_partner_id = slip.employee_id.address_home_id.id
             if slip.move_id:
                 move = slip.move_id
                 move_lines = self.env['account.move.line'].search(
@@ -106,39 +116,26 @@ class L10nBrHrPayslip(models.Model):
                 slip.tipo_de_folha, period_id.id
             )
             for line in slip.details_by_salary_rule_category:
-                if line.salary_rule_id.account_debit.id \
-                        or line.salary_rule_id.account_credit.id:
+                debit_account_id, credit_account_id = \
+                    slip._buscar_contas(line.salary_rule_id)
+                if debit_account_id.id or credit_account_id.id:
                     amt = slip.credit_note and -line.total or line.total
                     if float_is_zero(amt, precision_digits=precision):
                         continue
-                    partner_id = \
-                        line.salary_rule_id.register_id.partner_id \
-                        and line.salary_rule_id.register_id.partner_id.id \
-                        or default_partner_id
-                    debit_account_id = line.salary_rule_id.account_debit.id
-                    credit_account_id = line.salary_rule_id.account_credit.id
                     if slip.tipo_de_folha in [
                         'provisao_ferias', 'provisao_decimo_terceiro'
                     ]:
                         if move_anterior_id:
                             debito, credito, periodo_anterior_id = self\
                                 ._retorna_valor_lancamento_anterior_rubrica(
-                                    move_anterior_id, line
+                                    move_anterior_id, line.salary_rule_id
                                 )
                             if debito or credito:
                                 line_anterior = (0, 0, {
                                     'name': line.name + " (Anterior)",
                                     'date': timenow,
-                                    'partner_id':
-                                        (
-                                            line.salary_rule_id.register_id.
-                                            partner_id or line.salary_rule_id.
-                                            account_debit.type in (
-                                                'receivable', 'payable'
-                                            )
-                                        ) and partner_id or False,
-                                    'account_id': debit_account_id if debito
-                                    else credit_account_id,
+                                    'account_id': debit_account_id.id if debito
+                                    else credit_account_id.id,
                                     'journal_id': slip.journal_id.id,
                                     'period_id': periodo_anterior_id.id,
                                     'debit': credito or 0.0,
@@ -154,19 +151,13 @@ class L10nBrHrPayslip(models.Model):
                                     credit_sum += \
                                         line_anterior[2]['credit'] - \
                                         line_anterior[2]['debit']
-                    if debit_account_id:
+                    if debit_account_id and slip.tipo_de_folha not in [
+                        'provisao_ferias', 'provisao_decimo_terceiro'
+                    ]:
                         debit_line = (0, 0, {
                             'name': line.name,
                             'date': timenow,
-                            'partner_id':
-                                (
-                                    line.salary_rule_id.register_id.
-                                    partner_id or line.salary_rule_id.
-                                    account_debit.type in (
-                                        'receivable', 'payable'
-                                    )
-                                ) and partner_id or False,
-                            'account_id': debit_account_id,
+                            'account_id': debit_account_id.id,
                             'journal_id': slip.journal_id.id,
                             'period_id': period_id.id,
                             'debit': amt > 0.0 and amt or 0.0,
@@ -181,15 +172,7 @@ class L10nBrHrPayslip(models.Model):
                         credit_line = (0, 0, {
                             'name': line.name,
                             'date': timenow,
-                            'partner_id':
-                                (
-                                    line.salary_rule_id.register_id.
-                                    partner_id or line.salary_rule_id.
-                                    account_credit.type in (
-                                        'receivable', 'payable'
-                                    )
-                                ) and partner_id or False,
-                            'account_id': credit_account_id,
+                            'account_id': credit_account_id.id,
                             'journal_id': slip.journal_id.id,
                             'period_id': period_id.id,
                             'debit': amt < 0.0 and -amt or 0.0,

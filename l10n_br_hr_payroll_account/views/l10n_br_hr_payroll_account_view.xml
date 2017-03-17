@@ -31,9 +31,19 @@
                 <field name="arch" type="xml">
                 <xpath expr="/form/notebook/page[@string='Child Rules']" position="after">
                     <page string="Accounting">
-                        <group colspan="4">
-                            <field name="account_debit" />
-                            <field name="account_credit"/>
+                        <separator string="Contas Provisão Férias"/>
+                        <group>
+                            <group>
+                                <field name="provisao_ferias_account_debit"/>
+                                <field name="provisao_ferias_account_credit"/>
+                            </group>
+                        </group>
+                        <separator string="Contas Provisão Décimo Terceiro"/>
+                        <group>
+                            <group>
+                                <field name="provisao_13_account_debit"/>
+                                <field name="provisao_13_account_credit"/>
+                            </group>
                         </group>
                     </page>
                 </xpath>

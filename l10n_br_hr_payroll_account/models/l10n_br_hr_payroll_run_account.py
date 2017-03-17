@@ -26,13 +26,22 @@ class L10nBrHrPayslip(models.Model):
                         ]
                     )
 
-    account_debit = fields.Many2one(
+    provisao_ferias_account_debit = fields.Many2one(
         comodel_name='account.account',
-        string='Debit Account',
+        string='Conta débito provisão de Férias',
     )
-    account_credit = fields.Many2one(
+    provisao_ferias_account_credit = fields.Many2one(
         comodel_name='account.account',
-        string='Credit Account',
+        string='Conta crédito provisão de Férias',
+    )
+
+    provisao_13_account_debit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta débito provisão Décimo 13º',
+    )
+    provisao_13_account_credit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta crédito provisão Décimo 13º',
     )
 
     move_id = fields.Many2one(
@@ -54,10 +63,12 @@ class L10nBrHrPayslip(models.Model):
 
     @api.multi
     def _buscar_contas_lotes(self):
-        if self.tipo_de_folha in [
-            "provisao_ferias", "provisao_decimo_terceiro"
-        ]:
-            return self.account_debit, self.account_credit
+        if self.tipo_de_folha == "provisao_ferias":
+            return self.provisao_ferias_account_debit, self.\
+                provisao_ferias_account_credit
+        elif self.tipo_de_folha == "provisao_decimo_terceiro":
+            return self.provisao_13_account_debit, self.\
+                provisao_13_account_credit
         else:
             return False, False
 
@@ -90,9 +101,22 @@ class L10nBrHrPayslip(models.Model):
         return 0, 0
 
     @api.multi
+    def _verificar_existencia_conta_rubrica(self, rubrica, tipo_de_folha):
+        if tipo_de_folha == "provisao_ferias":
+            if rubrica.provisao_ferias_account_debit or \
+                    rubrica.provisao_ferias_account_credit:
+                return True
+        elif tipo_de_folha == "provisao_decimo_terceiro":
+            if rubrica.provisao_13_account_debit or \
+                    rubrica.provisao_13_account_credit:
+                return True
+        else:
+            return False
+
+    @api.multi
     def processar_folha(self):
         conta_debito, conta_credito = self._buscar_contas_lotes()
-        if conta_debito or conta_credito:
+        if conta_debito.id or conta_credito.id:
             for payslip_run in self:
                 move_obj = self.env['account.move']
                 period_obj = self.env['account.period']
@@ -113,9 +137,10 @@ class L10nBrHrPayslip(models.Model):
                     for line in move_lines:
                         line.unlink()
                 else:
-                    name = NOME_LANCAMENTO_LOTE[payslip_run.tipo_de_folha] \
-                           + " - " + str(payslip_run.mes_do_ano) + "/" \
-                           + str(payslip_run.ano)
+                    name = \
+                        NOME_LANCAMENTO_LOTE[payslip_run.tipo_de_folha] + \
+                        " - " + str(payslip_run.mes_do_ano) + \
+                        "/" + str(payslip_run.ano)
                     move = {
                         'name': name,
                         'display_name': name,
@@ -129,8 +154,9 @@ class L10nBrHrPayslip(models.Model):
                 rubricas = {}
                 for payslip in self.slip_ids:
                     for line in payslip.details_by_salary_rule_category:
-                        if line.salary_rule_id.account_debit.id \
-                                or line.salary_rule_id.account_credit.id:
+                        if payslip_run._verificar_existencia_conta_rubrica(
+                                line.salary_rule_id, payslip_run.tipo_de_folha
+                        ):
                             if not rubricas.get(line.name):
                                 rubricas.update({line.name: line.total})
                             else:

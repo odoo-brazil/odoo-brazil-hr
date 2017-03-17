@@ -31,11 +31,19 @@
                         </page>
                         <page string="Contabilização">
                             <button type="object" name="processar_folha" string="Gerar contabilização"/>
+                            <separator string="Contas Provisão Férias"/>
                             <group>
-                                <field name="account_debit"/>
+                                <group>
+                                    <field name="provisao_ferias_account_debit"/>
+                                    <field name="provisao_ferias_account_credit"/>
+                                </group>
                             </group>
+                            <separator string="Contas Provisão Décimo Terceiro"/>
                             <group>
-                                <field name="account_credit"/>
+                                <group>
+                                    <field name="provisao_13_account_debit"/>
+                                    <field name="provisao_13_account_credit"/>
+                                </group>
                             </group>
                             <group>
                                 <field name="move_id" readonly="1"/>
