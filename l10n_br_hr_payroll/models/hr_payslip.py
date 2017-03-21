@@ -596,7 +596,6 @@ class HrPayslip(models.Model):
 
     def IRRF(self, BASE_IR, BASE_INSS):
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
-
         if not BASE_IR:
             return 0
 
@@ -608,7 +607,6 @@ class HrPayslip(models.Model):
         irrf = tabela_irrf_obj._compute_irrf(
             BASE_IR, self.employee_id.id, inss, self.date_from
         )
-
         return irrf
 
     @api.model
