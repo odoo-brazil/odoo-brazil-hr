@@ -631,20 +631,15 @@ class HrPayslip(models.Model):
         else:
             return 0
 
-    def IRRF(self, BASE_IR, BASE_INSS):
+    def IRRF(self, BASE_IR, INSS):
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
-        if not BASE_IR:
-            return 0
-
-        if BASE_INSS:
-            inss = self.INSS(BASE_INSS)
+        if BASE_IR:
+            irrf = tabela_irrf_obj._compute_irrf(
+                BASE_IR, self.employee_id.id, INSS, self.date_from
+            )
+            return irrf
         else:
-            inss = 0
-
-        irrf = tabela_irrf_obj._compute_irrf(
-            BASE_IR, self.employee_id.id, inss, self.date_from
-        )
-        return irrf
+            return 0
 
     @api.model
     def get_contract_specific_rubrics(self, contract_id, rule_ids):
