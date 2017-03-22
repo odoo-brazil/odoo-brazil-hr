@@ -44,22 +44,8 @@ class HrPayslipGenerator(models.Model):
     )
 
     def processar_holerites(self, holerite):
-        wd_model = self.env['hr.payslip.worked_days']
-        input_model = self.env['hr.payslip.input']
 
         holerite._compute_set_employee_id()
-
-        res = holerite.onchange_employee_id(
-            holerite.date_from, holerite.date_to, holerite.contract_id.id)
-
-        for worked_days_line in res['value']['worked_days_line_ids']:
-            worked_days_line['payslip_id'] = holerite.id
-            wd_model.create(worked_days_line)
-
-        for input_line in res['value']['input_line_ids']:
-            input_line['payslip_id'] = holerite.id
-            input_model.create(input_line)
-
         holerite.compute_sheet()
         holerite.process_sheet()
 

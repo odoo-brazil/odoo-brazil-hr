@@ -47,8 +47,7 @@
                 <xpath expr="//notebook" position="replace">
                     <notebook>
                         <page string="Holerite">
-                            <field name="line_resume_ids" colspan="4"
-                                   nolabel="1">
+                            <field name="line_resume_ids" colspan="4" nolabel="1">
                                 <tree string="Salary Structure"
                                       editable="bottom"
                                       colors="blue:valor_provento > 0;red:valor_deducao > 0">
@@ -64,12 +63,12 @@
                                     </group>
                                 </form>
                             </field>
-                            <group class="oe_subtotal_footer oe_right"
-                                   colspan="2">
+                            <group class="oe_subtotal_footer oe_right" colspan="2">
                                 <field name="total_folha"/>
                             </group>
                             <div class="oe_clear"/>
                         </page>
+
                         <page string="Salary Computation">
                             <field name="line_ids" colspan="4" nolabel="1">
                                 <tree string="Salary Structure"
@@ -80,9 +79,10 @@
                                     <field name="category_id"/>
                                     <field name="sequence" invisible="1"/>
                                     <field name="quantity"/>
-                                    <field name="rate"/>
-                                    <field name="amount"/>
-                                    <field name="total"/>
+                                    <field name="rate" />
+                                    <field name="round_amount" />
+                                    <field name="round_total"/>
+                                    <field name="total" invisible="1"/>
                                 </tree>
                                 <form string="Payslip Line">
                                     <group col="4">
@@ -99,6 +99,7 @@
                                 </form>
                             </field>
                         </page>
+
                         <page string="Variáveis">
                             <separator string="Worked Days"/>
                             <field name="worked_days_line_ids">
@@ -180,16 +181,13 @@
 
                 <!--Redefinindo campo Funcionario-->
                 <field name="contract_id" position="replace">
-                    <field name="employee_id" invisible="1"
-                           on_change="onchange_employee_id(date_from, date_to, contract_id)"/>
-                    <field name="employee_id_readonly" readonly="True"/>
+                    <field name="employee_id" readonly="1"/>
                     <field name="tipo_de_folha" invisible="1"/>
                 </field>
 
                 <!--Redefinindo campo de Estrutura-->
                 <field name="struct_id" position="replace">
-                    <field name="struct_id" invisible="1"/>
-                    <field name="struct_id_readonly" readonly="True"/>
+                    <field name="struct_id" readonly="True"/>
                 </field>
 
                 <xpath expr="//div[@class='oe_title']" position="replace">
@@ -219,8 +217,7 @@
                                    domain="[('contrato_id', '=', contract_id), ('type', '=', 'remove'), ('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]"
                                    attrs="{'readonly': False, 'required': [('tipo_de_folha', '=', 'ferias')]}"/>
 
-                            <field name="periodo_aquisitivo" invisible="1"/>
-                            <field name="periodo_aquisitivo_readonly"
+                            <field name="periodo_aquisitivo"
                                    attrs="{'invisible' : [('tipo_de_folha', '!=', 'ferias')]}"
                                    readonly="True"/>
 
@@ -236,12 +233,11 @@
                     <label for="date_from" string=""/>
                 </xpath>
                 <field name="date_from" position="replace">
-                    <field name="date_from"/>
+                    <field name="date_from" readonly="1"/>
                     até
                 </field>
                 <field name="date_to" position="replace">
-                    <field name="date_to"
-                           on_change="onchange_employee_id(date_from, date_to, contract_id)"/>
+                    <field name="date_to" readonly="1"/>
                 </field>
 
                 <!--Adicionando campod o periodo-->

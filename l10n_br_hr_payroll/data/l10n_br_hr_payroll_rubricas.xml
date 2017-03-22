@@ -49,7 +49,7 @@
         <record id="hr_salary_rule_BASE_INSS" model="hr.salary.rule">
             <field name="code">BASE_INSS</field>
             <field name="name">Base INSS</field>
-            <field name="category_id" ref="hr_payroll.INSS" />
+            <field name="category_id" ref="hr_payroll.REFERENCIA" />
             <field name="amount_select">code</field>
             <field name="condition_select">none</field>
             <field name="amount_python_compute">result = BASE_INSS</field>
@@ -59,7 +59,7 @@
         <record id="hr_salary_rule_BASE_IRPF" model="hr.salary.rule">
             <field name="code">BASE_IRPF</field>
             <field name="name">Base IRRF</field>
-            <field name="category_id" ref="hr_payroll.IRPF" />
+            <field name="category_id" ref="hr_payroll.REFERENCIA" />
             <field name="amount_select">code</field>
             <field name="condition_select">none</field>
             <field name="amount_python_compute">result = BASE_IR</field>
@@ -79,7 +79,7 @@
         <record id="hr_salary_rule_BASE_FGTS" model="hr.salary.rule">
             <field name="code">BASE_FGTS</field>
             <field name="name">Base FGTS</field>
-            <field name="category_id" ref="hr_payroll.FGTS" />
+            <field name="category_id" ref="hr_payroll.REFERENCIA" />
             <field name="amount_select">code</field>
             <field name="condition_select">none</field>
             <field name="amount_python_compute">result = BASE_FGTS</field>
@@ -178,7 +178,7 @@
         <record id="hr_salary_rule_base_FERIAS" model="hr.salary.rule">
             <field name="code">BASE_FERIAS</field>
             <field name="name">Base FERIAS</field>
-            <field name="category_id" ref="hr_payroll.FERIAS"/>
+            <field name="category_id" ref="hr_payroll.REFERENCIA"/>
             <field name="amount_select">code</field>
             <field name="condition_select">none</field>
             <field name="amount_python_compute">result = MEDIAS.SALARIO.media
@@ -195,10 +195,12 @@
             <field name="amount_select">code</field>
             <field name="condition_select">none</field>
             <field name="amount_python_compute">result =  contract.wage / 30
-result_qty =  worked_days.FERIAS.number_of_days
+result_qty =  PEDIDO_FERIAS.DIAS_FERIAS
             </field>
             <field name="sequence" eval="109"/>
             <field name="compoe_base_FGTS" eval="True"/>
+            <field name="compoe_base_INSS" eval="True"/>
+            <field name="compoe_base_IR" eval="True"/>
         </record>
 
         <!--1/3 das ferias-->
@@ -210,36 +212,70 @@ result_qty =  worked_days.FERIAS.number_of_days
             <field name="condition_select">none</field>
             <field name="amount_python_compute">result = FERIAS / 3.0
             </field>
-            <field name="sequence" eval="109"/>
+            <field name="sequence" eval="110"/>
             <field name="compoe_base_FGTS" eval="True"/>
+            <field name="compoe_base_INSS" eval="True"/>
+            <field name="compoe_base_IR" eval="True"/>
         </record>
 
         <!--Abono Pecuniário-->
         <record id="hr_salary_rule_ABONO_PECUNIARIO" model="hr.salary.rule">
             <field name="code">ABONO_PECUNIARIO</field>
             <field name="name">Rubrica do Abono Pecuniario das FERIAS</field>
-            <field name="category_id" ref="hr_payroll.PROVENTO"/>
+            <field name="category_id" ref="hr_payroll.FERIAS"/>
             <field name="amount_select">code</field>
             <field name="condition_select">python</field>
-            <field name="condition_python">result = worked_days.FERIAS.number_of_days > 0 </field>
-            <field name="amount_python_compute">result = worked_days.ABONO_PECUNIARIO.number_of_days * contract.wage / 30</field>
-            <field name="sequence" eval="7"/>
+            <field name="condition_python">result = PEDIDO_FERIAS.DIAS_ABONO > 0 </field>
+            <field name="amount_python_compute">result =  contract.wage / 30
+result_qty =  PEDIDO_FERIAS.DIAS_ABONO
+            </field>
+            <field name="sequence" eval="111"/>
             <field name="compoe_base_FGTS" eval="True"/>
+            <field name="compoe_base_INSS" eval="True"/>
         </record>
 
-        <!--Abono Pecuniário-->
+        <!-- 1/3 Abono Pecuniário-->
         <record id="hr_salary_rule_1/3_ABONO_PECUNIARIO" model="hr.salary.rule">
             <field name="code">1/3_ABONO_PECUNIARIO</field>
             <field name="name">Rubrica do 1/3 Abono Pecuniario</field>
-            <field name="category_id" ref="hr_payroll.PROVENTO"/>
+            <field name="category_id" ref="hr_payroll.FERIAS"/>
             <field name="amount_select">code</field>
             <field name="condition_select">python</field>
-            <field name="condition_python">result = worked_days.FERIAS.number_of_days > 0 </field>
-            <field name="amount_python_compute">result = ABONO_PECUNIARIO / 3 </field>
-            <field name="sequence" eval="8"/>
+            <field name="condition_python">result = PEDIDO_FERIAS.DIAS_ABONO > 0 </field>
+            <field name="amount_python_compute">result = ABONO_PECUNIARIO / 3.0
+            </field>
+            <field name="sequence" eval="112"/>
             <field name="compoe_base_FGTS" eval="True"/>
+            <field name="compoe_base_INSS" eval="True"/>
         </record>
 
+        <!-- Liquido Férias-->
+        <record id="hr_salary_rule_liquido_ferias" model="hr.salary.rule">
+            <field name="code">LIQUIDO_FERIAS</field>
+            <field name="name">Liquido Férias</field>
+            <field name="category_id" ref="hr_payroll.REFERENCIA"/>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories.FERIAS - INSS - IRPF
+            </field>
+            <field name="sequence" eval="700"/>
+            <field name="compoe_base_FGTS" eval="False"/>
+            <field name="compoe_base_INSS" eval="False"/>
+        </record>
+
+        <!-- Pagamento de férias no Holerite Mensal-->
+        <record id="hr_salary_rule_pagamento_ferias" model="hr.salary.rule">
+            <field name="code">PAGAMENTO_FERIAS</field>
+            <field name="name">Pagamento Antecipado de Férias</field>
+            <field name="category_id" ref="hr_payroll.DEDUCAO"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = worked_days.FERIAS.number_of_days > 0 </field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = CALCULAR.rubrica_anterior(code='FERIAS_LIQUIDA', tipo_de_folha='ferias').total
+            </field>
+            <field name="sequence" eval="10"/>
+            <field name="compoe_base_FGTS" eval="False"/>
+            <field name="compoe_base_INSS" eval="False"/>
+        </record>
 
         <!--Vale alimentação / vale refeição-->
         <record id="hr_salary_rule_VA_VR" model="hr.salary.rule">
