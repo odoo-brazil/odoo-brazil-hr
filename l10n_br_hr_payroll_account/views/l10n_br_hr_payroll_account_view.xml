@@ -8,10 +8,10 @@
             <field name="inherit_id" ref="l10n_br_hr_payroll.hr_payslip_form_view"/>
             <field name="arch" type="xml">
                 <xpath expr="//notebook" position="inside">
-                    <page string="Contabilização">
+                    <page string="Contabilização" attrs="{'invisible': [('is_simulacao', '=', True)]}">
                         <button type="object" name="processar_folha" string="Gerar contabilização"/>
                         <group>
-                            <field name="journal_id" required="True"/>
+                            <field name="journal_id" attrs="{'required': [('is_simulacao', '=', False)]}"/>
                         </group>
                         <group>
                             <field name="move_id"/>
