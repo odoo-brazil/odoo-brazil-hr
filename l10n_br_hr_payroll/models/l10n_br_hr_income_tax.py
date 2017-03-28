@@ -41,7 +41,7 @@ class L10nBrHrIncomeTax(models.Model):
             'l10n_br.hr.income.tax.deductable.amount.family'
         ]
         deducao_dependente_value = deducao_dependente_obj.search(
-            [('year', '=', ano)]
+            [('year', '=', ano)], order='create_date DESC', limit=1
         )
         dependent_values = 0
         if employee.have_dependent:
