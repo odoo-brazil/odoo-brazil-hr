@@ -644,7 +644,7 @@ class HrPayslip(models.Model):
             ('state', '=', 'done')
         ])
         if holerite_ferias:
-            lines=[]
+            lines = []
             for line in holerite_ferias.line_ids:
                 lines.append(line)
         else:
@@ -975,11 +975,9 @@ class HrPayslip(models.Model):
             rule_ids = payslip.get_contract_specific_rubrics(
                 contract_ids, rule_ids)
 
-
-            lines, holidays_ferias = self.get_line_ferias(payslip)
-
             # Recuperar informações da payslip de ferias, e se encontrar
             # calcular proporcionalmente
+            lines, holidays_ferias = self.get_line_ferias(payslip)
             if holidays_ferias and worked_days_obj.FERIAS.number_of_days > 0:
                 ferias_proporcionais = \
                     self.env['ir.config_parameter'].get_param(
@@ -997,9 +995,6 @@ class HrPayslip(models.Model):
                         proporcao_abono = \
                             worked_days_obj.ABONO_PECUNIARIO.number_of_days / \
                             holidays_ferias.sold_vacations_days
-
-                total_ferias = 0
-                total_abono_pecuniario = 0
 
                 for line in lines:
                     key = line.code + '_ANTERIOR'
