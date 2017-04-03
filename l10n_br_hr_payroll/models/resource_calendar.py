@@ -63,7 +63,6 @@ class ResourceCalendar(models.Model):
                 semanas_sem_DSR.append(fields.Datetime.from_string(
                     leave.date_to).isocalendar()[1])
                 data_inicio += timedelta(days=1)
-
         quantity_DSR = len(set(semanas_sem_DSR))
 
         # percorre os feriados de determinado período e incrementa a quantidade
@@ -87,7 +86,6 @@ class ResourceCalendar(models.Model):
                                                               semanas_sem_DSR):
                                 quantity_DSR += 1
                             inicio_feriado += timedelta(days=1)
-
         return quantity_DSR
 
     @api.multi
@@ -106,15 +104,27 @@ class ResourceCalendar(models.Model):
             ('state', '=', 'validate'),
             ('employee_id', '=', employee_id),
             ('type', '=', 'remove'),
-            ('date_from', '>=', date_from),
-            ('date_to', '<=', date_to),
             ('holiday_status_id', '=', holiday_status_id.id),
         ]
         ferias_holidays_ids = self.env['hr.holidays'].search(domain)
+        ferias_atuais = ferias_holidays_ids.filtered(
+            lambda holiday:
+            (date_from <= holiday.date_from <= date_to) or
+            (date_to <= holiday.date_to <= date_to)
+        )
 
-        for holiday in ferias_holidays_ids:
-            quantidade_dias_ferias += holiday.vacations_days
-            quantidade_dias_abono += holiday.sold_vacations_days
+        for holiday in ferias_atuais:
+            data_inicio_holiday = fields.Date.from_string(holiday.date_from)
+            data_final_holiday = fields.Date.from_string(holiday.date_to)
+            while data_inicio_holiday <= data_final_holiday:
+                if date_from <= str(data_inicio_holiday) <= date_to:
+                    quantidade_dias_ferias += 1
+                data_inicio_holiday += timedelta(days=1)
+
+            if holiday.sold_vacations_days:
+                data_inicial_abono = data_inicio_holiday - timedelta(days=1)
+                if date_from <= str(data_inicial_abono) <= date_to:
+                    quantidade_dias_abono = holiday.sold_vacations_days
 
         return quantidade_dias_ferias, quantidade_dias_abono
 
