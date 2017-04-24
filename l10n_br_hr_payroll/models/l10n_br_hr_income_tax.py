@@ -51,9 +51,10 @@ class L10nBrHrIncomeTax(models.Model):
 
         if tabela_vigente:
             for faixa in tabela_vigente:
-                if BASE_IRRF > faixa.max_wage:
-                    return (BASE_IRRF - inss - dependent_values) * \
-                           (faixa.rate/100.00) - faixa.deductable
+                BASE_IRRF_AUX = BASE_IRRF - inss - dependent_values
+                if BASE_IRRF_AUX > faixa.max_wage:
+                    return \
+                        BASE_IRRF_AUX * (faixa.rate/100.00) - faixa.deductable
         else:
             raise UserError(
                 _('Tabela de IRRF do ano Vigente Não encontrada!')
