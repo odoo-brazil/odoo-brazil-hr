@@ -32,29 +32,16 @@ class L10nBrHrIncomeTax(models.Model):
     @api.multi
     def _compute_irrf(self, BASE_IRRF, employee_id, inss, date_from):
         ano = fields.Datetime.from_string(date_from).year
-        employee = self.env['hr.employee'].browse(employee_id)
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
         tabela_vigente = tabela_irrf_obj.search(
             [('year', '=', ano)], order='rate DESC'
         )
-        deducao_dependente_obj = self.env[
-            'l10n_br.hr.income.tax.deductable.amount.family'
-        ]
-        deducao_dependente_value = deducao_dependente_obj.search(
-            [('year', '=', ano)], order='create_date DESC', limit=1
-        )
-        dependent_values = 0
-        if employee.have_dependent:
-            dependent_values = deducao_dependente_value.amount * len(
-                employee.dependent_ids
-            )
 
         if tabela_vigente:
             for faixa in tabela_vigente:
-                BASE_IRRF_AUX = BASE_IRRF - inss - dependent_values
-                if BASE_IRRF_AUX > faixa.max_wage:
+                if BASE_IRRF > faixa.max_wage:
                     return \
-                        BASE_IRRF_AUX * (faixa.rate/100.00) - faixa.deductable
+                        BASE_IRRF * (faixa.rate/100.00) - faixa.deductable
         else:
             raise UserError(
                 _('Tabela de IRRF do ano Vigente Não encontrada!')
