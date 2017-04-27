@@ -624,6 +624,16 @@ class HrPayslip(models.Model):
         return res
 
     def INSS(self, BASE_INSS):
+        """
+        Cálculo do INSS da folha de pagamento. Essa função é responsável por
+        disparar o cálculo do INSS, que fica embutido em sua classe.
+         Essa função está dísponivel no context das rubricas sendo possível
+         inserir o seguinte código python na rubrica:
+         result = CALCULAR.INSS(<variavel que contem a base do INSS>)
+         *CALCULAR é a instancia corrente da payslip
+        :param BASE_INSS: - float - soma das rubricas que compoe o INSS
+        :return: float - Valor do inss a ser descontado do funcionario
+        """
         tabela_inss_obj = self.env['l10n_br.hr.social.security.tax']
         if BASE_INSS:
             inss = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
@@ -631,11 +641,37 @@ class HrPayslip(models.Model):
         else:
             return 0
 
-    def IRRF(self, BASE_IR, INSS):
+    def BASE_IRRF(self, TOTAL_IRRF, INSS):
+        """
+        Calcula a base de cálculo do IRRF. A formula se da por:
+        BASE_IRRF = BASE_INSS - INSS -
+            (DESCONTO_POR_DEPENDENTE * QTY_DE_DEPENDENTES)
+
+        :param TOTAL_IRRF:  - float - Soma das rubricas que compoem a BASE_IRRF
+        :param INSS:        - float - Valor do INSS a ser descontado
+                                      do funcionario
+        :return:            - float - base do IRRF
+        """
+        ano = fields.Datetime.from_string(self.date_from).year
+
+        deducao_dependente_obj = self.env[
+            'l10n_br.hr.income.tax.deductable.amount.family'
+        ]
+        deducao_dependente_value = deducao_dependente_obj.search(
+            [('year', '=', ano)], order='create_date DESC', limit=1
+        )
+        dependent_values = 0
+        if self.employee_id.have_dependent:
+            dependent_values = deducao_dependente_value.amount * len(
+                self.employee_id.dependent_ids
+            )
+        return TOTAL_IRRF - INSS - dependent_values
+
+    def IRRF(self, BASE_IRRF, INSS):
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
-        if BASE_IR:
+        if BASE_IRRF:
             irrf = tabela_irrf_obj._compute_irrf(
-                BASE_IR, self.employee_id.id, INSS, self.date_from
+                BASE_IRRF, self.employee_id.id, INSS, self.date_from
             )
             return irrf
         else:
