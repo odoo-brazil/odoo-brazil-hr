@@ -841,6 +841,8 @@ class HrPayslip(models.Model):
             'date_to': data_fim,
             'employee_id': self.contract_id.employee_id.id
         }
+        if tipo_simulacao == "aviso_previo":
+            vals.update({'dias_aviso_previo': self.dias_aviso_previo})
         payslip_simulacao_criada = hr_payslip_obj.create(vals)
         if tipo_simulacao == "ferias":
             periodo_ferias_vencida = False
@@ -855,6 +857,8 @@ class HrPayslip(models.Model):
                 }
             )
             payslip_simulacao_criada._compute_saldo_periodo_aquisitivo()
+        if tipo_simulacao in ["ferias", "aviso_previo"]:
+            payslip_simulacao_criada.gerar_media_dos_proventos()
         payslip_simulacao_criada._compute_set_employee_id()
         # worked_days_line_ids = \
         #     payslip_simulacao_criada.get_worked_day_lines(
@@ -1535,7 +1539,22 @@ class HrPayslip(models.Model):
                 record.date_to = record.contract_id.date_end
 
     @api.multi
+    def _checar_holerites_aprovados(self):
+        return self.env['hr.payslip'].search(
+            [
+                ('contract_id', '=', self.contract_id.id),
+                ('tipo_de_folha', '=', 'normal'),
+                ('state', '=', 'done')
+            ]
+        )
+
+    @api.multi
     def compute_sheet(self):
+        if self.tipo_de_folha == "rescisao":
+            if len(self._checar_holerites_aprovados()) == 0:
+                raise exceptions.Warning(
+                    "Não existem holerites aprovados para este contrato!"
+                )
         self.atualizar_worked_days_inputs()
         if self.tipo_de_folha in [
             "decimo_terceiro", "ferias", "aviso_previo",
