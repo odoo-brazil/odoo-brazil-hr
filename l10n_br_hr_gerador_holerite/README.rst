@@ -58,10 +58,7 @@ Images
 Contributors
 ------------
 
-* Luis Felipe Miléo <mileo@kmee.com.br>
-* Matheus Felix
-* Rafael da Silva Lima
-* Aristides Caldeira <aristides.caldeira@tauga.com.br>
+* Hendrix Costa <hendrix.costa@kmee.com.br>
 
 Funders
 -------
