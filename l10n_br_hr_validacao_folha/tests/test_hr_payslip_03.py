@@ -118,6 +118,12 @@ class TestHrPayslip(common.TransactionCase):
         elif rubrica == 'rubrica_creche':
             rule_id = self.env.ref(
                 'l10n_br_hr_payroll.hr_salary_rule_REMBOLSO_AUXILIO_CRECHE')
+        elif rubrica == 'rubrica_ligacao':
+            rule_id = self.env.ref(
+                'l10n_br_hr_payroll.hr_salary_rule_DESCONTO_LIGACOES')
+        elif rubrica == 'rubrica_contribuicao_sindical':
+            rule_id = self.env.ref(
+                'l10n_br_hr_payroll.hr_salary_rule_CONTRIBUICAO_SINDICAL')
         else:
             return False
 
@@ -227,16 +233,18 @@ class TestHrPayslip(common.TransactionCase):
         holerite_normal.process_sheet()
         return holerite_normal
 
-    def test_00_juliana(self):
+    def test_00_jennifer(self):
         """
-        Funcionario: JULIANA
-        Salario Base: 10936,46
+        Funcionario: JENNIFER
+        Salario Base: 11615.60
         Data Admissao: 02/01/14
         Rubricas Especificas:
             - Reembolso Plano de Saude - 400.00
             - Reembolso Auxílio Creche - 370.71
             - VA/VR                    - 6.04
-        Dependentes: 2
+            - Desconto Ligações        - 40,53
+            - Contribuição Sindical    - 387,19
+        Dependentes: 3
         Ferias: 13/10/16 - 22/10/16
         Abono Pecuniario: 0
         Dias Trabalhados: 20
@@ -244,73 +252,99 @@ class TestHrPayslip(common.TransactionCase):
         Holerite total: R$ 7050,14
         :return:
         """
-        employee_id = self.criar_funcionario('JULIANA', 3)
+
+        employee_id = self.criar_funcionario('JENNIFER', 3)
         data_admissao = '2014-01-02'
         estrutura_salario = self.env.ref(
             'l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA')
 
         # Criar Contrato
         contrato = self.criar_contrato(
-            'Contrato do JULIANA', employee_id, 10936.46,
+            'Contrato do JENNIFER', employee_id, 11615.60,
             estrutura_salario, data_admissao)
 
         # Criar Rubricas especificas do contrato
         self.criar_rubricas_especificas(
             'rubrica_saude', data_admissao, 1, 400.00, contrato)
         self.criar_rubricas_especificas(
-            'rubrica_creche', data_admissao, 1, 370.71, contrato)
+            'rubrica_creche', data_admissao, 1, 395.55, contrato)
         self.criar_rubricas_especificas(
-            'rubrica_VA', data_admissao, 1, 6.04, contrato)
+            'rubrica_VA', data_admissao, 1, 7.72, contrato)
+        self.criar_rubricas_especificas(
+            'rubrica_ligacao', data_admissao, 1, 40.53, contrato)
+        self.criar_rubricas_especificas(
+            'rubrica_contribuicao_sindical', data_admissao, 1, 387.19, contrato)
 
         # Atribuir Holidays de Férias ao funcinario e gerar aviso de ferias
-        self.atribuir_ferias(contrato, '2016-10-13', '2016-10-22', 10, 0)
+        self.atribuir_ferias(contrato, '2017-03-01', '2017-03-10', 10, 10)
 
         # Gerar holerite normal ja puxando informações das ferias
-        holerite_normal = self.gerar_holerite_normal(contrato, 10, 2016)
+        holerite_normal = self.gerar_holerite_normal(contrato, 03, 2017)
 
         for rubrica in holerite_normal.line_ids:
             if rubrica.total:
-
+                # Proventos
                 if rubrica.code == 'SALARIO':
-                    self.assertEqual('%g' % rubrica.total, str(7290.97))
-
+                    self.assertEqual(round(rubrica.total, 2), 7743.73)
                 if rubrica.code == 'REMBOLSO_SAUDE':
-                    self.assertEqual(rubrica.total, 400.00)
-
+                    self.assertEqual(round(rubrica.total, 2), 400.00)
+                if rubrica.code == 'REMBOLSO_AUXILIO_CRECHE':
+                    self.assertEqual(round(rubrica.total, 2), 395.55)
                 if rubrica.code == 'FERIAS':
-                    self.assertEqual('%g' % rubrica.total, str(3645.49))
-
+                    self.assertEqual(round(rubrica.total, 2), 3871.87)
                 if rubrica.code == '1/3_FERIAS':
-                    self.assertEqual('%g' % rubrica.total, str(1215.16))
+                    self.assertEqual(round(rubrica.total, 2), 1290.62)
+                if rubrica.code == 'ABONO_PECUNIARIO':
+                    self.assertEqual(round(rubrica.total, 2), 3871.87)
+                if rubrica.code == '1/3_ABONO_PECUNIARIO':
+                    self.assertEqual(round(rubrica.total, 2), 1290.62)
 
-                if rubrica.code == 'BASE_IRPF':
-                    self.assertEqual('%g' % rubrica.total, str(6685.99))
+                # Deduções
+                if rubrica.code == 'CONTRIBUICAO_SINDICAL':
+                    self.assertEqual(round(rubrica.total, 2), 387.19)
+                if rubrica.code == 'VA/VR':
+                    self.assertEqual(round(rubrica.total, 2), 7.72)
+                if rubrica.code == 'DESCONTO_LIGACOES_TELEFONICAS':
+                    self.assertEqual(round(rubrica.total, 2), 40.53)
+                # Adiantamento do 13 Salario esta sendo cobrado junto ?
+                # if rubrica.code == 'PAGAMENTO_FERIAS':
+                #     self.assertEqual(round(rubrica.total, 2), 15295.22)
 
-        self.assertEqual('%g' % holerite_normal.total_folha, str(7050.15))
+                # INSS Mensal
+                if rubrica.code == 'INSS': # INSS Mensal - Teto
+                    self.assertEqual(round(rubrica.total, 2), 608.44)
+                # INSS FERIAS
+                if rubrica.code == 'INSS_FERIAS' and rubrica.valor_deducao:
+                    self.assertEqual(round(rubrica.total, 2), 567.87)
+                # INSS Ajuste FERIAS
+                if rubrica.code == 'INSS_FERIAS' and rubrica.valor_provento:
+                    self.assertEqual(round(rubrica.total, 2), 567.87)
 
-    def test_01_barbara(self):
-        """
-        testes dos dados de demonstracao
-        Funcionario: BARBARA
-        """
-        holerite_barbara = \
-            self.env.ref('l10n_br_hr_validacao_folha.hr_payslip_barbara')
-        self.assertEqual(round(holerite_barbara.total_folha, 2), 16100.03)
+                # IRRF
+                if rubrica.code == 'IRPF':
+                    self.assertEqual(round(rubrica.total, 2), 1092.60)
+                # IRRF FERIAS
+                if rubrica.code == 'IRPF_FERIAS':
+                    self.assertEqual(round(rubrica.total, 2), 269.69)
 
-    def test_02_paula(self):
-        """
-        testes dos dados de demonstracao
-        Funcionario: PAULA
-        """
-        holerite_paula = \
-            self.env.ref('l10n_br_hr_validacao_folha.hr_payslip_paula')
-        self.assertEqual(round(holerite_paula.total_folha, 2), 5897.70)
+                # Referências de cálculos
+                if rubrica.code == 'BASE_INSS': # BASE_INSS
+                    # BASE_INSS = SALARIO + FERIAS + 1/3
+                    BASE_INSS = round(3871.87 + 1290.62 + 7743.73, 2)
+                    self.assertEqual(round(rubrica.total, 2), BASE_INSS)
+                if rubrica.code == 'BASE_IRPF':   # BASE_IRRF
+                    # BASE_IRRF = Salario + Ajuste do INSS - INSS - Dependen
+                    BASE_IRRF = round(7743.73 + 567.87 - 608.44 - 568.77, 2)
+                    self.assertEqual(round(rubrica.total, 2), BASE_IRRF)
+                if rubrica.code == 'BASE_INSS_FERIAS': # BASE_INSS FERIAS
+                    # BASE_INSS_FERIAS = FERIAS + 1/3_FERIAS
+                    BASE_INSS_FERIAS = round(3871.87 + 1290.62, 2)
+                    self.assertEqual(rubrica.round_total, BASE_INSS_FERIAS)
+                if rubrica.code == 'BASE_IRPF_FERIAS': # BASE_IRRF FERIAS
+                    # BASE_IRRF_FERIAS = BASE_INSS_FERIAS -INSSFerias - Depend.
+                    BASE_IRRF_FERIAS = \
+                        round(BASE_INSS_FERIAS - 567.87 - 568.77, 2)
+                    self.assertEqual(rubrica.round_total, BASE_IRRF_FERIAS)
 
-    def test_03_rheila(self):
-        """
-        testes dos dados de demonstracao
-        Funcionario: RHEILA
-        """
-        holerite_paula = \
-            self.env.ref('l10n_br_hr_validacao_folha.hr_payslip_rheila')
-        self.assertEqual(round(holerite_paula.total_folha, 2), 11188.22)
+        # Valor Liquido do holerite
+        self.assertEqual(round(holerite_normal.total_folha, 2), 6970.68)

@@ -21,10 +21,11 @@
     'demo': [
         'demo/funcionarios.yml',
         'demo/contratos.yml',
-        'demo/holerites.yml',
+        'demo/holerites10.yml',
+        'demo/holerites11.yml',
     ],
     'test': [
-        'tests/test_hr_payslip.py',
+        'tests/test_hr_payslip_10.py',
     ],
     'installable': True,
     'auto_install': False,
