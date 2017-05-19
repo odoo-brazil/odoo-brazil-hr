@@ -17,12 +17,6 @@
     from openerp.exceptions import ValidationError
     self.compute_sheet()
     self.process_sheet()
-    print (self.total_folha)
-
-    for line in self.line_ids:
-      print (line.code)
-      print (line.total)
-
     if round(self.total_folha, 2) != 7050.15:
         raise ValidationError("Calculo da folha da JENNIFER Incorreto")
 
