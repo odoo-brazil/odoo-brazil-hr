@@ -56,8 +56,3 @@
     from openerp.exceptions import ValidationError
     self.compute_sheet()
     self.process_sheet()
-
-#    if round(self.total_folha, 2) != 8378.37:
-#        raise ValidationError("Calculo da folha da INGRID Incorreto")
-
-###############################################################################

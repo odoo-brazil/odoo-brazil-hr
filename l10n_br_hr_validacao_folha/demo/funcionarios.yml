@@ -69,4 +69,3 @@
 -
   !record {model: hr.employee, id: hr_employee_tina}:
     name: 'TINA'
--

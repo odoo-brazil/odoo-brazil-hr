@@ -19,4 +19,3 @@
     self.process_sheet()
     if round(self.total_folha, 2) != 	4667.56:
         raise ValidationError("Calculo da folha da INGRID Incorreto")
-###############################################################################

@@ -100,7 +100,6 @@
 
 #    if round(self.total_folha, 2) != 8378.37:
 #        raise ValidationError("Calculo da folha da RHEILA Incorreto")
-
 ###############################################################################
 #-
 #    Criar Holerite da TINA de Outubro do 2016
