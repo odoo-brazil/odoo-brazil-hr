@@ -306,21 +306,21 @@ class TestHrPayslip(common.TransactionCase):
                 if rubrica.code == 'BASE_INSS_FERIAS':
                     # BASE_INSS_FERIAS = FERIAS + 1/3_FERIAS
                     BASE_INSS_FERIAS = 3645.49 + 1215.16
-                    self.assertEqual(rubrica.round_total, BASE_INSS_FERIAS)
+                    self.assertEqual(round(rubrica.total, 2), BASE_INSS_FERIAS)
                 if rubrica.code == 'BASE_IRPF_FERIAS':
                     # BASE_IRRF_FERIAS = BASE_INSS_FERIAS -INSSFERIAS - Depend.
                     BASE_IRRF_FERIAS = \
                         round(3645.49 + 1215.16 - 534.67 - 568.77, 2)
-                    self.assertEqual(rubrica.round_total, BASE_IRRF_FERIAS)
+                    self.assertEqual(round(rubrica.total, 2), BASE_IRRF_FERIAS)
                 if rubrica.code == 'BASE_INSS':
                     # BASE_INSS = SALARIO + FERIAS + 1/3 - INSS_FERIAS_ja_pago
                     BASE_INSS = round(7290.97 + 3645.49 + 1215.16 - 534.67, 2)
-                    self.assertEqual(rubrica.round_total, BASE_INSS)
+                    self.assertEqual(round(rubrica.total, 2), BASE_INSS)
                 if rubrica.code == 'BASE_IRPF':
                     # Diferença de INSS = INSS_FERIAS_ja_pago - INSS_MENSAL
                     # BASE_IRRF = (Salario - Diferença de INSS - Dependen
                     BASE_IRRF = round(7290.97 + 534.67 - 570.88 - 568.77, 2)
-                    self.assertEqual(rubrica.round_total, BASE_IRRF)
+                    self.assertEqual(round(rubrica.total, 2), BASE_IRRF)
 
         # Valor Liquido do holerite
         self.assertEqual(round(holerite_normal.total_folha, 2), 7050.15)
@@ -495,11 +495,11 @@ class TestHrPayslip(common.TransactionCase):
                 if rubrica.code == 'BASE_INSS_FERIAS':  # BASE_INSS FERIAS
                     # BASE_INSS_FERIAS = FERIAS + 1/3_FERIAS
                     BASE_INSS_FERIAS = round(4374.59 + 1458.19, 2)
-                    self.assertEqual(rubrica.round_total, BASE_INSS_FERIAS)
+                    self.assertEqual(round(rubrica.total, 2), BASE_INSS_FERIAS)
                 if rubrica.code == 'BASE_IRPF_FERIAS':  # BASE_IRRF FERIAS
                     # BASE_IRRF_FERIAS = FERIAS + 1/3 - INSS_FERIAS - Depend.
                     BASE_IRRF_FERIAS = round(4374.58 + 1458.19 - 570.88, 1)
-                    self.assertEqual(rubrica.round_total, BASE_IRRF_FERIAS)
+                    self.assertEqual(round(rubrica.total, 2), BASE_IRRF_FERIAS)
 
                 if rubrica.code == 'BASE_INSS':  # BASE_INSS
                     # BASE_INSS = SALARIO + FERIAS + 1/3 - INSS_FERIAS_ja_pago
@@ -565,7 +565,7 @@ class TestHrPayslip(common.TransactionCase):
                 if rubrica.code == 'BASE_INSS':  # BASE_INSS
                     # BASE_INSS = SALARIO
                     BASE_INSS = 14413.96
-                    self.assertEqual(rubrica.round_total, BASE_INSS)
+                    self.assertEqual(round(rubrica.total, 2), BASE_INSS)
                 if rubrica.code == 'BASE_IRPF':   # BASE_IRRF
                     # BASE_IRRF = BASE_INSS - INSS - Dependen
                     BASE_IRRF = BASE_INSS - 570.88 - 0

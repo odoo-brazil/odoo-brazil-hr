@@ -332,12 +332,12 @@ class TestHrPayslip(common.TransactionCase):
                 if rubrica.code == 'BASE_INSS_FERIAS':  # BASE_INSS FERIAS
                     # BASE_INSS_FERIAS = FERIAS + 1/3_FERIAS
                     BASE_INSS_FERIAS = round(3871.87 + 1290.62, 2)
-                    self.assertEqual(rubrica.round_total, BASE_INSS_FERIAS)
+                    self.assertEqual(round(rubrica.total, 2), BASE_INSS_FERIAS)
                 if rubrica.code == 'BASE_IRPF_FERIAS':  # BASE_IRRF FERIAS
                     # BASE_IRRF_FERIAS = BASE_INSS_FERIAS -INSSFerias - Depend.
                     BASE_IRRF_FERIAS = \
                         round(BASE_INSS_FERIAS - 567.87 - 568.77, 2)
-                    self.assertEqual(rubrica.round_total, BASE_IRRF_FERIAS)
+                    self.assertEqual(round(rubrica.total, 2), BASE_IRRF_FERIAS)
 
                 if rubrica.code == 'BASE_INSS':  # BASE_INSS
                     # BASE_INSS = SALARIO + FERIAS + 1/3 - INSS_FERIAS_ja_pago
