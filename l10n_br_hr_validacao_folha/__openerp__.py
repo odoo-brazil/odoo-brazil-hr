@@ -21,8 +21,8 @@
     'demo': [
         'demo/funcionarios.yml',
         'demo/contratos.yml',
-        'demo/holerites10.yml',
-        'demo/holerites11.yml',
+        # 'demo/holerites10.yml',
+        # 'demo/holerites11.yml',
     ],
     'test': [
         'tests/test_hr_payslip_10.py',

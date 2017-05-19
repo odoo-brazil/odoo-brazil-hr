@@ -329,8 +329,8 @@ class TestHrPayslip(common.TransactionCase):
 
                 # Referências de cálculos
                 if rubrica.code == 'BASE_INSS': # BASE_INSS
-                    # BASE_INSS = SALARIO + FERIAS + 1/3
-                    BASE_INSS = round(3871.87 + 1290.62 + 7743.73, 2)
+                    # BASE_INSS = SALARIO + FERIAS + 1/3 - AjusteINSS
+                    BASE_INSS = round(3871.87 + 1290.62 + 7743.73 - 567.87, 2)
                     self.assertEqual(round(rubrica.total, 2), BASE_INSS)
                 if rubrica.code == 'BASE_IRPF':   # BASE_IRRF
                     # BASE_IRRF = Salario + Ajuste do INSS - INSS - Dependen
