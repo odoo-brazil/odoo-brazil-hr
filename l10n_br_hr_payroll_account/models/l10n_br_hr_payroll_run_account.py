@@ -3,7 +3,7 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 import time
 
-from openerp import api, models, fields, _
+from openerp import api, models, fields, exceptions, _
 from openerp.tools import float_compare
 
 NOME_LANCAMENTO_LOTE = {
@@ -14,6 +14,13 @@ NOME_LANCAMENTO_LOTE = {
 
 class L10nBrHrPayslip(models.Model):
     _inherit = 'hr.payslip.run'
+
+    @api.model
+    def _buscar_diario_fopag(self):
+        if self.env.context.get('params'):
+            return self.env.ref(
+                "l10n_br_hr_payroll_account.payroll_account_journal").id
+        return self.env["account.journal"]
 
     @api.multi
     def _buscar_lancamentos(self):
@@ -43,7 +50,22 @@ class L10nBrHrPayslip(models.Model):
         comodel_name='account.account',
         string='Conta crédito provisão Décimo 13º',
     )
-
+    holerite_normal_account_debit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta débito holerite normal',
+    )
+    holerite_normal_account_credit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta crédito holerite normal',
+    )
+    decimo_13_account_debit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta débito Décimo 13º',
+    )
+    decimo_13_account_credit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta crédito Décimo 13º',
+    )
     move_id = fields.Many2one(
         comodel_name='account.move',
         string='Accounting Entry',
@@ -58,12 +80,18 @@ class L10nBrHrPayslip(models.Model):
     journal_id = fields.Many2one(
         comodel_name='account.journal',
         string=u"Diário",
-        required=True,
+        default=_buscar_diario_fopag
     )
 
     @api.multi
     def _buscar_contas_lotes(self):
-        if self.tipo_de_folha == "provisao_ferias":
+        if self.tipo_de_folha == "normal":
+            return self.holerite_normal_account_debit, self.\
+                holerite_normal_account_credit
+        elif self.tipo_de_folha == "decimo_terceiro":
+            return self.decimo_13_account_debit, self.\
+                decimo_13_account_credit
+        elif self.tipo_de_folha == "provisao_ferias":
             return self.provisao_ferias_account_debit, self.\
                 provisao_ferias_account_credit
         elif self.tipo_de_folha == "provisao_decimo_terceiro":
@@ -116,7 +144,7 @@ class L10nBrHrPayslip(models.Model):
     @api.multi
     def processar_folha(self):
         conta_debito, conta_credito = self._buscar_contas_lotes()
-        if conta_debito.id or conta_credito.id:
+        if conta_debito or conta_credito:
             for payslip_run in self:
                 move_obj = self.env['account.move']
                 period_obj = self.env['account.period']
@@ -267,3 +295,8 @@ class L10nBrHrPayslip(models.Model):
                 self.write({'move_id': move_id.id})
                 if payslip_run.journal_id.entry_posted:
                     move_obj.post(move_id)
+        else:
+            raise exceptions.Warning(
+                "Não foi selecionada nenhuma conta de crédito ou "
+                "débito para o lote de holerites!"
+            )
