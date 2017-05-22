@@ -1245,6 +1245,8 @@ class HrPayslip(models.Model):
             'RAT_FAP': rat_fap, 'MEDIAS': medias_obj,
             'PEDIDO_FERIAS': ferias_abono,
             'DIAS_AVISO_PREVIO': payslip.dias_aviso_previo,
+            'locals': locals,
+            'globals': locals,
         }
 
         for contract_ids in self:
