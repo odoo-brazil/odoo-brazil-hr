@@ -3,11 +3,16 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 import time
 
-from openerp import api, models, fields, _
+from openerp import api, models, fields, exceptions, _
 from openerp.tools import float_compare, float_is_zero
 from openerp.exceptions import Warning
 
 NOME_LANCAMENTO = {
+    'normal': u'Holerite Normal - ',
+    'rescisao': u'Rescisão - ',
+    'ferias': u'Férias - ',
+    'decimo_terceiro': u'Décimo Terceiro - ',
+    'aviso_previo': u'Aviso Prévio - ',
     'provisao_ferias': u'Provisão de Férias - ',
     'provisao_decimo_terceiro': u'Provisão de Décimo Terceiro - ',
 }
@@ -15,6 +20,13 @@ NOME_LANCAMENTO = {
 
 class L10nBrHrPayslip(models.Model):
     _inherit = 'hr.payslip'
+
+    @api.multi
+    def _buscar_diario_fopag(self):
+        if self.env.context.get('params'):
+            return self.env.ref(
+                "l10n_br_hr_payroll_account.payroll_account_journal").id
+        return self.env["account.journal"]
 
     @api.multi
     def _buscar_lancamentos(self):
@@ -40,6 +52,7 @@ class L10nBrHrPayslip(models.Model):
     journal_id = fields.Many2one(
         comodel_name='account.journal',
         string=u"Diário",
+        default=_buscar_diario_fopag
     )
 
     @api.multi
@@ -118,7 +131,7 @@ class L10nBrHrPayslip(models.Model):
             for line in slip.details_by_salary_rule_category:
                 debit_account_id, credit_account_id = \
                     slip._buscar_contas(line.salary_rule_id)
-                if debit_account_id.id or credit_account_id.id:
+                if debit_account_id or credit_account_id:
                     amt = slip.credit_note and -line.total or line.total
                     if float_is_zero(amt, precision_digits=precision):
                         continue
@@ -182,7 +195,11 @@ class L10nBrHrPayslip(models.Model):
                         line_ids.append(credit_line)
                         credit_sum += \
                             credit_line[2]['credit'] - credit_line[2]['debit']
-
+                else:
+                    raise exceptions.Warning(
+                        "Não foi selecionada nenhuma conta de crédito ou "
+                        "débito para a rúbrica ", (line.display_name)
+                    )
             if float_compare(
                     credit_sum, debit_sum, precision_digits=precision) == -1:
                 acc_id = slip.journal_id.default_credit_account_id.id

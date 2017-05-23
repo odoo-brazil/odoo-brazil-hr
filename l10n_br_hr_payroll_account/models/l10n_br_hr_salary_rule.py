@@ -16,7 +16,6 @@ class L10nBrHrSalaryRule(models.Model):
         comodel_name='account.account',
         string='Conta crédito provisão de Férias',
     )
-
     provisao_13_account_debit = fields.Many2one(
         comodel_name='account.account',
         string='Conta débito provisão Décimo 13º',
@@ -24,4 +23,36 @@ class L10nBrHrSalaryRule(models.Model):
     provisao_13_account_credit = fields.Many2one(
         comodel_name='account.account',
         string='Conta crédito provisão Décimo 13º',
+    )
+    holerite_normal_account_debit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta débito holerite normal',
+    )
+    holerite_normal_account_credit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta crédito holerite normal',
+    )
+    ferias_account_debit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta débito Férias',
+    )
+    ferias_account_credit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta crédito Férias',
+    )
+    decimo_13_account_debit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta débito Décimo 13º',
+    )
+    decimo_13_account_credit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta crédito Décimo 13º',
+    )
+    rescisao_account_debit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta débito Rescisão',
+    )
+    rescisao_account_credit = fields.Many2one(
+        comodel_name='account.account',
+        string='Conta crédito Rescisão',
     )
