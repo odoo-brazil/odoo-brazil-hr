@@ -24,26 +24,6 @@ class HrSalaryRule(models.Model):
     _inherit = b'hr.salary.rule'
 
     @api.multi
-    def formata_caracteres_xml(self, field):
-        """
-        Formata o XML que nao pode conter caracateres como '<=' ou '>='
-        """
-        # Validar a entrada de dados
-        if not isinstance(field, (str, unicode)):
-            return field
-
-        # Menor igual
-        field = re.sub('<=', ' &lt;= ', field)
-        # Menor
-        field = re.sub('<[^/ford!?]', ' &lt; ', field)
-        # Maior Igual
-        field = re.sub('>=', ' &gt;= ', field)
-        # Maior
-        field = re.sub('[^pad?"\-/] >', ' &gt; ', field)
-
-        return field
-
-    @api.multi
     def _compute_xml_rubrica(self):
         """
         Função que gera XML da rubrica atual
@@ -55,101 +35,46 @@ class HrSalaryRule(models.Model):
             # external_id, senão exibe a external id que sera criada pelo
             # modulo de backup
             backup = self.env['hr.backup']
+
             id = backup.get_external_id(
                 regra, 'hr_salary_rule_%s' % regra.code)
 
             record = \
                 "\t\t<record id=\"%s\" model=\"hr.salary.rule\"> \n" % id
-            record += "\t\t\t<field name=\"code\">%s</field>\n" % (regra.code)
-            record += "\t\t\t<field name=\"name\">%s</field>\n" % (regra.name)
-            record += "\t\t\t<field name=\"category_id\" ref=\"%s\"/>\n" % \
-                      (regra.category_id._get_external_ids().
-                       get(regra.category_id.id)[0])
 
-            record += "\t\t\t<field name=\"active\" eval=\"%s\"/>\n" %\
-                      (regra.active)
+            record += backup.get_text_field(regra.code, 'code')
+            record += backup.get_text_field(regra.name, 'name')
+            record += backup.get_text_field(regra.active, 'active')
+            record += backup.get_text_field(regra.sequence, 'sequence')
+            record += backup.get_many_to_one_field(regra.category_id, 'category_id')
+            record += backup.get_text_field(regra.condition_select, 'condition_select')
+            record += backup.get_text_field(backup.formata_caracteres_xml(regra.condition_python),'condition_python')
+            record += backup.get_text_field(backup.formata_caracteres_xml(regra.amount_python_compute),'amount_python_compute')
+            record += backup.get_text_field(backup.formata_caracteres_xml(regra.custom_amount_python_compute),'custom_amount_python_compute')
+            record += backup.get_text_field(regra.amount_select, 'amount_select')
+            record += backup.get_text_field(regra.custom_amount_select, 'custom_amount_select')
+            record += backup.get_text_field(regra.compoe_base_INSS, 'compoe_base_INSS')
+            record += backup.get_text_field(regra.compoe_base_IR, 'compoe_base_IR')
+            record += backup.get_text_field(regra.compoe_base_FGTS, 'compoe_base_FGTS')
+            record += backup.get_text_field(regra.amount_fix, 'amount_fix')
+            record += backup.get_text_field(regra.custom_amount_fix, 'custom_amount_fix')
+            record += backup.get_text_field(regra.amount_percentage, 'amount_percentage')
+            record += backup.get_text_field(regra.amount_percentage_base, 'amount_percentage_base')
+            record += backup.get_text_field(regra.custom_amount_percentage_base, 'custom_amount_percentage_base')
+            record += backup.get_text_field(regra.custom_amount_percentage, 'custom_amount_percentage')
+            record += backup.get_text_field(regra.appears_on_payslip, 'appears_on_payslip')
+            record += backup.get_text_field(regra.condition_range, 'condition_range')
+            record += backup.get_text_field(regra.condition_range_min, 'condition_range_min')
+            record += backup.get_text_field(regra.condition_range_max, 'condition_range_max')
+            record += backup.get_text_field(regra.note, 'note')
+            record += backup.get_text_field(regra.calculo_nao_padrao, 'calculo_nao_padrao')
+            record += backup.get_text_field(regra.quantity, 'quantity')
+            record += backup.get_text_field(regra.custom_quantity, 'custom_quantity')
+            record += backup.get_text_field(regra.tipo_media, 'tipo_media')
 
-            record += "\t\t\t<field name=\"condition_select\">%s</field>\n" %\
-                      (regra.condition_select)
-
-            record += "\t\t\t<field name=\"condition_python\">%s</field>\n" % \
-                      (self.formata_caracteres_xml(regra.condition_python))
-
-            record += "\t\t\t<field name=\"amount_select\">%s</field>\n" % \
-                      (regra.amount_select)
-
-            record += "\t\t\t<field name=\"custom_amount_select\">%s</field>\n" % \
-                      (regra.custom_amount_select)
-
-            record += \
-                "\t\t\t<field name=\"amount_python_compute\">%s</field>\n" % \
-                (self.formata_caracteres_xml(regra.amount_python_compute))
-
-            record += \
-                "\t\t\t<field name=\"custom_amount_python_compute\">%s</field>\n" % \
-                (self.formata_caracteres_xml(regra.custom_amount_python_compute))
-
-            record += "\t\t\t<field name=\"sequence\" eval=\"%d\" />\n" % \
-                      (regra.sequence)
-            record += \
-                "\t\t\t<field name=\"compoe_base_INSS\" eval=\"%s\"/>\n" % \
-                      (regra.compoe_base_INSS)
-            record += "\t\t\t<field name=\"compoe_base_IR\" eval=\"%s\"/>\n" % \
-                      (regra.compoe_base_IR)
-            record += "\t\t\t<field name=\"compoe_base_FGTS\" eval=\"%s\"/>\n" %\
-                      (regra.compoe_base_FGTS)
-
-            record += "\t\t\t<field name=\"amount_fix\">%s</field>\n" % \
-                      (regra.amount_fix)
-
-            record += "\t\t\t<field name=\"custom_amount_fix\">%s</field>\n" % \
-                      (regra.custom_amount_fix)
-
-            record += "\t\t\t<field name=\"amount_percentage\">%s</field>\n" % \
-                      (regra.amount_percentage)
-
-            record += "\t\t\t<field name=\"amount_percentage_base\">%s</field>\n" % \
-                      (regra.amount_percentage_base)
-
-            record += "\t\t\t<field name=\"custom_amount_percentage_base\">%s</field>\n" % \
-                      (regra.custom_amount_percentage_base)
-
-            record += "\t\t\t<field name=\"custom_amount_percentage\">%s</field>\n" % \
-                      (regra.custom_amount_percentage)
-
-            record += "\t\t\t<field name=\"appears_on_payslip\" eval=\"%s\"/>\n" %\
-                      (regra.appears_on_payslip)
-
-            record += "\t\t\t<field name=\"condition_range\">%s</field>\n" % \
-                      (regra.condition_range)
-
-            record += "\t\t\t<field name=\"condition_range_min\">%s</field>\n" % \
-                      (regra.condition_range_min)
-
-            record += "\t\t\t<field name=\"condition_range_max\">%s</field>\n" % \
-                      (regra.condition_range_max)
-
-            record += "\t\t\t<field name=\"note\">%s</field>\n" % \
-                      (regra.note)
-
-            record += "\t\t\t<field name=\"calculo_nao_padrao\" eval=\"%s\"/>\n" %\
-                      (regra.calculo_nao_padrao)
-
-            record += "\t\t\t<field name=\"quantity\">%s</field>\n" % \
-                      (regra.quantity)
-
-            record += "\t\t\t<field name=\"custom_quantity\">%s</field>\n" % \
-                      (regra.custom_quantity or '')
-
-            # record += "\t\t\t<field name=\"company_id\" eval=\"%s\"/>\n" %\
-            #           (regra.company_id)
-            # record += "\t\t\t<field name=\"register_id\" eval=\"%s\"/>\n" %\
-            #           (regra.register_id)
-            # record += "\t\t\t<field name=\"parent_rule_id\" eval=\"%s\"/>\n" %\
-            #           (regra.parent_rule_id)
-
-            record += "\t\t\t<field name=\"tipo_media\">%s</field>\n" % \
-                      (regra.tipo_media or '')
+            record += backup.get_many_to_one_field(regra.parent_rule_id, 'parent_rule_id')
+            record += backup.get_many_to_one_field(regra.company_id, 'company_id')
+            record += backup.get_many_to_one_field(regra.register_id, 'register_id')
 
             record += "\t\t</record>\n\n"
 
@@ -164,7 +89,3 @@ class HrSalaryRule(models.Model):
     last_backup = fields.Datetime(
         string='Data do ultimo backup',
     )
-
-    @api.multi
-    def gerar_backup(self):
-        self.env['hr.backup'].gerar_backup()

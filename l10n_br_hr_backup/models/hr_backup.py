@@ -15,6 +15,61 @@ class HrBackup(models.Model):
     _name = 'hr.backup'
 
     @api.multi
+    def get_many_to_one_field(self, field_val, field_name):
+        """
+        """
+        # if isinstance(field_val, )
+        field_val = ''
+        if field_val and field_val._get_external_ids().get(field_val.id):
+            field_val = field_val._get_external_ids().get(field_val.id)[0]
+        linha = "\t\t\t<field name=\"%s\" ref=\"%s\"/>\n" % \
+                (field_name, field_val)
+        return linha
+
+    @api.multi
+    def get_text_field(self, field_val, field_name):
+        """
+        """
+        linha = "\t\t\t<field name=\"%s\">%s</field>\n" % \
+                (field_name, field_val or '')
+        return linha
+
+    @api.multi
+    def get_many_to_many(self, field_vals, field_name):
+        """
+        """
+        refs = ''
+        for field in field_vals:
+            if field and field._get_external_ids().get(field.id):
+                refs += "ref('%s'), " % \
+                        field._get_external_ids().get(field.id)[0]
+        line = \
+            "\t\t\t<field name=\"%s\" eval=\"[(6, 0, [%s])]\" />\n" %\
+            (field_name, refs[:-2])
+
+        return line
+
+    @api.multi
+    def formata_caracteres_xml(self, field):
+        """
+        Formata o XML que nao pode conter caracateres como '<=' ou '>='
+        """
+        # Validar a entrada de dados
+        if not isinstance(field, (str, unicode)):
+            return field
+
+        # Menor igual
+        field = re.sub('<=', ' &lt;= ', field)
+        # Menor
+        field = re.sub('<[^/ford!?]', ' &lt; ', field)
+        # Maior Igual
+        field = re.sub('>=', ' &gt;= ', field)
+        # Maior
+        field = re.sub('[^pad?"\-/] >', ' &gt; ', field)
+
+        return field
+
+    @api.multi
     def get_external_id(self, object, name):
         """
         Retorna a referencia externa se existir senao retorna o nome
@@ -77,78 +132,86 @@ class HrBackup(models.Model):
         backup_xml.close()
 
     @api.multi
-    def gerar_backup_regras_criadas(self):
+    def gerar_backup_regras_criadas(self, modelo):
         """
         Função que busca as regras que foram criadas somente pela interface,
         dispara uma função para registro na tabela ir_model_data e retorna um
         texto em xml para gerar o backup das regras
-        # <record(.|\s)*?record>
         """
-        hr_salary_rule_obj = self.env['hr.salary.rule']
+        model_obj = self.env[modelo]
         ir_model_data_obj = self.env['ir.model.data']
 
         # Buscar todas as regras que foram geradas apartir do XML
         res_id =  ir_model_data_obj.search([
-            ('model', '=', 'hr.salary.rule'),
+            ('model', '=', modelo),
         ]).mapped('res_id')
 
         # Identificar regras geradas pela interface
-        regras_sem_xml = hr_salary_rule_obj.search([
+        regras_sem_xml = model_obj.search([
             ('id', 'not in', res_id),
         ])
 
         # variavel que contem as regras em xml
-        regras_xml = u''
+        models_xml = u''
 
-        for regra_sem_xml in regras_sem_xml:
+        for model_sem_xml in regras_sem_xml:
             # Se nao achar um id externo cria na tabela ir_model_data
-            if not self.get_external_id(regra_sem_xml, False):
-                name = 'hr_salary_rule_' + regra_sem_xml.code
-                self.registrar_modelo_ir_model_data(regra_sem_xml, name)
-                regras_xml += regra_sem_xml.generate_xml
+            if not self.get_external_id(model_sem_xml, False):
 
-        return regras_xml.encode('utf-8'), len(regras_sem_xml)
+                name = modelo.replace('.', '_') + \
+                       model_sem_xml.code \
+                    if model_sem_xml.code \
+                    else str(model_sem_xml.id)
+                # self.registrar_modelo_ir_model_data(regra_sem_xml, name)
+                models_xml += model_sem_xml.generate_xml
+
+        return models_xml.encode('utf-8'), len(regras_sem_xml)
 
     @api.multi
-    def gerar_backup_regras_editadas(self):
+    def gerar_backup_regras_editadas(self, modelo):
         """
         Função que gera um texto no formato xml para realizar o backup
         """
-        hr_salary_rule_obj = self.env['hr.salary.rule']
+        model_obj = self.env[modelo]
+        models = model_obj.search([])
 
-        regras = hr_salary_rule_obj.search([])
-
-        regras_xml = u''
-        regras_qty = 0
-        for regra in regras:
-            if regra.create_date != regra.write_date:
-                if not regra.last_backup or \
-                                regra.write_date > regra.last_backup:
-                    regras_xml += regra.generate_xml
-                    regras_qty += 1
-                    regra.last_backup = fields.datetime.now()
-        return regras_xml.encode('utf-8'), regras_qty
+        models_xml = u''
+        models_qty = 0
+        for model in models:
+            if model.create_date != model.write_date:
+                if not model.last_backup or \
+                                model.write_date > model.last_backup:
+                    models_xml += model.generate_xml
+                    models_qty += 1
+                    model.last_backup = fields.datetime.now()
+        return models_xml.encode('utf-8'), models_qty
 
     @api.multi
     def gerar_backup(self):
         """
-        Rotina chamada pela interface que faz backup das regras de salario
+        Rotina chamada pela interface para fazer backup dos modelos listados
         """
-        # Gerar xml com todas as regras criadas via interface
-        xml_regras_criadas, qty_regras_criadas = \
-            self.gerar_backup_regras_criadas()
+        models = ['hr.salary.rule', 'hr.payroll.structure']
 
-        # Gerar xml com todas as regras editadas via interface
-        xml_regras_editadas, qty_regras_editadas = \
-            self.gerar_backup_regras_editadas()
+        for model in models:
+            # Gerar xml com todas as regras criadas via interface
+            xml_regras_criadas, qty_regras_criadas = \
+                self.gerar_backup_regras_criadas(model)
 
-        # Ajustar estrutura do xml
-        xml_regras = '\n\t\t<!-- Regras Criadas: %d --> \n\n' % \
-                     qty_regras_criadas
-        xml_regras += xml_regras_criadas
-        xml_regras += '\n\t\t<!-- Regras Editadas: %d --> \n\n' % \
-                      qty_regras_editadas
-        xml_regras += xml_regras_editadas
+            # Gerar xml com todas as regras editadas via interface
+            xml_regras_editadas, qty_regras_editadas = \
+                self.gerar_backup_regras_editadas(model)
 
-        # Escreve no arquivo XML do modulo
-        self.escrever_arquivo_backup('hr_salary_rule', xml_regras)
+            # Ajustar estrutura do xml
+            xml_regras = '\n\t\t<!-- Regras Criadas: %d --> \n\n' % \
+                         qty_regras_criadas
+
+            xml_regras += xml_regras_criadas
+
+            xml_regras += '\n\t\t<!-- Regras Editadas: %d --> \n\n' % \
+                          qty_regras_editadas
+
+            xml_regras += xml_regras_editadas
+
+            # Escreve no arquivo XML do modulo
+            self.escrever_arquivo_backup(model.replace('.','_'), xml_regras)
