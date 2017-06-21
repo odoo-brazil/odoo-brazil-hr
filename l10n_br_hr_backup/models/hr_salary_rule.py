@@ -72,7 +72,7 @@ class HrSalaryRule(models.Model):
             record += backup.get_text_field(regra.custom_quantity, 'custom_quantity')
             record += backup.get_text_field(regra.tipo_media, 'tipo_media')
 
-            record += backup.get_many_to_one_field(regra.parent_rule_id, 'parent_rule_id')
+            record += backup.get_many_to_one_field(regra.parent_rule_id, 'parent_rule_id', criar_model_data=True)
             record += backup.get_many_to_one_field(regra.company_id, 'company_id')
             record += backup.get_many_to_one_field(regra.register_id, 'register_id')
 

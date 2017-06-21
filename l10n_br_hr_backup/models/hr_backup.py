@@ -15,15 +15,30 @@ class HrBackup(models.Model):
     _name = 'hr.backup'
 
     @api.multi
-    def get_many_to_one_field(self, field_val, field_name):
+    def get_many_to_one_field(self, field_val, field_name,
+                              criar_model_data=False):
         """
         """
         # if isinstance(field_val, )
-        field_val = ''
-        if field_val and field_val._get_external_ids().get(field_val.id):
-            field_val = field_val._get_external_ids().get(field_val.id)[0]
+
+        if field_val:
+            if field_val._get_external_ids().get(field_val.id):
+                field_val = field_val._get_external_ids().get(field_val.id)[0]
+
+            elif criar_model_data:
+                # self.registrar_modelo_ir_model_data(field_val)
+                _logger.info('Criado ir_model_data do Objeto relacional %s '
+                             'do modelo %s - %s' %
+                             (field_name, field_val._name, field_val.name))
+
+            else:
+                _logger.info(
+                    "Informacao do campo %s no modelo %s nao foi salva."
+                    "Campo relacional %s nao possui XML." %
+                    (field_name, field_val._name, field_val.name))
+
         linha = "\t\t\t<field name=\"%s\" ref=\"%s\"/>\n" % \
-                (field_name, field_val)
+                (field_name, field_val or '')
         return linha
 
     @api.multi
@@ -191,7 +206,11 @@ class HrBackup(models.Model):
         """
         Rotina chamada pela interface para fazer backup dos modelos listados
         """
-        models = ['hr.salary.rule', 'hr.payroll.structure']
+        models = [
+            # 'hr.salary.rule.category',
+            'hr.salary.rule',
+            'hr.payroll.structure',
+        ]
 
         for model in models:
             # Gerar xml com todas as regras criadas via interface

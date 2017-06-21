@@ -33,9 +33,10 @@ class HrPayrollStructure(models.Model):
             record += backup.get_text_field(regra.note, 'note')
             record += backup.get_many_to_many(regra.rule_ids, 'rule_ids')
             record += backup.get_text_field(regra.tipo_saque, 'tipo_saque')
-            record += backup.get_many_to_one_field(regra.ferias, 'ferias')
             record += backup.get_many_to_one_field(
-                regra.parent_id, 'parent_id')
+                regra.ferias, 'ferias', criar_model_data=True)
+            record += backup.get_many_to_one_field(
+                regra.parent_id, 'parent_id', criar_model_data=True)
             record += backup.get_many_to_many(
                 regra.children_ids, 'children_ids')
             record += backup.get_many_to_one_field(
