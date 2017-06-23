@@ -5,3 +5,4 @@
 from . import hr_backup
 from . import hr_payroll_structure
 from . import hr_salary_rule
+from . import hr_salary_rule_category
