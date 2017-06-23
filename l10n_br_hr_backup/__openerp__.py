@@ -18,6 +18,7 @@
         'views/hr_backup.xml',
         'views/hr_payroll_structure.xml',
         'views/hr_salary_rule.xml',
+        'security/ir.model.access.csv',
     ],
     'installable': True,
 }
