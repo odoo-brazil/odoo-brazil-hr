@@ -202,6 +202,29 @@ class HrBackup(models.Model):
         return models_xml.encode('utf-8'), models_qty
 
     @api.multi
+    def atualizar_modelos_ja_exportados(self, model):
+        """
+        Os modelos exportadas anteriormente, ja possuem registro no
+        ir_model_data, mas o registro aponta para um modulo inválido (export)
+        A função readequara esses registros apontando para o modulo de backup
+        :return:
+        """
+        model_obj = self.env[model]
+        ir_model_data_obj = self.env['ir.model.data']
+
+        modelos_ja_exportados =  ir_model_data_obj.search([
+            ('model', '=', model),
+            ('module', '=', '__export__'),
+        ])
+
+        for modelo_ja_exportado in modelos_ja_exportados:
+            modelo_id = model_obj.browse(modelo_ja_exportado.res_id)
+            name = model.replace('.', '_') + '_' + modelo_id.code \
+                if modelo_id.code else str(modelo_id.id)
+            modelo_ja_exportado.module = 'l10n_br_hr_backup'
+            modelo_ja_exportado.name = name
+            modelo_id.write_date = fields.datetime.now()
+
     def gerar_backup(self):
         """
         Rotina chamada pela interface para fazer backup dos modelos listados
