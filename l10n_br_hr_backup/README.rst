@@ -24,7 +24,29 @@ Configuration
 Usage
 =====
 
-This module provides Vacation planning by the employee, from the holidays approved
+Este módulo faz backup de tres modelos:
+
+- hr.salary.rule
+- hr.payroll.structure
+- hr.salary.rule.category
+
+Após instalado o modulo, navegar até o menu de backup em:
+
+ Recursos Humanos > Configurações > HR Backup
+
+Em seguida Confirmar o backup.
+
+
+A rotina de backup consiste em varrer o sistema, identificar todas as regras de salarios,
+ estruturas de salario e categorias de salarios que foram criadas ou editadas via interface
+ e escrever em arquivos XML que estão pre-estabelecidos na pasta data do próprio modelo.
+
+
+Estrutura de arquivos:
+
+.. image:: /l10n_br_hr_backup/static/description/tree_files.png
+
+
 
 For further information, please visit:
 
