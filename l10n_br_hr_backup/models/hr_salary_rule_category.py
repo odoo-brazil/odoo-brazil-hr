@@ -4,20 +4,7 @@
 
 from __future__ import unicode_literals, division, print_function
 
-import logging
-import re
-
-from openerp import api
-from openerp import fields, models
-
-_logger = logging.getLogger(__name__)
-
-try:
-    from pybrasil.python_pt_BR import python_pt_BR
-    from pybrasil.valor.decimal import Decimal
-
-except ImportError:
-    _logger.info('Cannot import pybrasil')
+from openerp import api, fields, models
 
 
 class HrSalaryRuleCategory(models.Model):
@@ -40,7 +27,8 @@ class HrSalaryRuleCategory(models.Model):
                 categoria, 'hr_salary_rule_category_%s' % categoria.code)
 
             record = \
-                "\t\t<record id=\"%s\" model=\"hr.salary.rule.category\"> \n" % id
+                "\t\t<record id=\"%s\" " \
+                "model=\"hr.salary.rule.category\"> \n" % id
             record += backup.get_text_field(categoria.name, 'name')
             record += backup.get_text_field(categoria.code, 'code')
             record += backup.get_many_to_one_field(
@@ -50,7 +38,7 @@ class HrSalaryRuleCategory(models.Model):
                 categoria.parent_id, 'parent_id', criar_model_data=True)
             record += "\t\t</record>\n\n"
             categoria.generate_xml = record
-        
+
     generate_xml = fields.Text(
         string='XML da rubrica gerado automaticamente',
         compute='_compute_xml_rubrica',

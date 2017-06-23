@@ -4,20 +4,7 @@
 
 from __future__ import unicode_literals, division, print_function
 
-import logging
-import re
-
-from openerp import api
-from openerp import fields, models
-
-_logger = logging.getLogger(__name__)
-
-try:
-    from pybrasil.python_pt_BR import python_pt_BR
-    from pybrasil.valor.decimal import Decimal
-
-except ImportError:
-    _logger.info('Cannot import pybrasil')
+from openerp import api, fields, models
 
 
 class HrSalaryRule(models.Model):
@@ -46,40 +33,72 @@ class HrSalaryRule(models.Model):
             record += backup.get_text_field(regra.name, 'name')
             record += backup.get_text_field(regra.active, 'active')
             record += backup.get_text_field(regra.sequence, 'sequence')
-            record += backup.get_many_to_one_field(regra.category_id, 'category_id')
-            record += backup.get_text_field(regra.condition_select, 'condition_select')
-            record += backup.get_text_field(backup.formata_caracteres_xml(regra.condition_python),'condition_python')
-            record += backup.get_text_field(backup.formata_caracteres_xml(regra.amount_python_compute),'amount_python_compute')
-            record += backup.get_text_field(backup.formata_caracteres_xml(regra.custom_amount_python_compute),'custom_amount_python_compute')
-            record += backup.get_text_field(regra.amount_select, 'amount_select')
-            record += backup.get_text_field(regra.custom_amount_select, 'custom_amount_select')
-            record += backup.get_text_field(regra.compoe_base_INSS, 'compoe_base_INSS')
-            record += backup.get_text_field(regra.compoe_base_IR, 'compoe_base_IR')
-            record += backup.get_text_field(regra.compoe_base_FGTS, 'compoe_base_FGTS')
-            record += backup.get_text_field(regra.amount_fix, 'amount_fix')
-            record += backup.get_text_field(regra.custom_amount_fix, 'custom_amount_fix')
-            record += backup.get_text_field(regra.amount_percentage, 'amount_percentage')
-            record += backup.get_text_field(regra.amount_percentage_base, 'amount_percentage_base')
-            record += backup.get_text_field(regra.custom_amount_percentage_base, 'custom_amount_percentage_base')
-            record += backup.get_text_field(regra.custom_amount_percentage, 'custom_amount_percentage')
-            record += backup.get_text_field(regra.appears_on_payslip, 'appears_on_payslip')
-            record += backup.get_text_field(regra.condition_range, 'condition_range')
-            record += backup.get_text_field(regra.condition_range_min, 'condition_range_min')
-            record += backup.get_text_field(regra.condition_range_max, 'condition_range_max')
+
+            record += backup.get_many_to_one_field(
+                regra.category_id, 'category_id')
+            record += backup.get_text_field(
+                regra.condition_select, 'condition_select')
+
+            condition = backup.formata_caracteres_xml(regra.condition_python)
+            record += backup.get_text_field(condition, 'condition_python')
+            amount = backup.formata_caracteres_xml(regra.amount_python_compute)
+            record += backup.get_text_field(amount, 'amount_python_compute')
+
+            custom_amount = backup.formata_caracteres_xml(
+                regra.custom_amount_python_compute)
+            record += backup.get_text_field(
+                custom_amount, 'custom_amount_python_compute')
+
+            record += backup.get_text_field(
+                regra.amount_select, 'amount_select')
+            record += backup.get_text_field(
+                regra.custom_amount_select, 'custom_amount_select')
+            record += backup.get_text_field(
+                regra.compoe_base_INSS, 'compoe_base_INSS')
+            record += backup.get_text_field(
+                regra.compoe_base_IR, 'compoe_base_IR')
+            record += backup.get_text_field(
+                regra.compoe_base_FGTS, 'compoe_base_FGTS')
+            record += backup.get_text_field(
+                regra.amount_fix, 'amount_fix')
+            record += backup.get_text_field(
+                regra.custom_amount_fix, 'custom_amount_fix')
+            record += backup.get_text_field(
+                regra.amount_percentage, 'amount_percentage')
+            record += backup.get_text_field(
+                regra.amount_percentage_base, 'amount_percentage_base')
+            record += backup.get_text_field(
+                regra.custom_amount_percentage_base,
+                'custom_amount_percentage_base')
+            record += backup.get_text_field(
+                regra.custom_amount_percentage, 'custom_amount_percentage')
+            record += backup.get_text_field(
+                regra.appears_on_payslip, 'appears_on_payslip')
+            record += backup.get_text_field(
+                regra.condition_range, 'condition_range')
+            record += backup.get_text_field(
+                regra.condition_range_min, 'condition_range_min')
+            record += backup.get_text_field(
+                regra.condition_range_max, 'condition_range_max')
             record += backup.get_text_field(regra.note, 'note')
-            record += backup.get_text_field(regra.calculo_nao_padrao, 'calculo_nao_padrao')
+            record += backup.get_text_field(
+                regra.calculo_nao_padrao, 'calculo_nao_padrao')
             record += backup.get_text_field(regra.quantity, 'quantity')
-            record += backup.get_text_field(regra.custom_quantity, 'custom_quantity')
+            record += backup.get_text_field(
+                regra.custom_quantity, 'custom_quantity')
             record += backup.get_text_field(regra.tipo_media, 'tipo_media')
 
-            record += backup.get_many_to_one_field(regra.parent_rule_id, 'parent_rule_id', criar_model_data=True)
-            record += backup.get_many_to_one_field(regra.company_id, 'company_id')
-            record += backup.get_many_to_one_field(regra.register_id, 'register_id')
+            record += backup.get_many_to_one_field(
+                regra.parent_rule_id, 'parent_rule_id', criar_model_data=True)
+            record += backup.get_many_to_one_field(
+                regra.company_id, 'company_id')
+            record += backup.get_many_to_one_field(
+                regra.register_id, 'register_id')
 
             record += "\t\t</record>\n\n"
 
             regra.generate_xml = record
-        
+
     generate_xml = fields.Text(
         string='XML da rubrica gerado automaticamente',
         compute='_compute_xml_rubrica',
