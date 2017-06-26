@@ -116,7 +116,7 @@ class HrBackup(models.Model):
 
         vals = {
             'name': name,
-            'module': 'l10n_br_hr_backup',
+            'module': 'l10n_br_hr_payroll',
             'model': objeto._model,
             'res_id': objeto.id,
         }
@@ -221,7 +221,7 @@ class HrBackup(models.Model):
             modelo_id = model_obj.browse(modelo_ja_exportado.res_id)
             name = model.replace('.', '_') + '_' + modelo_id.code \
                 if modelo_id.code else str(modelo_id.id)
-            modelo_ja_exportado.module = 'l10n_br_hr_backup'
+            modelo_ja_exportado.module = 'l10n_br_hr_payroll'
             modelo_ja_exportado.name = name
             modelo_id.write_date = fields.datetime.now()
 
@@ -232,9 +232,9 @@ class HrBackup(models.Model):
          editados e criados via interface
         """
         models = [
+            'hr.salary.rule.category',
             'hr.salary.rule',
             'hr.payroll.structure',
-            'hr.salary.rule.category',
         ]
 
         for model in models:
