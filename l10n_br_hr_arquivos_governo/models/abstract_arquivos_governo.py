@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-# (c) 2014 Kmee - Luis Felipe Mileo <mileo@kmee.com.br>
+# (c) 2017 KMEE- Hendrix Costa <hendrix.costa@kmee.com.br>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 import logging
 import re
 
-
 _logger = logging.getLogger(__name__)
 
 try:
     from pybrasil.base import tira_acentos
+    from pybrasil import data
 except ImportError:
     _logger.info('Cannot import pybrasil')
 
@@ -33,10 +33,15 @@ class AbstractArquivosGoverno(object):
         """
         Função Genérica utilizada para validação de campos que são gerados
         nos arquivos TXT's
-        :param word:
-        :param tam:
-        :param tipo:
-        :return:
+        :param tipo: str - Tipo de palavras validadas:
+            -   A -> Alfabéticas -> Apenas letras do alfabeto
+            -   D -> Data -> Apenas numeral
+            -   V -> Valor -> Valores decimais, retirando a virgula
+            -   N -> Numerico -> Apenas numeros preechidos com zero a esq.
+            -   AN -> Alfanumericos -> Aceita nuemros e caracateres sem acentos
+        :param word: str - palavra a ser validada
+        :param tam: int - Tamanho que a palavra deve ser
+        :return: str - Palavra formatada de acordo com tipo e tamanho
         """
         if not word:
             word = u''
@@ -51,8 +56,9 @@ class AbstractArquivosGoverno(object):
 
         elif tipo == 'D':       # Data
             # Retira tudo que nao for numeral
-            data = re.sub(u'[^0-9]', '', str(word))
-            return unicode.ljust(unicode(data), tam)[:tam]
+            word = data.formata_data(word)
+            word = re.sub(u'[^0-9]', '', str(word))
+            return unicode.ljust(unicode(word), tam)[:tam]
 
         elif tipo == 'V':       # Valor
             # Pega a parte decimal como inteiro e nas duas ultimas casas
