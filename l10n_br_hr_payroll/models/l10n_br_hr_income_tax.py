@@ -10,7 +10,7 @@ from openerp.exceptions import Warning as UserError
 _logger = logging.getLogger(__name__)
 
 try:
-    from pybrasil.valor.decimal import Decimal, ROUND_HALP_UP
+    from pybrasil.valor.decimal import Decimal
 
 except ImportError:
     _logger.info('Cannot import pybrasil')
@@ -51,7 +51,9 @@ class L10nBrHrIncomeTax(models.Model):
             for faixa in tabela_vigente:
                 if BASE_IRRF > faixa.max_wage:
                     irrf = \
-                        Decimal(BASE_IRRF or 0) * (Decimal(faixa.rate)/100.00) - Decimal(faixa.deductable)
+                        Decimal(BASE_IRRF or 0) * (
+                            Decimal(faixa.rate)/100.00
+                        ) - Decimal(faixa.deductable)
                     irrf = irrf.quantize(Decimal('0.01'))
                     return irrf
         else:
