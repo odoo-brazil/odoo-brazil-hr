@@ -2,6 +2,8 @@
 # Copyright 2017 KMEE - Hendrix Costa <hendrix.costa@kmee.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+import datetime
+
 from openerp import fields
 from openerp.tests import common
 
@@ -86,6 +88,7 @@ class TestHrPayslip(common.TransactionCase):
                 'dependent_dob': '2000-01-01',
                 'dependent_type_id': tipo_dependente.id,
                 'employee_id': funcionario.id,
+                'dependent_verification': True,
             })
             quantidade -= 1
 
@@ -108,7 +111,8 @@ class TestHrPayslip(common.TransactionCase):
         return contrato_id
 
     def criar_rubricas_especificas(self, rubrica, date_start, specific_qty,
-                                   specific_amount, contract_id):
+                                   specific_amount, contract_id,
+                                   date_stop=datetime.date.today()):
         if rubrica == 'rubrica_saude':
             rule_id = self.env.ref(
                 'l10n_br_hr_payroll.hr_salary_rule_REMBOLSO_PLANO_SAUDE')
@@ -133,6 +137,7 @@ class TestHrPayslip(common.TransactionCase):
             'specific_quantity': specific_qty,
             'specific_amount': specific_amount,
             'contract_id': contract_id.id,
+            'date_stop': date_stop,
         })
         return rubrica_especifica
 
@@ -286,58 +291,68 @@ class TestHrPayslip(common.TransactionCase):
             if rubrica.total:
                 # Proventos
                 if rubrica.code == 'SALARIO':
-                    self.assertEqual(round(rubrica.total, 2), 7743.73)
+                    self.assertEqual(rubrica.total, 7743.73)
                 if rubrica.code == 'REMBOLSO_SAUDE':
-                    self.assertEqual(round(rubrica.total, 2), 400.00)
+                    self.assertEqual(rubrica.total, 400.00)
                 if rubrica.code == 'REMBOLSO_AUXILIO_CRECHE':
-                    self.assertEqual(round(rubrica.total, 2), 395.55)
+                    self.assertEqual(rubrica.total, 395.55)
                 if rubrica.code == 'FERIAS':
-                    self.assertEqual(round(rubrica.total, 2), 3871.87)
+                    self.assertEqual(rubrica.total, 3871.87)
                 if rubrica.code == '1/3_FERIAS':
-                    self.assertEqual(round(rubrica.total, 2), 1290.62)
+                    self.assertEqual(rubrica.total, 1290.62)
                 if rubrica.code == 'ABONO_PECUNIARIO':
-                    self.assertEqual(round(rubrica.total, 2), 3871.87)
+                    self.assertEqual(rubrica.total, 3871.87)
                 if rubrica.code == '1/3_ABONO_PECUNIARIO':
-                    self.assertEqual(round(rubrica.total, 2), 1290.62)
+                    self.assertEqual(rubrica.total, 1290.62)
 
                 # Deduções
                 if rubrica.code == 'CONTRIBUICAO_SINDICAL':
-                    self.assertEqual(round(rubrica.total, 2), 387.19)
+                    self.assertEqual(rubrica.total, 387.19)
                 if rubrica.code == 'VA/VR':
-                    self.assertEqual(round(rubrica.total, 2), 7.72)
+                    self.assertEqual(rubrica.total, 7.72)
                 if rubrica.code == 'DESCONTO_LIGACOES_TELEFONICAS':
-                    self.assertEqual(round(rubrica.total, 2), 40.53)
+                    self.assertEqual(rubrica.total, 40.53)
                 # Adiantamento do 13 Salario esta sendo cobrado junto ?
                 # if rubrica.code == 'PAGAMENTO_FERIAS':
-                #     self.assertEqual(round(rubrica.total, 2), 15295.22)
+                #     self.assertEqual(rubrica.total, 15295.22)
 
                 # INSS Mensal
                 if rubrica.code == 'INSS':  # INSS Mensal - Teto
-                    self.assertEqual(round(rubrica.total, 2), 608.44)
+                    self.assertEqual(rubrica.total, 40.57)
                 # INSS FERIAS
                 if rubrica.code == 'INSS_FERIAS' and rubrica.valor_deducao:
-                    self.assertEqual(round(rubrica.total, 2), 567.87)
-                # INSS Ajuste FERIAS
-                if rubrica.code == 'INSS_FERIAS' and rubrica.valor_provento:
-                    self.assertEqual(round(rubrica.total, 2), 567.87)
+                    self.assertEqual(rubrica.total, 567.87)
 
                 # IRRF
                 if rubrica.code == 'IRPF':
-                    self.assertEqual(round(rubrica.total, 2), 1092.60)
+                    self.assertEqual(rubrica.total, 1092.60)
                 # IRRF FERIAS
                 if rubrica.code == 'IRPF_FERIAS':
-                    self.assertEqual(round(rubrica.total, 2), 269.69)
+                    self.assertEqual(rubrica.total, 269.69)
 
                 # Referências de cálculos
                 if rubrica.code == 'BASE_INSS_FERIAS':  # BASE_INSS FERIAS
                     # BASE_INSS_FERIAS = FERIAS + 1/3_FERIAS
-                    BASE_INSS_FERIAS = round(3871.87 + 1290.62, 2)
-                    self.assertEqual(round(rubrica.total, 2), BASE_INSS_FERIAS)
+                    BASE_INSS_FERIAS = 3871.87 + 1290.62
+                    self.assertEqual(rubrica.total, BASE_INSS_FERIAS)
                 if rubrica.code == 'BASE_IRPF_FERIAS':  # BASE_IRRF FERIAS
                     # BASE_IRRF_FERIAS = BASE_INSS_FERIAS -INSSFerias - Depend.
-                    BASE_IRRF_FERIAS = \
-                        round(BASE_INSS_FERIAS - 567.87 - 568.77, 2)
-                    self.assertEqual(round(rubrica.total, 2), BASE_IRRF_FERIAS)
+                    BASE_IRRF_FERIAS = BASE_INSS_FERIAS - 567.87 - 568.77
+                    self.assertEqual(rubrica.total, BASE_IRRF_FERIAS)
+
+                if rubrica.code == 'BASE_INSS':  # BASE_INSS
+                    # BASE_INSS = SALARIO
+                    BASE_INSS = 7743.73
+                    self.assertEqual(rubrica.total, BASE_INSS)
+                if rubrica.code == 'BASE_IRPF':   # BASE_IRRF
+                    # BASE_IRRF = (Salario - INSS MENSAL- Dependen
+                    BASE_IRRF = round(7743.73 - 40.57 - 568.77, 2)
+                    self.assertEqual(rubrica.total, BASE_IRRF)
+
+        # Valor Liquido do holerite
+        # holerite_normal = 6970.670000000007
+        # self.assertEqual(holerite_normal.total_folha, 6970.68)
+
 
                 if rubrica.code == 'BASE_INSS':  # BASE_INSS
                     # BASE_INSS = SALARIO + FERIAS + 1/3 - INSS_FERIAS_ja_pago
