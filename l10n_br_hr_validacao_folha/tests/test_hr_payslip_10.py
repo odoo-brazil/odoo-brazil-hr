@@ -519,30 +519,28 @@ class TestHrPayslip(common.TransactionCase):
         data_admissao = '2014-04-07'
         estrutura_salario = self.env.ref(
             'l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA')
-    
+
         # Criar Contrato
         contrato = self.criar_contrato(
             'Contrato da REILA', employee_id, 14413.96,
             estrutura_salario, data_admissao)
-    
+
         # Criar Rubricas especificas do contrato
         self.criar_rubricas_especificas(
             'rubrica_saude', data_admissao, 1, 288.67, contrato)
         self.criar_rubricas_especificas(
             'rubrica_VA', data_admissao, 1, 6.04, contrato)
-    
+
         # Gerar holerite normal ja puxando informações das ferias
         holerite_normal = self.gerar_holerite_normal(contrato, 10, 2016)
-    
+
         for rubrica in holerite_normal.line_ids:
             if rubrica.total:
-    
                 # Proventos
                 if rubrica.code == 'SALARIO':
                     self.assertEqual(rubrica.total, 14413.96)
                 if rubrica.code == 'REMBOLSO_SAUDE':
                     self.assertEqual(rubrica.total, 288.67)
-    
                 # Deduções
                 if rubrica.code == 'VA/VR':
                     self.assertEqual(rubrica.total, 6.04)
@@ -550,7 +548,7 @@ class TestHrPayslip(common.TransactionCase):
                     self.assertEqual(rubrica.total, 570.88)
                 if rubrica.code == 'IRPF':  # IRRF
                     self.assertEqual(rubrica.total, 2937.49)
-    
+
                 # Referências de cálculos
                 if rubrica.code == 'BASE_INSS':  # BASE_INSS
                     # BASE_INSS = SALARIO
