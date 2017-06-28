@@ -353,16 +353,74 @@ class TestHrPayslip(common.TransactionCase):
         # holerite_normal = 6970.670000000007
         # self.assertEqual(holerite_normal.total_folha, 6970.68)
 
+    def test_02_linda(self):
+        """
+        Funcionario: Linda
+        Salario Base: 7.866,22
+        Data Admissao: 2014-09-08'
+        Rubricas Especificas:
+            - Reembolso Plano de Saude - 309.77
+            - VA/VR                    - 6.60
+            - Creche                   - 395.55
+            - Contibuição Sindical     - 262.21
+        Dependentes: 1
+        Holerite total: R$ 6.618,78
+        """
+        employee_id = self.criar_funcionario('LINDA', 1)
+        data_admissao = '2014-09-08'
+        estrutura_salario = self.env.ref(
+            'l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA')
 
+        # Criar Contrato
+        contrato = self.criar_contrato(
+            'Contrato da LINDA', employee_id, 7866.22,
+            estrutura_salario, data_admissao)
+
+        # Criar Rubricas especificas do contrato
+        self.criar_rubricas_especificas(
+            'rubrica_saude', data_admissao, 1, 309.77, contrato)
+        self.criar_rubricas_especificas(
+            'rubrica_creche', data_admissao, 1, 395.55, contrato)
+        self.criar_rubricas_especificas(
+            'rubrica_VA', '2017-04-01', 1, 6.60, contrato)
+        self.criar_rubricas_especificas(
+            'rubrica_VA', '2017-03-01', 1, 7.72, contrato,
+            date_stop='2017-03-31')
+
+        # Gerar holerite normal ja puxando informações das ferias
+        holerite_normal = self.gerar_holerite_normal(contrato, 3, 2017)
+
+        for rubrica in holerite_normal.line_ids:
+
+            if rubrica.total:
+
+                # Proventos
+                if rubrica.code == 'SALARIO':
+                    self.assertEqual(rubrica.total, 7866.22)
+                if rubrica.code == 'REMBOLSO_SAUDE':
+                    self.assertEqual(rubrica.total, 309.77)
+                if rubrica.code == 'REMBOLSO_AUXILIO_CRECHE':
+                    self.assertEqual(rubrica.total, 395.55)
+
+                # Deduções
+                if rubrica.code == 'VA/VR':
+                    self.assertEqual(rubrica.total, 7.72)
+                if rubrica.code == 'CONTRIBUICAO_SINDICAL':
+                    self.assertEqual(rubrica.total, 262.21)
+                if rubrica.code == 'INSS':  # INSS
+                    self.assertEqual(rubrica.total, 608.44)
+                if rubrica.code == 'IRPF':  # IRRF
+                    self.assertEqual(rubrica.total, 1074.39)
+
+                # Referências de cálculos
                 if rubrica.code == 'BASE_INSS':  # BASE_INSS
-                    # BASE_INSS = SALARIO + FERIAS + 1/3 - INSS_FERIAS_ja_pago
-                    BASE_INSS = round(3871.87 + 1290.62 + 7743.73 - 567.87, 2)
-                    self.assertEqual(round(rubrica.total, 2), BASE_INSS)
+                    # BASE_INSS = SALARIO
+                    BASE_INSS = 7866.22
+                    self.assertEqual(rubrica.total, BASE_INSS)
                 if rubrica.code == 'BASE_IRPF':   # BASE_IRRF
-                    # Diferença de INSS = INSS_FERIAS_ja_pago - INSS_MENSAL
-                    # BASE_IRRF = (Salario - Diferença de INSS - Dependen
-                    BASE_IRRF = round(7743.73 + 567.87 - 608.44 - 568.77, 2)
-                    self.assertEqual(round(rubrica.total, 2), BASE_IRRF)
+                    # BASE_IRRF = BASE_INSS - INSS - Dependen
+                    BASE_IRRF = round(BASE_INSS - 608.44 - 189.59, 2)
+                    self.assertEqual(rubrica.total, BASE_IRRF)
 
         # Valor Liquido do holerite
-        self.assertEqual(round(holerite_normal.total_folha, 2), 6970.68)
+        # self.assertEqual(holerite_normal.total_folha, 6618.78)
