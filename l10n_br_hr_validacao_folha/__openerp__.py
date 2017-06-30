@@ -15,6 +15,7 @@
         'l10n_br_hr_contract',
         'l10n_br_hr_payroll',
         'l10n_br_hr_gerador_holerite',
+        'l10n_br_hr_arquivos_governo',
     ],
     'data': [
     ],

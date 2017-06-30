@@ -10,6 +10,7 @@
     date_start: '2014-01-02'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 10936.46
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato Do JENNIFER
 -
@@ -43,6 +44,7 @@
     date_start: '2014-10-01'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 14413.96
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da CAROLINA
 -
@@ -69,6 +71,7 @@
     date_start: '2013-10-15'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 29483.08
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da BELA
 -
@@ -95,6 +98,7 @@
     date_start: '2014-10-01'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 10936.46
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da PAULA
 -
@@ -121,6 +125,7 @@
     date_start: '2014-03-24'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 14413.96
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da RHEILA
 -
@@ -147,6 +152,7 @@
     date_start: '2014-09-08'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 7372.28
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da RHEILA
 -
@@ -181,6 +187,7 @@
     date_start: '2014-01-06'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 14413.96
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da MALU
 -
@@ -215,6 +222,7 @@
     date_start: '2013-11-01'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 10936.46
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da INGRID
 -
@@ -235,6 +243,7 @@
     date_start: '2013-11-01'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 10936.46
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da TINA
 -
@@ -263,6 +272,7 @@
     date_start: '2014-09-08'
     struct_id: l10n_br_hr_payroll.hr_salary_structure_FUNCAO_COMISSIONADA
     wage: 7866.22
+    categoria: '101'
 -
     Criar Rubricas Especificas do Contrato da Linda
 -
