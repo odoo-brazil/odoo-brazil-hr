@@ -1724,7 +1724,6 @@ class HrPayslip(models.Model):
                 raise exceptions.Warning(_(
                     "Não existem holerites aprovados para este contrato!"
                 ))
-        self.atualizar_worked_days_inputs()
         if self.tipo_de_folha in [
             "decimo_terceiro", "ferias", "aviso_previo",
             "provisao_ferias", "provisao_decimo_terceiro"
@@ -1792,6 +1791,7 @@ class HrPayslip(models.Model):
                     else:
                         self.periodo_aquisitivo.inicio_gozo = self.date_from
                         self.periodo_aquisitivo.fim_gozo = self.date_to
+        self.atualizar_worked_days_inputs()
         super(HrPayslip, self).compute_sheet()
         self._compute_valor_total_folha()
         return True
