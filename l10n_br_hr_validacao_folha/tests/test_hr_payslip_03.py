@@ -182,7 +182,7 @@ class TestHrPayslip(common.TransactionCase):
         ferias.holidays_validate()
 
         # Gerar holerites do peŕiodo Aquisitivo
-        self.gerar_12_holerites(contrato, 1, 2015)
+        self.gerar_12_holerites(contrato, 1, 2016)
 
         estrutura_ferias = \
             self.env.ref('l10n_br_hr_payroll.hr_salary_structure_FERIAS')
@@ -190,6 +190,8 @@ class TestHrPayslip(common.TransactionCase):
         # Criar Holerite de Férias
         holerite_ferias = self.hr_payslip.create({
             'tipo_de_folha': 'ferias',
+            'periodo_aquisitivo':
+                holiday_periodo_aquisitivo.controle_ferias.id,
             'contract_id': contrato.id,
             'employee_id': contrato.employee_id.id,
             'struct_id': estrutura_ferias.id,
