@@ -31,46 +31,46 @@
                 <field name="arch" type="xml">
                 <xpath expr="/form/notebook/page[@string='Child Rules']" position="after">
                     <page string="Accounting">
-                        <separator string="Contas Provisão Férias"/>
-                        <group>
-                            <group>
-                                <field name="provisao_ferias_account_debit"/>
-                                <field name="provisao_ferias_account_credit"/>
-                            </group>
-                        </group>
-                        <separator string="Contas Provisão Décimo Terceiro"/>
-                        <group>
-                            <group>
-                                <field name="provisao_13_account_debit"/>
-                                <field name="provisao_13_account_credit"/>
-                            </group>
-                        </group>
-                        <separator string="Contas Holerite Normal"/>
+                        <separator string="Contas Contábeis para Cálculo de Folha Normal"/>
                         <group>
                             <group>
                                 <field name="holerite_normal_account_debit"/>
                                 <field name="holerite_normal_account_credit"/>
                             </group>
                         </group>
-                        <separator string="Contas Férias"/>
+                        <separator string="Contas Contábeis para Cálculo de Férias"/>
                         <group>
                             <group>
                                 <field name="ferias_account_debit"/>
                                 <field name="ferias_account_credit"/>
                             </group>
                         </group>
-                        <separator string="Contas Décimo 13º"/>
+                        <separator string="Contas Contábeis para Cálculo de 13º (Segunda Parcela)"/>
                         <group>
                             <group>
                                 <field name="decimo_13_account_debit"/>
                                 <field name="decimo_13_account_credit"/>
                             </group>
                         </group>
-                        <separator string="Contas Rescisão"/>
+                        <separator string="Contas Contábeis para Cálculo de Rescisão"/>
                         <group>
                             <group>
                                 <field name="rescisao_account_debit"/>
                                 <field name="rescisao_account_credit"/>
+                            </group>
+                        </group>
+                        <separator string="Contas Contábeis para Cálculo de Provisão de Férias"/>
+                        <group>
+                            <group>
+                                <field name="provisao_ferias_account_debit"/>
+                                <field name="provisao_ferias_account_credit"/>
+                            </group>
+                        </group>
+                        <separator string="Contas Contábeis para Cálculo de Provisão de 13º"/>
+                        <group>
+                            <group>
+                                <field name="provisao_13_account_debit"/>
+                                <field name="provisao_13_account_credit"/>
                             </group>
                         </group>
                     </page>
