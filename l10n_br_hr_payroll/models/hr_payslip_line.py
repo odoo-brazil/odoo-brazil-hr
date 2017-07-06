@@ -9,6 +9,8 @@ _logger = logging.getLogger(__name__)
 
 try:
     from pybrasil import valor
+    from pybrasil.valor.decimal import Decimal
+
 except ImportError:
     _logger.info('Cannot import pybrasil')
 
@@ -29,12 +31,46 @@ class HrPayslipeLine(models.Model):
         digits=(10, 2),
         compute='_compute_arredondamento'
     )
+    round_total_fmt = fields.Char(
+        string=u'Total',
+        default='',
+        compute='_compute_arredondamento'
+    )
+
+    sequence = fields.Float(
+        string=u'Sequence',
+    )
+    rate = fields.Float(
+        digits=(18, 11),
+    )
+    amount = fields.Float(
+        digits=(18, 11),
+    )
+    quantity = fields.Float(
+        digits=(18, 11),
+    )
+    total = fields.Float(
+        digits=(18, 2),
+        compute='_compute_total',
+        store=True,
+    )
+
+    @api.depends('rate', 'amount', 'quantity')
+    def _compute_total(self):
+        for linha in self:
+            total = Decimal(linha.amount or 0)
+            total *= Decimal(linha.quantity or 0)
+            total *= Decimal(linha.rate or 0)
+            total /= 100
+            total = total.quantize(Decimal('0.01'))
+            linha.total = total
 
     @api.depends('total')
     def _compute_arredondamento(self):
         for linha in self:
             linha.round_amount = linha.amount
             linha.round_total = linha.total
+            linha.round_total_fmt = valor.formata_valor(linha.round_total)
 
     @api.multi
     @api.depends('category_id', 'total', 'amount')

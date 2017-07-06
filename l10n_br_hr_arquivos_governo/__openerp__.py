@@ -18,7 +18,15 @@
         'python': ['pybrasil'],
     },
     'data': [
+        'data/l10n_br_hr_contract_type.xml',
         'security/hr_payslip.xml',
+        'security/ir.model.access.csv',
         'views/hr_payslip.xml',
+        'views/hr_contract_type.xml',
+        'views/l10n_br_hr_caged.xml',
+        'views/l10n_br_hr_contract.xml',
+        'views/l10n_br_hr_employee.xml',
+        'views/l10n_br_hr_sefip.xml',
+        'views/res_company.xml',
     ],
 }

@@ -100,6 +100,24 @@ class TestHrHoliday(common.TransactionCase):
         self.assertEqual(contrato.name, 'Contrato ANA BEATRIZ CARVALHO')
         self.assertEqual(contrato.date_start, '2014-01-01')
         self.assertEqual(contrato.wage, 12345.67)
+        # Testar controles de férias
+        self.assertEqual(len(contrato.vacation_control_ids), 4)
+        self.assertEqual(
+            contrato.vacation_control_ids[3].inicio_aquisitivo, '2014-01-01')
+        self.assertEqual(
+            contrato.vacation_control_ids[3].fim_aquisitivo, '2014-12-31')
+        self.assertEqual(
+            contrato.vacation_control_ids[2].inicio_aquisitivo, '2015-01-01')
+        self.assertEqual(
+            contrato.vacation_control_ids[2].fim_aquisitivo, '2015-12-31')
+        self.assertEqual(
+            contrato.vacation_control_ids[1].inicio_aquisitivo, '2016-01-01')
+        self.assertEqual(
+            contrato.vacation_control_ids[1].fim_aquisitivo, '2016-12-31')
+        self.assertEqual(
+            contrato.vacation_control_ids[0].inicio_aquisitivo, '2017-01-01')
+        self.assertEqual(
+            contrato.vacation_control_ids[0].fim_aquisitivo, '2017-12-31')
 
     def test_01_verificar_controle_ferias(self):
         """
@@ -110,7 +128,7 @@ class TestHrHoliday(common.TransactionCase):
         contrato = self.criar_contrato('2014-01-01')
 
         # Verificar a criação do controle de férias
-        controle = contrato.vacation_control_ids[0]
+        controle = contrato.vacation_control_ids[3]
         self.assertEqual(len(contrato.vacation_control_ids), 4)
         self.assertEqual(controle.inicio_aquisitivo, '2014-01-01')
         self.assertEqual(controle.fim_aquisitivo, '2014-12-31')
@@ -119,7 +137,7 @@ class TestHrHoliday(common.TransactionCase):
 
         # Verificar a criação dos holidays que atribuem férias ao funcionario
         # A Criação só é feita automatica para os dois ultimos controlesferias
-        for controle in contrato.vacation_control_ids[-2:]:
+        for controle in contrato.vacation_control_ids[:2]:
             self.assertEqual(len(controle.hr_holiday_ids), 1)
             self.assertEqual(controle.hr_holiday_ids.number_of_days_temp, 30)
             self.assertEqual(controle.hr_holiday_ids.type, 'add')
@@ -135,7 +153,7 @@ class TestHrHoliday(common.TransactionCase):
         # Edição do contrato
         contrato.date_start = '2010-08-01'
 
-        controle = contrato.vacation_control_ids[0]
+        controle = contrato.vacation_control_ids[6]
         self.assertEqual(len(contrato.vacation_control_ids), 7)
         self.assertEqual(controle.inicio_aquisitivo, '2010-08-01')
         self.assertEqual(controle.fim_aquisitivo, '2011-07-31')
@@ -143,7 +161,7 @@ class TestHrHoliday(common.TransactionCase):
         self.assertEqual(controle.fim_concessivo, '2012-07-31')
 
         # verificar a criação de novos holidays de férias
-        for controle in contrato.vacation_control_ids[-2:]:
+        for controle in contrato.vacation_control_ids[:2]:
             self.assertEqual(len(controle.hr_holiday_ids), 1)
             self.assertEqual(controle.hr_holiday_ids.number_of_days_temp, 30)
             self.assertEqual(controle.hr_holiday_ids.type, 'add')
@@ -175,7 +193,7 @@ class TestHrHoliday(common.TransactionCase):
         # Validar criação de novos controles de fériass
         self.assertEqual(len(contrato.vacation_control_ids), 4)
         # Validar a criação do holiday do controle de férias novamente
-        for controle in contrato.vacation_control_ids[-2:]:
+        for controle in contrato.vacation_control_ids[:2]:
             self.assertEqual(len(controle.hr_holiday_ids), 1)
 
     def test_04_editar_contrato_com_ferias(self):
@@ -202,3 +220,100 @@ class TestHrHoliday(common.TransactionCase):
         # Se ja tiver holidays, nao permite alteração da data do contrato
         with self.assertRaises(exceptions.Warning):
             contrato.date_start = '2015-02-02'
+
+    def run_tests_05(self, contrato):
+        """
+        Testes das informacoes do ultimo controle de ferias para o bloco de
+        testes do item 05
+        """
+        self.assertEqual(
+            contrato.vacation_control_ids[0].fim_aquisitivo, '2017-06-12')
+        self.assertEqual(
+            contrato.vacation_control_ids[0].inicio_concessivo, False)
+        self.assertEqual(
+            contrato.vacation_control_ids[0].fim_concessivo, False)
+        self.assertEqual(
+            contrato.vacation_control_ids[0].avos, 5)
+
+    def test_05_finalizar_contrato(self):
+        """
+        Ao atribuir uma data de demissao ('date_end'), o controle de ferias
+        deve parar a contabilizacao do saldo de dias para ferias e atribuir
+        a data de demissao para o ultimo controle de ferias
+        """
+        # Criar Contrato
+        contrato = self.criar_contrato('2014-01-01')
+        # Encerrar contrato
+        contrato.date_end = '2017-06-12'
+        # Executar testes
+        self.run_tests_05(contrato)
+
+        # Se Chamar atualizacao do controle de ferias pela view, deve continuar
+        # passando nos testes
+        contrato.action_button_update_controle_ferias()
+        # tests
+        self.run_tests_05(contrato)
+
+    def test_06_reativar_contrato(self):
+        """
+        Após finalizar um contrato, o controle de ferias é atualizado com
+        informacoes da data de demissao. Quando um contrato é reativado,
+        o controle de ferias deve voltar a calcular
+        """
+        # Criar Contrato
+        contrato = self.criar_contrato('2014-01-01')
+        # Encerrar contrato
+        contrato.date_end = '2017-06-12'
+        self.run_tests_05(contrato)
+
+        # Reativar contrato
+        contrato.date_end = False
+
+        self.assertEqual(
+            contrato.vacation_control_ids[0].inicio_aquisitivo, '2017-01-01')
+        self.assertEqual(
+            contrato.vacation_control_ids[0].fim_aquisitivo, '2017-12-31')
+        self.assertEqual(
+            contrato.vacation_control_ids[0].inicio_concessivo, '2018-01-01')
+        self.assertEqual(
+            contrato.vacation_control_ids[0].fim_concessivo, '2018-12-31')
+
+    def test_07_finalizar_contrato_sem_controle_ferias(self):
+        """
+        Finalizar um contrato quando nao há um controle de férias
+        """
+        # Criar Contrato
+        contrato = self.criar_contrato('2014-01-01')
+
+        # excluir controle férias
+        for controle in contrato.vacation_control_ids:
+            controle.unlink()
+
+        # Garantir que o controle de férias foi apagado
+        self.assertEqual(len(contrato.vacation_control_ids), 0)
+
+        # Finalizar contrato
+        contrato.date_end = '2017-06-12'
+
+        # Verificar data do contrato
+        self.assertEqual(contrato.date_end, '2017-06-12')
+
+    def test_08_criar_holidays_ultimos_controles(self):
+        """
+        Criar holidays do tipo 'add' de férias para as duas ultimas linhas do
+        controle de férias. Sempre que um contrato for criado, o funcionario
+        ja pode selecionar seus holidays de férias do tipo 'remove'.
+        """
+        # Criar Contrato
+        contrato = self.criar_contrato('2014-01-01')
+
+        for controle in contrato.vacation_control_ids[:2]:
+            self.assertTrue(controle.hr_holiday_ids)
+
+        ultimo_controle = contrato.vacation_control_ids[0]
+        self.assertEqual(ultimo_controle.inicio_aquisitivo, '2017-01-01')
+        self.assertEqual(ultimo_controle.fim_aquisitivo, '2017-12-31')
+
+        penultimo_controle = contrato.vacation_control_ids[1]
+        self.assertEqual(penultimo_controle.inicio_aquisitivo, '2016-01-01')
+        self.assertEqual(penultimo_controle.fim_aquisitivo, '2016-12-31')

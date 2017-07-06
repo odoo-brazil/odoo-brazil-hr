@@ -11,7 +11,7 @@
                     <page string="Contabilização" attrs="{'invisible': [('is_simulacao', '=', True)]}">
                         <button type="object" name="processar_folha" string="Gerar contabilização"/>
                         <group>
-                            <field name="journal_id" attrs="{'required': [('is_simulacao', '=', False)]}"/>
+                            <field name="journal_id"/>
                         </group>
                         <group>
                             <field name="move_id"/>
@@ -43,6 +43,34 @@
                             <group>
                                 <field name="provisao_13_account_debit"/>
                                 <field name="provisao_13_account_credit"/>
+                            </group>
+                        </group>
+                        <separator string="Contas Holerite Normal"/>
+                        <group>
+                            <group>
+                                <field name="holerite_normal_account_debit"/>
+                                <field name="holerite_normal_account_credit"/>
+                            </group>
+                        </group>
+                        <separator string="Contas Férias"/>
+                        <group>
+                            <group>
+                                <field name="ferias_account_debit"/>
+                                <field name="ferias_account_credit"/>
+                            </group>
+                        </group>
+                        <separator string="Contas Décimo 13º"/>
+                        <group>
+                            <group>
+                                <field name="decimo_13_account_debit"/>
+                                <field name="decimo_13_account_credit"/>
+                            </group>
+                        </group>
+                        <separator string="Contas Rescisão"/>
+                        <group>
+                            <group>
+                                <field name="rescisao_account_debit"/>
+                                <field name="rescisao_account_credit"/>
                             </group>
                         </group>
                     </page>
