@@ -52,7 +52,7 @@ class L10nBrHrIncomeTax(models.Model):
                 if BASE_IRRF > faixa.max_wage:
                     irrf = \
                         Decimal(BASE_IRRF or 0) * (
-                            Decimal(faixa.rate)/100.00
+                            Decimal(faixa.rate) / 100.00
                         ) - Decimal(faixa.deductable)
                     irrf = irrf.quantize(Decimal('0.01'))
                     return irrf
