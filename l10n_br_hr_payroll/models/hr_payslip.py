@@ -149,6 +149,7 @@ class HrPayslip(models.Model):
             holerite.data_pagamento = \
                 str((fields.Datetime.from_string(holerite.date_from) +
                      relativedelta(days=-2)).date())
+            holerite.ferias_vencidas = self._verificar_ferias_vencidas()
             # TO DO Verificar datas de feriados.
             # A biblioteca aceita os parametros de feriados, mas a utilizacao
             # dos feriados é diferente do odoo.
@@ -479,6 +480,14 @@ class HrPayslip(models.Model):
         string="Valor da Multa do FGTS"
     )
 
+    ferias_vencidas = fields.Many2one(
+        comodel_name='hr.vacation.control',
+        string="Ferias Vencidas",
+        domain="[('contract_id','=',contract_id)]",
+        compute='_verificar_ferias_vencidas',
+        store=True,
+    )
+
     company_id = fields.Many2one(
         string="Empresa",
         comodel_name="res.company",
@@ -638,22 +647,22 @@ class HrPayslip(models.Model):
         salario_mes_dic = {
             'name': 'Salário Mês',
             'code': 'SALARIO_MES',
-            'amount': contract._salario_mes(date_from, date_to) if
-            not self.medias_proventos else self.medias_proventos[1].media,
+            'amount': contract._salario_mes(date_from, date_to) if not
+            self.medias_proventos else self.medias_proventos[1].media,
             'contract_id': contract.id,
         }
         salario_dia_dic = {
             'name': 'Salário Dia',
             'code': 'SALARIO_DIA',
-            'amount': contract._salario_dia(date_from, date_to)if
-            not self.medias_proventos else self.medias_proventos[1].media / 30,
+            'amount': contract._salario_dia(date_from, date_to)if not
+            self.medias_proventos else self.medias_proventos[1].media / 30,
             'contract_id': contract.id,
         }
         salario_hora_dic = {
             'name': 'Salário Hora',
             'code': 'SALARIO_HORA',
-            'amount': contract._salario_hora(date_from, date_to)if
-            not self.medias_proventos else self.medias_proventos[1].media/220,
+            'amount': contract._salario_hora(date_from, date_to)if not
+            self.medias_proventos else self.medias_proventos[1].media/220,
             'contract_id': contract.id,
         }
         res += [salario_mes_dic]
@@ -769,8 +778,8 @@ class HrPayslip(models.Model):
         for rubrica in self.contract_id.specific_rule_ids:
             if rubrica.rule_id.id == rubrica_id \
                     and rubrica.date_start <= self.date_from and \
-                    (not rubrica.date_stop or rubrica.date_stop >= self.date_to
-                     ):
+                    (not rubrica.date_stop or rubrica.date_stop >=
+                        self.date_to):
                 if medias_obj:
                     if rubrica.rule_id.code not in medias_obj.dict.keys():
                         return 0
@@ -846,6 +855,7 @@ class HrPayslip(models.Model):
             )
             return estrutura_provisao_decimo_terceiro
 
+    @api.depends('contract_id', 'date_from', 'date_to')
     @api.multi
     def _verificar_ferias_vencidas(self):
         periodo_ferias_vencida = self.env['hr.vacation.control'].search(
@@ -1457,7 +1467,7 @@ class HrPayslip(models.Model):
 
             # organizando as regras pela sequencia de execução definida
             sorted_rule_ids = \
-                [id for id, sequence in sorted(rule_ids, key=lambda x:x[1])]
+                [id for id, sequence in sorted(rule_ids, key=lambda x: x[1])]
 
             if payslip.tipo_de_folha == "rescisao":
                 if not payslip.verificar_adiantamento_13_aviso_ferias():
@@ -1725,8 +1735,8 @@ class HrPayslip(models.Model):
                     "Não existem holerites aprovados para este contrato!"
                 ))
         if self.tipo_de_folha in [
-            "decimo_terceiro", "ferias", "aviso_previo",
-            "provisao_ferias", "provisao_decimo_terceiro"
+                "decimo_terceiro", "ferias", "aviso_previo",
+                "provisao_ferias", "provisao_decimo_terceiro"
         ]:
             if self.tipo_de_folha == 'ferias' and not self.\
                     _buscar_holerites_periodo_aquisitivo():
@@ -1890,6 +1900,7 @@ class HrPayslip(models.Model):
                 else:
                     data_de_inicio = str(self.ano) + '-01-01'
                 data_final = self.date_to
+
             hr_medias_ids = medias_obj.gerar_media_dos_proventos(
                 data_de_inicio, data_final, self)
             return hr_medias_ids, data_de_inicio, data_final
