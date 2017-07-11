@@ -160,6 +160,7 @@ class HrPayslip(models.Model):
                      relativedelta(days=1)).date()))
             holerite.data_pagamento = str(
                 self.compute_payment_day(holerite.date_from))
+
             # TO DO Verificar datas de feriados.
             # A biblioteca aceita os parametros de feriados, mas a utilizacao
             # dos feriados é diferente do odoo.
