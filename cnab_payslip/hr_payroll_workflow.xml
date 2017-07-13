@@ -8,6 +8,7 @@
             <field name="act_to" ref="hr_payroll.act_done"/>
             <field name="trigger_model"/>
             <field name="trigger_expr_id"/>
+            <field name="signal"></field>
             <field name="condition">paid_order</field>
         </record>
     </data>

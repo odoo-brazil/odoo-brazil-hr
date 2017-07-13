@@ -2,30 +2,30 @@
 # Copyright 2017 KMEE
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from openerp import api, fields, models, _
-from openerp.exceptions import Warning as UserError
+from openerp import api, fields, models
 
 
 class HrPayslip(models.Model):
-
     _inherit = 'hr.payslip'
 
     paid_order = fields.Boolean(
         compute='_compute_paid',
-        default=False,
-        store=False,
+        readonly=True,
+        store=True,
     )
 
-    # confirmar os states
+    @api.multi
     def test_paid(self):
         if not self.payment_line_ids:
             return False
         for line in self.payment_line_ids:
-            print line.status
-            if line.status in ('draft', 'done', 'error'):
+            if not line.state2:
+                return False
+            if line.state2 != 'paid':
                 return False
         return True
 
-    @api.depends('payment_line_ids')
+    @api.one
+    @api.depends('payment_line_ids.bank_line_id.state2')
     def _compute_paid(self):
         self.paid_order = self.test_paid()

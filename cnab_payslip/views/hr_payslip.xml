@@ -9,6 +9,9 @@
         <field name="model">hr.payslip</field>
         <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
         <field name="arch" type="xml">
+            <button name="hr_verify_sheet" position="replace">
+                <button string="Confirm" name="hr_verify_sheet" states="draft" class="oe_highlight" type="workflow"/>
+            </button>
             <field name="number" position="after">
                 <field name="paid_order"/>
             </field>
