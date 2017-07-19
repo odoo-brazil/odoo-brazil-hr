@@ -35,7 +35,6 @@ class HrBackup(models.Model):
                             str(field_val._model).replace('.', '_') +\
                             '_' + field_val.code
 
-
             else:
                 _logger.info(
                     "Informacao do campo %s no modelo %s nao foi salva."
