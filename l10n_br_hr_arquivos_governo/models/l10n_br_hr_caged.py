@@ -21,42 +21,75 @@ except ImportError:
     _logger.info('Cannot import pybrasil')
 
 
+class CagedAttachment(models.Model):
+    _name = 'l10n_br.hr.caged.attachments'
+    _order = 'create_date'
+
+    name = fields.Char(string='Observações')
+    caged_id = fields.Many2one(
+        string='Arquivo do governo relacionado',
+        comodel_name=b'hr.caged'
+    )
+    attachment_ids = fields.Many2many(
+        string='Arquivo anexo',
+        comodel_name='ir.attachment',
+        relation='ir_attachment_caged_rel',
+        column1='caged_attachment_id',
+        column2='attachment_id',
+    )
+
+
 class HrCaged(models.Model):
 
     _name = 'hr.caged'
+    _inherit = ['abstract.arquivos.governo.workflow', 'mail.thread']
 
+    related_attachment_ids = fields.One2many(
+        string='Anexos Relacionados',
+        comodel_name='l10n_br.hr.caged.attachments',
+        inverse_name='caged_id',
+        readonly=True, track_visibility='onchange',
+        states={'draft': [('readonly', False)], 'open': [('readonly', False)]}
+    )
     mes_do_ano = fields.Selection(
         selection=MES_DO_ANO,
         string=u'Mês',
-        default=fields.Date.from_string(fields.Date.today()).month
+        default=fields.Date.from_string(fields.Date.today()).month,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
-
     ano = fields.Integer(
         string=u'Ano',
-        default=fields.Date.from_string(fields.Date.today()).year
+        default=fields.Date.from_string(fields.Date.today()).year,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
-
     company_id = fields.Many2one(
         comodel_name='res.company',
         string=u'Empresa',
         default=lambda self: self.env.user.company_id or '',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
-
     caged_txt = fields.Text(
-        string='CAGED TXT'
+        string='CAGED TXT',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
-
     primeira_declaracao = fields.Boolean(
         string='Primeira declaração?',
         help='Define se é ou não a primeira declaração do estabelecimento ao '
              'Cadastro Geral de Empregados e Desempregados - '
              'CAGED  Lei nº 4.923/65.',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
-
     responsavel = fields.Many2one(
         comodel_name='res.users',
         string=u'Responsável',
-        default=lambda self: self.env.user
+        default=lambda self: self.env.user,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
 
     @api.depends('responsavel')
@@ -300,6 +333,23 @@ class HrCaged(models.Model):
         return caged._registro_Z()
 
     @api.multi
+    def action_open(self):
+        for record in self:
+            record.criar_anexo_caged()
+            super(HrCaged, record).action_open()
+
+    @api.multi
+    def criar_anexo_caged(self):
+        caged = Caged()
+        # Cria um arquivo temporario txt do CAGED e escreve o que foi gerado
+        path_arquivo = caged._gerar_arquivo_temp(self.caged_txt, 'CAGED')
+        # Gera o anexo apartir do txt do grrf no temp do sistema
+        mes = str(self.mes_do_ano) \
+            if self.mes_do_ano > 9 else '0' + str(self.mes_do_ano)
+        nome_arquivo = 'CGED' + str(self.ano) + '.M' + mes
+        self._gerar_anexo(nome_arquivo, path_arquivo)
+
+    @api.multi
     def doit(self):
 
         contrato_model = self.env['hr.contract']
@@ -359,14 +409,6 @@ class HrCaged(models.Model):
         # Guardar campo no modelo com informações do CAGED
         self.caged_txt = caged_txt
 
-        # Cria um arquivo temporario txt do CAGED e escreve o que foi gerado
-        path_arquivo = caged._gerar_arquivo_temp(caged_txt, 'CAGED')
-        # Gera o anexo apartir do txt do grrf no temp do sistema
-        mes = str(self.mes_do_ano) \
-            if self.mes_do_ano > 9 else '0' + str(self.mes_do_ano)
-        nome_arquivo = 'CGED' + str(self.ano) + '.M' + mes
-        self._gerar_anexo(nome_arquivo, path_arquivo)
-
         return True
 
     def _gerar_anexo(self, nome_do_arquivo, path_arquivo_temp):
@@ -378,20 +420,26 @@ class HrCaged(models.Model):
         :param path_arquivo_temp:
         :return:
         """
+        caged_attach_obj = self.env['l10n_br.hr.caged.attachments']
         try:
             file_attc = open(path_arquivo_temp, 'r')
             attc = file_attc.read()
-            attachment_obj = self.env['ir.attachment']
+
             attachment_data = {
                 'name': nome_do_arquivo,
                 'datas_fname': nome_do_arquivo,
                 'datas': base64.b64encode(attc),
-                'res_model': 'hr.caged',
-                'res_id': self.id,
+                'res_model': 'l10n_br.hr.caged.attachments',
             }
-            attachment_obj.create(attachment_data)
-            file_attc.close()
 
+            caged_attachment_data = {
+                'name': 'Arquivo Caged',
+                'attachment_ids': [(0, 0, attachment_data)],
+                'caged_id': self.id,
+            }
+            caged_attach_obj.create(caged_attachment_data)
+
+            file_attc.close()
         except:
             raise Warning(
                 _('Impossível gerar Anexo do %s' % nome_do_arquivo))

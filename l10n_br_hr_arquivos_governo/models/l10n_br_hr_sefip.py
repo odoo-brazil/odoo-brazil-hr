@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# (c) 2017 KMEE INFORMATICA LTDA - Daniel Sadamo <sadamo@kmee.com.br>
+# (c) 2017 KMEE INFORMATICA LTDA - Daniel Sadamo <daniel.sadamo@kmee.com.br>
 # (c) 2017 KMEE INFORMATICA LTDA - Luis Felipe Mileo <mileo@kmee.com.br>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
@@ -21,20 +21,36 @@ from ..constantes_rh import (
     CODIGO_RECOLHIMENTO,
     RECOLHIMENTO_GPS,
     RECOLHIMENTO_FGTS,
-    CENTRALIZADORA,
 )
 
 _logger = logging.getLogger(__name__)
 
-SEFIP_STATE = [
-    ('rascunho', u'Rascunho'),
-    ('confirmado', u'Confirmada'),
-    ('enviado', u'Enviado'),
-]
+
+class SefipAttachments(models.Model):
+    _name = b'l10n_br.hr.sefip.attachments'
+    _order = b'create_date'
+
+    name = fields.Char(string='Observações')
+    type = fields.Selection(string='Tipo', selection=[
+        ('sent', 'Enviado'),
+        ('relatorio', 'relatorio'),
+    ], default='relatorio')
+    sefip_id = fields.Many2one(
+        string='Arquivo do governo relacionado',
+        comodel_name=b'l10n_br.hr.sefip'
+    )
+    attachment_ids = fields.Many2many(
+        string='Arquivo anexo',
+        comodel_name='ir.attachment',
+        relation='ir_attachment_sefip_rel',
+        column1='sefip_attachment_id',
+        column2='attachment_id',
+    )
 
 
 class L10nBrSefip(models.Model):
     _name = b'l10n_br.hr.sefip'
+    _inherit = [b'abstract.arquivos.governo.workflow', b'mail.thread']
 
     @api.multi
     def name_get(self):
@@ -118,45 +134,76 @@ class L10nBrSefip(models.Model):
             return str("%05d" % self.porcentagem_filantropia * 100)
         return '    '
 
-    state = fields.Selection(selection=SEFIP_STATE, default='rascunho')
-    # responsible_company_id = fields.Many2one(
-    #     comodel_name='res.company', string=u'Empresa Responsável'
-    # )
+    related_attachment_ids = fields.One2many(
+        string='Anexos Relacionados',
+        comodel_name='l10n_br.hr.sefip.attachments',
+        inverse_name='sefip_id',
+        readonly=True, track_visibility='onchange',
+        states={'draft': [('readonly', False)], 'open': [('readonly', False)]}
+    )
     responsible_user_id = fields.Many2one(
-        comodel_name='res.partner', string=u'Usuário Responsável'
+        comodel_name='res.partner', string=u'Usuário Responsável',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     company_id = fields.Many2one(
-        comodel_name='res.company', string=u'Empresa'
+        comodel_name='res.company', string=u'Empresa',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
-    mes = fields.Selection(selection=MESES, string=u'Mês')
-    ano = fields.Char(string=u'Ano', size=4)
+    mes = fields.Selection(
+        selection=MESES, string=u'Mês',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
+    ano = fields.Char(
+        string=u'Ano', size=4,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
     modalidade_arquivo = fields.Selection(
-        selection=MODALIDADE_ARQUIVO, string=u'Modalidade do arquivo'
+        selection=MODALIDADE_ARQUIVO, string=u'Modalidade do arquivo',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     codigo_recolhimento = fields.Selection(
-        string=u'Código de recolhimento', selection=CODIGO_RECOLHIMENTO
+        string=u'Código de recolhimento', selection=CODIGO_RECOLHIMENTO,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     recolhimento_fgts = fields.Selection(
-        string=u'Recolhimento do FGTS', selection=RECOLHIMENTO_FGTS
+        string=u'Recolhimento do FGTS', selection=RECOLHIMENTO_FGTS,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     data_recolhimento_fgts = fields.Date(
-        string=u'Data de recolhimento do FGTS'
+        string=u'Data de recolhimento do FGTS',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     codigo_recolhimento_gps = fields.Integer(
         string=u'Código de recolhimento do GPS',
         related='company_id.codigo_recolhimento_GPS',
         store=True,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     recolhimento_gps = fields.Selection(
-        string=u'Recolhimento do GPS', selection=RECOLHIMENTO_GPS
+        string=u'Recolhimento do GPS', selection=RECOLHIMENTO_GPS,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     data_recolhimento_gps = fields.Date(
-        string=u'Data de recolhimento do GPS'
+        string=u'Data de recolhimento do GPS',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     codigo_fpas = fields.Char(
         string=u'Código FPAS',
         default='736',
         required=True,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
         help="""Campo obrigatório:\n
         • Deve ser um FPAS válido.\n
         • Deve ser diferente de 744 e 779, pois as GPS desses códigos serão
@@ -170,39 +217,57 @@ class L10nBrSefip(models.Model):
     )
     eh_obrigatorio_codigo_outras_entidades = fields.Boolean(
         compute='_compute_eh_obrigatorio_codigo_outras_entidades',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     codigo_outras_entidades = fields.Selection(
         string=u'Código de outras entidades',
         related='company_id.codigo_outras_entidades',
         store=True,
-    )
-    centralizadora = fields.Selection(
-        selection=CENTRALIZADORA,
-        string=u'Centralizadora',
-        default='0',
-        required=True,
-        help="""Para indicar as empresas que centralizam o recolhimento do
-         FGTS\n- Deve ser igual a zero (0), para os códigos de recolhimento
-          130, 135, 150, 155, 211, 317, 337, 608 e para empregador doméstico
-         (FPAS 868).\n- Quando existir empresa centralizadora deve existir,
-         no mínimo, uma empresa centralizada e vice-versa.\n - Quando existir
-          centralização, as oito primeiras posições\n do CNPJ da
-          centralizadora e da centralizada devem ser iguais.\n- Empresa com
-           inscrição CEI não possui centralização.\n"""
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
     eh_obrigatorio_informacoes_processo = fields.Boolean(
         compute='_compute_eh_obrigatorio_informacoes_processo',
         default=False,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
-    data_geracao = fields.Date(string=u'Data do arquivo')
+    data_geracao = fields.Date(
+        string=u'Data do arquivo',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
     # Processo ou convenção coletiva
-    num_processo = fields.Char(string=u'Número do processo')
-    ano_processo = fields.Char(string=u'Ano do processo', size=4)
-    vara_jcj = fields.Char(string=u'Vara/JCJ')
-    data_inicio = fields.Date(string=u'Data de Início')
-    data_termino = fields.Date(string=u'Data de término')
+    num_processo = fields.Char(
+        string=u'Número do processo',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
+    ano_processo = fields.Char(
+        string=u'Ano do processo', size=4,
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+        )
+    vara_jcj = fields.Char(
+        string=u'Vara/JCJ',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
+    data_inicio = fields.Date(
+        string=u'Data de Início',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
+    data_termino = fields.Date(
+        string=u'Data de término',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
     sefip = fields.Text(
-        string=u'Prévia do SEFIP'
+        string=u'Prévia do SEFIP',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
     )
 
     def _valida_tamanho_linha(self, linha):
@@ -405,6 +470,55 @@ class L10nBrSefip(models.Model):
         ])
         return folha_ids
 
+    def _valida_centralizadora(self, companies):
+        options = []
+        for company in companies:
+            options.append(company.centralizadora)
+        if '1' in options:
+            if '2' not in options:
+                raise ValidationError(
+                    _(u'Existe uma empresa centralizadora porém não '
+                      u'existe nenhuma centralizada')
+                )
+        if '2' in options:
+            if '1' not in options:
+                raise ValidationError(
+                    _(u'Existe uma empresa centralizada porém não '
+                      u'existe nenhuma centralizadora')
+                )
+
+    @api.multi
+    def criar_anexo_sefip(self):
+        sefip = SEFIP()
+        for record in self:
+            # Cria um arquivo temporario txt e escreve o que foi gerado
+            path_arquivo = sefip._gerar_arquivo_temp(record.sefip, 'SEFIP')
+            # Gera o anexo apartir do txt do grrf no temp do sistema
+            nome_arquivo = 'SEFIP.re'
+            self._gerar_anexo(nome_arquivo, path_arquivo)
+
+    def valida_anexos(self):
+        tipos_anexo = [x.type for x in self.related_attachment_ids]
+        if 'sent'in tipos_anexo and 'relatorio' in tipos_anexo:
+            return True
+        else:
+            raise ValidationError(
+                _('É necessário adicionar o relatório gerado pelo '
+                  'aplicativo na aba "Arquivos Anexos" para confirmar o envio')
+            )
+
+    @api.multi
+    def action_sent(self):
+        for record in self:
+            record.valida_anexos()
+            super(L10nBrSefip, record).action_sent()
+
+    @api.multi
+    def action_open(self):
+        for record in self:
+            record.criar_anexo_sefip()
+            super(L10nBrSefip, record).action_open()
+
     @api.multi
     def gerar_sefip(self):
         for record in self:
@@ -415,6 +529,8 @@ class L10nBrSefip(models.Model):
                     record._preencher_registro_00(sefip))
 
             folha_ids = record._get_folha_ids()
+
+            self._valida_centralizadora(folha_ids.mapped('company_id'))
 
             for company_id in folha_ids.mapped('company_id'):
                 folhas_da_empresa = folha_ids.filtered(
@@ -437,12 +553,6 @@ class L10nBrSefip(models.Model):
                             record._preencher_registro_32(sefip, folha))
 
             record.sefip += sefip._registro_90_totalizador_do_arquivo()
-
-            # Cria um arquivo temporario txt e escreve o que foi gerado
-            path_arquivo = sefip._gerar_arquivo_temp(self.sefip, 'SEFIP')
-            # Gera o anexo apartir do txt do grrf no temp do sistema
-            nome_arquivo = 'SEFIP.re'
-            self._gerar_anexo(nome_arquivo, path_arquivo)
 
     def _preencher_registro_00(self, sefip):
         sefip.tipo_inscr_resp = '1' if \
@@ -508,7 +618,7 @@ class L10nBrSefip(models.Model):
         sefip.emp_cnae = cnae
         # sefip.emp_indic_alteracao_cnae = 'n'
         sefip.emp_aliquota_RAT = self._rat(company_id)
-        sefip.emp_cod_centralizacao = self.centralizadora
+        sefip.emp_cod_centralizacao = company_id.centralizadora
         sefip.emp_simples = self._simples(company_id)
         sefip.emp_FPAS = self.codigo_fpas
         sefip.emp_cod_outras_entidades = self._buscar_codigo_outras_entidades()
@@ -971,11 +1081,7 @@ class L10nBrSefip(models.Model):
         :return:
         """
         attachment_obj = self.env['ir.attachment']
-
-        # Apagar SEFIP's existentes
-        anexos = attachment_obj.search([('res_id', '=', self.id)])
-        for anexo in anexos:
-            anexo.unlink()
+        sefip_attachment_obj = self.env['l10n_br.hr.sefip.attachments']
 
         try:
             file_attc = open(path_arquivo_temp, 'r')
@@ -985,10 +1091,24 @@ class L10nBrSefip(models.Model):
                 'name': nome_do_arquivo,
                 'datas_fname': nome_do_arquivo,
                 'datas': base64.b64encode(attc),
-                'res_model': 'l10n_br.hr.sefip',
-                'res_id': self.id,
+                'res_model': 'l10n_br.hr.sefip.attachments',
             }
-            attachment_obj.create(attachment_data)
+
+            if 'sent' in [line.type for line in self.related_attachment_ids]:
+                for line in self.related_attachment_ids:
+                    if line.type == 'sent':
+                        attach_id = attachment_obj.create(attachment_data)
+                        line.attachment_ids = False
+                        line.attachment_ids = [attach_id.id]
+            else:
+                sefip_attachment_data = {
+                    'name': 'Arquivo SEFIP',
+                    'sefip_id': self.id,
+                    'attachment_ids': [(0, 0, attachment_data)],
+                    'type': 'sent'
+                }
+                sefip_attachment_obj.create(sefip_attachment_data)
+
             file_attc.close()
 
         except:
