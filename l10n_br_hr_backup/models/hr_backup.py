@@ -27,10 +27,14 @@ class HrBackup(models.Model):
                 field_val = field_val._get_external_ids().get(field_val.id)[0]
 
             elif criar_model_data:
-                self.registrar_modelo_ir_model_data(field_val)
-                _logger.info('Criado ir_model_data do Objeto relacional %s '
-                             'do modelo %s - %s' %
-                             (field_name, field_val._name, field_val.name))
+                # self.registrar_modelo_ir_model_data(field_val)
+                # _logger.info('Criado ir_model_data do Objeto relacional %s '
+                #              'do modelo %s - %s' %
+                #              (field_name, field_val._name, field_val.name))
+                field_val = 'l10n_br_hr_payroll.' + \
+                            str(field_val._model).replace('.', '_') +\
+                            '_' + field_val.code
+
 
             else:
                 _logger.info(
