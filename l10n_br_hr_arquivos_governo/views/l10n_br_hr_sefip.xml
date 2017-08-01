@@ -36,6 +36,7 @@
                         <button name="action_open" string="Confirmar SEFIP" type="object" attrs="{'invisible':[('state', '!=', 'draft')]}"/>
                         <button name="action_draft" string="Voltar para provisório" type="object" attrs="{'invisible':[('state', '!=', 'open')]}" groups="base.group_hr_manager"/>
                         <button name="action_sent" string="Confirmar Envio" type="object" attrs="{'invisible':[('state', '!=', 'open')]}"/>
+                        <button name="gerar_boletos" string="Gerar Guias" type="object" attrs="{'invisible':[('state', '!=', 'sent')]}"/>
                         <field name="state" widget="statusbar"/>
                     </header>
                     <group cols="4" string="SEFIP">
@@ -61,6 +62,9 @@
                             <field name="eh_obrigatorio_codigo_outras_entidades" invisible="1"/>
                             <field name="codigo_outras_entidades" attrs="{'required':[('eh_obrigatorio_codigo_outras_entidades', '=', True)]}"/>
                             <field name="data_geracao"/>
+                        </group>
+                        <group string="GRCSU (Guia de Contribuição Sindical Urbana)" colspan="4">
+                            <field name="data_vencimento_grcsu"/>
                         </group>
                         <field name="eh_obrigatorio_informacoes_processo" invisible="1"/>
                         <group string="Processo, convenção ou coletiva" colspan="4"  attrs="{'invisible':[('eh_obrigatorio_informacoes_processo', '!=', True)]}" >
@@ -97,6 +101,11 @@
                                             </group>
                                         </form>
                                     </field>
+                                </group>
+                            </page>
+                            <page string="Holerites">
+                                <group string="Holerites do SEFIP">
+                                    <field nolabel="1" name="folha_ids" readonly="1"/>
                                 </group>
                             </page>
                         </notebook>

@@ -9,6 +9,7 @@ from __future__ import (
 
 import logging
 import base64
+import pybrasil
 from openerp import api, fields, models, _
 from openerp.exceptions import ValidationError
 
@@ -269,6 +270,35 @@ class L10nBrSefip(models.Model):
         readonly=True,
         states={'draft': [('readonly', False)]},
     )
+    data_vencimento_grcsu = fields.Date(
+        string=u'Data de Vencimento da GRCSU',
+    )
+
+    folha_ids = fields.One2many(
+        string='Holerites',
+        comodel_name='hr.payslip',
+        inverse_name='sefip_id',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
+
+    @api.onchange('company_id', 'ano', 'mes')
+    def _onchange_data_vencimento_grcsu(self):
+        self.ensure_one()
+        if not (self.ano and self.mes and self.company_id):
+            return
+
+        ultimo_dia_mes = str(self.ano) + '-' + self.mes + '-01'
+        ultimo_dia_mes = pybrasil.data.mes_que_vem(ultimo_dia_mes)
+        ultimo_dia_mes = pybrasil.data.ultimo_dia_mes(ultimo_dia_mes)
+        estado = self.company_id.state_id.code
+        municipio = self.company_id.l10n_br_city_id.name
+        self.data_vencimento_grcsu = pybrasil.data.dia_util_pagamento(
+                ultimo_dia_mes,
+                estado=estado,
+                municipio=municipio,
+                antecipa=True
+        )
 
     def _valida_tamanho_linha(self, linha):
         """Valida tamanho da linha (sempre igual a 360 posições) e
@@ -465,7 +495,7 @@ class L10nBrSefip(models.Model):
         folha_ids = self.env['hr.payslip'].search([
             ('mes_do_ano', '=', self.mes),
             ('ano', '=', self.ano),
-            ('state', '=', 'done'),
+#            ('state', 'in', ['done','verify']),
             ('company_id.partner_id.cnpj_cpf', 'like', raiz)
         ])
         return folha_ids
@@ -507,29 +537,125 @@ class L10nBrSefip(models.Model):
                   'aplicativo na aba "Arquivos Anexos" para confirmar o envio')
             )
 
+    def prepara_financial_move(
+            self, partner_id, sindicato_info, sindicato_total_empregados):
+        '''
+         Tratar dados do sefip e criar um dict para criar financial.move de 
+         contribuição sindical.
+        :param partner_id: id do partner do sindicato 
+        :param valor:  float com valor total de contribuição
+        :return: dict com valores para criar financial.move
+        '''
+
+        sequence_id = \
+            self.company_id.payment_mode_sindicato_id.sequence_arquivo_id.id
+        doc_number = str(self.env['ir.sequence'].next_by_id(sequence_id))
+
+        return {
+            'date_document': fields.Date.today(),
+            'partner_id': partner_id,
+            'doc_source_id': 'l10n_br.hr.sefip,' + str(self.id),
+            'company_id': self.company_id.id,
+            'amount_document': sindicato_info.get('contribuicao_sindicato'),
+            'document_number': doc_number,
+            'account_id': self.company_id.financial_account_sindicato_id.id,
+            'document_type_id': self.company_id.document_type_sindicato_id.id,
+            'payment_mode_id': self.company_id.payment_mode_sindicato_id.id,
+            'type': '2pay',
+            'sindicato_total_remuneracao_contribuintes':
+                sindicato_info.get('total_remuneracao'),
+            'sindicato_qtd_contribuintes':
+                sindicato_info.get('qtd_contribuintes'),
+            'sindicato_total_empregados': sindicato_total_empregados,
+            'date_maturity': self.data_vencimento_grcsu,
+        }
+
+    @api.multi
+    def gerar_boletos(self):
+        '''
+        Criar ordem de pagamento para boleto de sindicato
+        1. Configurar os dados para criação das financial.moves
+        2. Criar os financial.moves
+        '''
+        contribuicao_sindical = {}
+        for record in self:
+            created_ids = []
+            for holerite in self.folha_ids:
+                for line in holerite.line_ids:
+                    remuneracao = line.slip_id.line_ids.filtered(
+                        lambda x: x.code == 'LIQUIDO')
+                    if line.code == 'CONTRIBUICAO_SINDICAL':
+                        id_sindicato = \
+                            line.slip_id.contract_id.partner_union.id or 0
+                        if id_sindicato in contribuicao_sindical:
+                            contribuicao_sindical[id_sindicato][
+                                'contribuicao_sindicato'] += line.total
+                            contribuicao_sindical[id_sindicato][
+                                'qtd_contribuintes'] += 1
+                            contribuicao_sindical[id_sindicato][
+                                'total_remuneracao'] += remuneracao.total
+                        else:
+                            contribuicao_sindical[id_sindicato] = {}
+                            contribuicao_sindical[id_sindicato][
+                                'contribuicao_sindicato'] = line.total
+                            contribuicao_sindical[id_sindicato][
+                                'qtd_contribuintes'] = 1
+                            contribuicao_sindical[id_sindicato][
+                                'total_remuneracao'] = remuneracao.total
+
+            for sindicato in contribuicao_sindical:
+                vals = self.prepara_financial_move(
+                    sindicato, contribuicao_sindical[sindicato], 123)
+
+                financial_move = self.env['financial.move'].create(vals)
+                created_ids.append(financial_move.id)
+
+            return {
+                'domain': "[('id', 'in', %s)]" % created_ids,
+                'name': _("Boletos para sindicatos"),
+                'res_ids': created_ids,
+                'view_type': 'form',
+                'view_mode': 'tree,form',
+                'auto_search': True,
+                'res_model': 'financial.move',
+                'view_id': False,
+                'search_view_id': False,
+                'type': 'ir.actions.act_window'
+            }
+
     @api.multi
     def action_sent(self):
+        """
+        Confirmar o Envio do Sefip:
+        1. Validar se o sefip contem o relatorio em anexo
+        2. Chamar a função que muda o status do holerite, liberando para pagamt
+        """
         for record in self:
             record.valida_anexos()
+            # Liberar holerites para pagamento
+            for holerite in record.folha_ids:
+                holerite.hr_verify_sheet()
             super(L10nBrSefip, record).action_sent()
 
     @api.multi
     def action_open(self):
+        """
+        Confirmar a geração do Sefip 
+        """
         for record in self:
             record.criar_anexo_sefip()
-            super(L10nBrSefip, record).action_open()
+        super(L10nBrSefip, record).action_open()
 
     @api.multi
     def gerar_sefip(self):
         for record in self:
+            record.folha_ids = False
             sefip = SEFIP()
             record.sefip = ''
             record.sefip += \
                 self._valida_tamanho_linha(
                     record._preencher_registro_00(sefip))
-
             folha_ids = record._get_folha_ids()
-
             self._valida_centralizadora(folha_ids.mapped('company_id'))
 
             for company_id in folha_ids.mapped('company_id'):
@@ -553,6 +679,10 @@ class L10nBrSefip(models.Model):
                             record._preencher_registro_32(sefip, folha))
 
             record.sefip += sefip._registro_90_totalizador_do_arquivo()
+
+            # Setar a relação entre Holerite e o SEFIP
+            for holerite in folha_ids:
+                holerite.sefip_id = record.id
 
     def _preencher_registro_00(self, sefip):
         sefip.tipo_inscr_resp = '1' if \
@@ -832,7 +962,7 @@ class L10nBrSefip(models.Model):
         if folha.tipo_de_folha == 'rescisao':
             # FIXME:
             # return hr.payroll.structure.tipo_afastamento_sefip
-            print ("tipo_afastamento_sefip - Registro 30. Item 19")
+            #print ("tipo_afastamento_sefip - Registro 30. Item 19")
             pass
 
         ocorrencias_no_periodo_ids = self._buscar_ocorrencias(folha)
@@ -995,39 +1125,43 @@ class L10nBrSefip(models.Model):
         if codigo_categoria in ('01', '03', '04', '05', '06', '07', '11',
                                 '12', '19', '20', '21', '26'):
             sefip.data_admissao = fields.Datetime.from_string(
-                folha.contract_id.date_start).strftime('%d%m%Y')
+                folha.contract_id.date_start).strftime('%d%m%Y') or ''
 
         if codigo_categoria in ('01', '03', '04', '05', '06', '07', '11',
                                 '12', '19', '20', '21'):
-            sefip.categoria_trabalhador = codigo_categoria
+            sefip.categoria_trabalhador = codigo_categoria or ''
 
         sefip.nome_trabalhador = folha.employee_id.name
 
         if codigo_categoria not in (
                 '06', '13', '14', '15', '16', '17', '18', '22', '23',
                 '24', '25'):
-            sefip.matricula_trabalhador = folha.employee_id.registration
+            sefip.matricula_trabalhador = folha.employee_id.registration or ''
 
         if codigo_categoria in ('01', '03', '04', '06', '07', '26'):
-            sefip.num_ctps = folha.employee_id.ctps
-            sefip.serie_ctps = folha.employee_id.ctps_series
+            sefip.num_ctps = folha.employee_id.ctps or ''
+            sefip.serie_ctps = folha.employee_id.ctps_series or ''
         else:
-            sefip.num_ctps = ' ' * 7
-            sefip.serie_ctps = ' ' * 5
+            sefip.num_ctps = ' ' * 7 or ''
+            sefip.serie_ctps = ' ' * 5 or ''
 
         if codigo_categoria in ('01', '03', '04', '05', '06', '07'):
             # Item 13: Data de opção do FGtS, é sempre a data de contratação!
             sefip.data_de_opcao = fields.Datetime.from_string(
-                folha.contract_id.date_start).strftime('%d%m%Y')
+                folha.contract_id.date_start).strftime('%d%m%Y') or ''
         else:
             sefip.data_de_opcao = '      '
 
         if codigo_categoria in ('01', '02', '03', '04', '05', '06', '07',
-                                '12', '19', '20', '21', '26'):
+                                '12', '19', '20', '21', '26') and \
+                folha.employee_id.birthday:
             sefip.data_de_nascimento = fields.Datetime.from_string(
                 folha.employee_id.birthday).strftime('%d%m%Y')
         else:
             sefip.data_de_nascimento = '      '
+
+        if not folha.contract_id.job_id:
+            raise ValidationError("Contrato " + folha.contract_id.name + " faltando campo função !")
 
         if codigo_categoria in '06':
             sefip.trabalhador_cbo = '05121'
@@ -1036,23 +1170,23 @@ class L10nBrSefip(models.Model):
                                     folha.contract_id.job_id.cbo_id.code[:4]
         # Revisar daqui para a frente
         sefip.trabalhador_remun_sem_13 = \
-            self._trabalhador_remun_sem_13(folha)
+            self._trabalhador_remun_sem_13(folha) or ''
 
-        sefip.trabalhador_remun_13 = self._trabalhador_remun_13(folha)
+        sefip.trabalhador_remun_13 = self._trabalhador_remun_13(folha) or ''
 
         sefip.trabalhador_classe_contrib = \
-            self._trabalhador_classe_contrib(folha)
+            self._trabalhador_classe_contrib(folha) or ''
 
-        sefip.trabalhador_ocorrencia = self._trabalhador_ocorrencia(folha)
+        sefip.trabalhador_ocorrencia = self._trabalhador_ocorrencia(folha) or ''
         sefip.trabalhador_valor_desc_segurado = \
-            self._trabalhador_valor_desc_segurado(folha)
+            self._trabalhador_valor_desc_segurado(folha) or ''
         sefip.trabalhador_remun_base_calc_contribuicao_previdenciaria = \
             self._trabalhador_remun_base_calc_contribuicao_previdenciaria(
-                folha)
+                folha) or ''
         sefip.trabalhador_base_calc_13_previdencia_competencia = \
-            self._trabalhador_base_calc_13_previdencia_competencia(folha)
+            self._trabalhador_base_calc_13_previdencia_competencia(folha) or ''
         sefip.trabalhador_base_calc_13_previdencia_GPS = \
-            self._trabalhador_base_calc_13_previdencia_GPS(folha)
+            self._trabalhador_base_calc_13_previdencia_GPS(folha) or ''
 
         return sefip._registro_30_registro_do_trabalhador()
 
