@@ -13,6 +13,11 @@ NOME_LANCAMENTO_LOTE = {
     'normal': u'Folha normal em Lote',
 }
 
+class RubricaContabiliza(object):
+    def __init__(self):
+        self.line = None
+        self.total = 0
+
 
 class L10nBrHrPayslip(models.Model):
     _inherit = 'hr.payslip.run'
@@ -196,7 +201,10 @@ class L10nBrHrPayslip(models.Model):
                                 payslip_run.tipo_de_folha
                         ):
                             if not rubricas.get(line.name):
-                                rubricas.update({line.name: line})
+                                rubrica = RubricaContabiliza()
+                                rubrica.line = line
+                                rubrica.total = line.total
+                                rubricas.update({line.name: rubrica})
                             else:
                                 rubricas[line.name].total += line.total
                 move_anterior_id = \
@@ -206,7 +214,7 @@ class L10nBrHrPayslip(models.Model):
                 for rubrica in rubricas:
                     debito, credito = \
                         self._valor_lancamento_lote_anterior_rubrica(
-                            rubricas[rubrica]
+                            rubricas[rubrica].line
                         )
                     if payslip_run.tipo_de_folha in [
                         'provisao_ferias',
