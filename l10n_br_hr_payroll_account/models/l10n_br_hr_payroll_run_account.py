@@ -133,10 +133,29 @@ class L10nBrHrPayslip(models.Model):
     @api.multi
     def _valor_lancamento_lote_anterior_rubrica(self, rubrica):
         if self.tipo_de_folha == "normal":
-                return \
-                    rubrica.salary_rule_id.holerite_normal_account_debit, \
-                    rubrica.salary_rule_id.holerite_normal_account_credit
-        return 0, 0
+            return \
+                rubrica.salary_rule_id.holerite_normal_account_debit, \
+                rubrica.salary_rule_id.holerite_normal_account_credit
+        if self.tipo_de_folha == "ferias":
+            return \
+                rubrica.salary_rule_id.ferias_account_debit, \
+                rubrica.salary_rule_id.ferias_account_credit
+        if self.tipo_de_folha == "decimo_terceiro":
+            return \
+                rubrica.salary_rule_id.decimo_13_account_debit, \
+                rubrica.salary_rule_id.decimo_13_account_credit
+        if self.tipo_de_folha == "rescisao":
+            return \
+                rubrica.salary_rule_id.rescisao_account_debit, \
+                rubrica.salary_rule_id.rescisao_account_credit
+        if self.tipo_de_folha == "provisao_ferias":
+            return \
+                rubrica.salary_rule_id.provisao_ferias_account_debit, \
+                rubrica.salary_rule_id.provisao_ferias_account_credit
+        if self.tipo_de_folha == "provisao_decimo_terceiro":
+            return \
+                rubrica.salary_rule_id.provisao_13_account_debit, \
+                rubrica.salary_rule_id.provisao_13_account_credit
 
     @api.multi
     def _verificar_existencia_conta_rubrica(self, rubrica, tipo_de_folha):
