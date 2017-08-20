@@ -246,17 +246,18 @@ class L10nBrHrPayslip(models.Model):
                 #
                 if move_anterior_id:
                     for linha in move_anterior_id.line_id:
-                        line_anterior = (0, 0, {
-                            'name': linha.name + " (Anterior)",
-                            'date': timenow,
-                            'account_id': linha.account_id.id,
-                            'journal_id': linha.journal_id,
-                            'period_id': period_id,
-                            'debit': 0.0 if linha.credit else linha.debit,
-                            'credit': 0.0 if linha.debit else linha.credit,
-                            'payslip_run_id': payslip_run.id,
-                        })
-                        line_ids.append(line_anterior)
+                        if "(Anterior)" not in linha.name:
+                            line_anterior = (0, 0, {
+                                'name': linha.name + " (Anterior)",
+                                'date': timenow,
+                                'account_id': linha.account_id.id,
+                                'journal_id': linha.journal_id,
+                                'period_id': period_id,
+                                'debit': 0.0 if linha.credit else linha.debit,
+                                'credit': 0.0 if linha.debit else linha.credit,
+                                'payslip_run_id': payslip_run.id,
+                            })
+                            line_ids.append(line_anterior)
 
                 for rubrica in rubricas:
                     if rubricas[rubrica].total:
