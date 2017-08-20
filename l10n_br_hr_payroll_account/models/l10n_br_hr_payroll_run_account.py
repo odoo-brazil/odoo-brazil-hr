@@ -190,30 +190,34 @@ class L10nBrHrPayslip(models.Model):
                 line_ids = []
                 debit_sum = 0.0
                 credit_sum = 0.0
+
+                # Exclui o lançamento se já existir
                 if payslip_run.move_id:
                     move = payslip_run.move_id
-                    move_lines = self.env['account.move.line'].search(
-                        [
-                            ('move_id', '=', move.id)
-                        ]
-                    )
-                    for line in move_lines:
-                        line.unlink()
-                else:
-                    name = \
-                        NOME_LANCAMENTO_LOTE[payslip_run.tipo_de_folha] + \
-                        " - " + str(payslip_run.mes_do_ano) + \
-                        "/" + str(payslip_run.ano)
-                    move = {
-                        'name': name,
-                        'display_name': name,
-                        'narration': name,
-                        'date': payslip_run.date_end,
-                        'ref': payslip_run.display_name,
-                        'journal_id': payslip_run.journal_id.id,
-                        'period_id': period_id.id,
-                        'payslip_run_id': payslip_run.id,
-                    }
+                    move.unlink()
+                    #move_lines = self.env['account.move.line'].search(
+                    #    [
+                    #        ('move_id', '=', move.id)
+                    #    ]
+                    #)
+                    #for line in move_lines:
+                    #    line.unlink()
+
+                # Cria o lançamento do zero
+                name = \
+                    NOME_LANCAMENTO_LOTE[payslip_run.tipo_de_folha] + \
+                    " - " + str(payslip_run.mes_do_ano) + \
+                    "/" + str(payslip_run.ano)
+                move = {
+                    'name': name,
+                    'display_name': name,
+                    'narration': name,
+                    'date': payslip_run.date_end,
+                    'ref': payslip_run.display_name,
+                    'journal_id': payslip_run.journal_id.id,
+                    'period_id': period_id.id,
+                    'payslip_run_id': payslip_run.id,
+                }
                 rubricas = {}
                 for payslip in self.slip_ids:
                     for line in payslip.details_by_salary_rule_category:
@@ -236,40 +240,58 @@ class L10nBrHrPayslip(models.Model):
                     self._verificar_lancamentos_lotes_anteriores(
                         payslip_run.tipo_de_folha, period_id.id
                     )
+
+                #
+                # Desfaz o lançamento anterior
+                #
+                if move_anterior_id:
+                    for linha in move_anterior_id.line_id:
+                        line_anterior = (0, 0, {
+                            'name': linha.name + " (Anterior)",
+                            'date': timenow,
+                            'account_id': linha.account_id.id,
+                            'journal_id': linha.journal_id,
+                            'period_id': period_id,
+                            'debit': 0.0 if linha.credit else linha.debit,
+                            'credit': 0.0 if linha.debit else linha.credit,
+                            'payslip_run_id': payslip_run.id,
+                        })
+                        line_ids.append(line_anterior)
+
                 for rubrica in rubricas:
                     if rubricas[rubrica].total:
                         debito, credito = \
                             self._valor_lancamento_lote_anterior_rubrica(
                                 rubricas[rubrica].line
                             )
-                        if payslip_run.tipo_de_folha in [
-                            'provisao_ferias',
-                            'provisao_decimo_terceiro'
-                        ]:
-                            if move_anterior_id:
-                                if debito or credito:
-                                    line_anterior = (0, 0, {
-                                        'name': rubrica + " (Anterior)",
-                                        'date': timenow,
-                                        'account_id':
-                                            conta_debito.id if debito else
-                                            conta_credito.id,
-                                        'journal_id':
-                                            payslip_run.journal_id.id,
-                                        'period_id': period_id.id,
-                                        'debit': credito or 0.0,
-                                        'credit': debito or 0.0,
-                                        'payslip_run_id': payslip_run.id,
-                                    })
-                                    line_ids.append(line_anterior)
-                                    if debito:
-                                        debit_sum += \
-                                            line_anterior[2]['debit'] - \
-                                            line_anterior[2]['credit']
-                                    else:
-                                        credit_sum += \
-                                            line_anterior[2]['credit'] - \
-                                            line_anterior[2]['debit']
+                        #if payslip_run.tipo_de_folha in [
+                        #    'provisao_ferias',
+                        #    'provisao_decimo_terceiro'
+                        #]:
+                        #    if move_anterior_id:
+                        #        if debito or credito:
+                        #            line_anterior = (0, 0, {
+                        #                'name': rubricas[rubrica].name + " (Anterior)",
+                        #                'date': timenow,
+                        #                'account_id':
+                        #                    conta_debito.id if debito else
+                        #                    conta_credito.id,
+                        #                'journal_id':
+                        #                    payslip_run.journal_id.id,
+                        #                'period_id': period_id.id,
+                        #                'debit': credito or 0.0,
+                        #                'credit': debito or 0.0,
+                        #                'payslip_run_id': payslip_run.id,
+                        #            })
+                        #            line_ids.append(line_anterior)
+                        #            if debito:
+                        #                debit_sum += \
+                        #                    line_anterior[2]['debit'] - \
+                        #                    line_anterior[2]['credit']
+                        #            else:
+                        #                credit_sum += \
+                        #                    line_anterior[2]['credit'] - \
+                        #                    line_anterior[2]['debit']
                         if credito:
                             credit_line = (0, 0, {
                                 'name': rubricas[rubrica].name,
