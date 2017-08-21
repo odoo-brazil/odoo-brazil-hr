@@ -3,6 +3,7 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 import time
 
+from datetime import datetime
 from openerp import api, models, fields, exceptions, _
 from openerp.tools import float_compare
 from lxml import etree
@@ -111,7 +112,21 @@ class L10nBrHrPayslip(models.Model):
 
     @api.multi
     def _verificar_lancamentos_lotes_anteriores(self, tipo_folha, period_id):
+        period_obj = self.env['account.period']
+
         for payslip in self:
+            mes_anterior = payslip.mes_do_ano - 1
+            ano_anterior = payslip.ano
+            if mes_anterior == 0:
+                mes_anterior = 12
+                ano_anterior -= 1
+
+            primeiro_dia_do_mes = str(
+                datetime.strptime(str(mes_anterior) + '-' +
+                                  str(ano_anterior), '%m-%Y'))
+
+            periodo_anterior_id = period_obj.find(primeiro_dia_do_mes)
+
             move_id = self.env['account.move'].search(
                 [
                     (
@@ -120,7 +135,7 @@ class L10nBrHrPayslip(models.Model):
                         NOME_LANCAMENTO_LOTE[tipo_folha]
                     ),
                     (
-                        'period_id', '!=', period_id
+                        'period_id', '=', periodo_anterior_id.id
                     )
                 ],
                 limit=1
