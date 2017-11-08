@@ -38,8 +38,9 @@ class L10nBrHrPayslip(models.Model):
                     ]
                 )
 
-    move_id = fields.Many2one(
+    move_id = fields.One2many(
         comodel_name='account.move',
+        inverse_name='payslip_id',
         string='Accounting Entry',
     )
 
@@ -101,42 +102,23 @@ class L10nBrHrPayslip(models.Model):
             timenow = time.strftime('%Y-%m-%d')
 
             for slip in self:
-                line_ids = []
                 debit_sum = 0.0
                 credit_sum = 0.0
+                contador_lancamentos = 1
                 period_id = period_obj.find(slip.date_to)
                 if slip.move_id:
-                    move = slip.move_id
-                    move_lines = self.env['account.move.line'].search(
-                        [
-                            ('move_id', '=', move.id)
-                        ]
-                    )
-                    for line in move_lines:
-                        line.unlink()
-                else:
-                    name = \
-                        NOME_LANCAMENTO[slip.tipo_de_folha] \
-                        + str(slip.mes_do_ano) + "/" + str(slip.ano) \
-                        + " - " + slip.contract_id.nome_contrato
-                    move = {
-                        'name': name,
-                        'display_name': name,
-                        'narration': name,
-                        'date': slip.date_from,
-                        'ref': slip.number,
-                        'journal_id': slip.journal_id.id,
-                        'period_id': period_id.id,
-                        'payslip_id': slip.id,
-                    }
-                move_anterior_id = self._verificar_lancamentos_anteriores(
-                    slip.tipo_de_folha, period_id.id
-                )
+                    slip.move_id.unlink()
+
                 for line in slip.details_by_salary_rule_category:
-                    if line.total:
+                    line_ids = []
+
+                    if line.total > 0:
                         debit_account_id, credit_account_id = \
                             slip._buscar_contas(line.salary_rule_id)
                         if debit_account_id or credit_account_id:
+                            move, move_anterior_id = self.criar_lancamento_contabil(
+                                period_id, slip, contador_lancamentos)
+                            contador_lancamentos += 1
                             amt = slip.credit_note and - \
                                 line.total or line.total
                             if float_is_zero(amt, precision_digits=precision):
@@ -206,72 +188,80 @@ class L10nBrHrPayslip(models.Model):
                                 credit_sum += \
                                     credit_line[2]['credit'] - credit_line[2][
                                         'debit']
-                        else:
-                            pass
-                            # raise exceptions.Warning(
-                            #     "Não foi selecionada nenhuma conta de
-                            #      crédito ou débito para a rúbrica ",
-                            # (line.display_name)
-                            # )
-                if float_compare(
-                        credit_sum, debit_sum, precision_digits=precision
-                ) == -1:
-                    acc_id = slip.journal_id.default_credit_account_id.id
-                    if not acc_id:
-                        raise Warning(_('Configuration Error!'),
-                                      _('The Expense Journal "%s" has not '
-                                        'properly configured the '
-                                        'Credit Account!'
-                                        ) % slip.journal_id.name)
-                    adjust_credit = (0, 0, {
-                        'name': _('Adjustment Entry'),
-                        'date': timenow,
-                        'partner_id': False,
-                        'account_id': acc_id,
-                        'journal_id': slip.journal_id.id,
-                        'period_id': period_id.id,
-                        'debit': 0.0,
-                        'credit': debit_sum - credit_sum,
-                        'payslip_id': slip.id,
-                    })
-                    line_ids.append(adjust_credit)
 
-                elif float_compare(
-                        debit_sum, credit_sum, precision_digits=precision
-                ) == -1:
-                    acc_id = slip.journal_id.default_debit_account_id.id
-                    if not acc_id:
-                        raise Warning(_('Configuration Error!'),
-                                      _('The Expense Journal "%s" '
-                                        'has not properly configured'
-                                        ' the Debit Account!'
-                                        ) % slip.journal_id.name)
-                    adjust_debit = (0, 0, {
-                        'name': _('Adjustment Entry'),
-                        'date': timenow,
-                        'partner_id': False,
-                        'account_id': acc_id,
-                        'journal_id': slip.journal_id.id,
-                        'period_id': period_id.id,
-                        'debit': credit_sum - debit_sum,
-                        'credit': 0.0,
-                        'payslip_id': slip.id,
-                    })
-                    line_ids.append(adjust_debit)
-                if not slip.move_id:
-                    move.update({'line_id': line_ids})
-                    move_id = move_obj.create(move)
-                else:
-                    for line in line_ids:
-                        line[2].update({'move_id': slip.move_id.id})
-                        self.env['account.move.line'].create(line[2])
-                    move_id = slip.move_id
-                self.write({'move_id': move_id.id})
-                if slip.journal_id.entry_posted:
-                    move_obj.post(move_id)
+                            if float_compare(
+                                    credit_sum, debit_sum, precision_digits=precision
+                            ) == -1:
+                                acc_id = slip.journal_id.default_credit_account_id.id
+                                if not acc_id:
+                                    raise Warning(_('Configuration Error!'),
+                                                  _('The Expense Journal "%s" has not '
+                                                    'properly configured the '
+                                                    'Credit Account!'
+                                                    ) % slip.journal_id.name)
+                                adjust_credit = (0, 0, {
+                                    'name': _('Adjustment Entry'),
+                                    'date': timenow,
+                                    'partner_id': False,
+                                    'account_id': acc_id,
+                                    'journal_id': slip.journal_id.id,
+                                    'period_id': period_id.id,
+                                    'debit': 0.0,
+                                    'credit': debit_sum - credit_sum,
+                                    'payslip_id': slip.id,
+                                })
+                                line_ids.append(adjust_credit)
+
+                            elif float_compare(
+                                    debit_sum, credit_sum, precision_digits=precision
+                            ) == -1:
+                                acc_id = slip.journal_id.default_debit_account_id.id
+                                if not acc_id:
+                                    raise Warning(_('Configuration Error!'),
+                                                  _('The Expense Journal "%s" '
+                                                    'has not properly configured'
+                                                    ' the Debit Account!'
+                                                    ) % slip.journal_id.name)
+                                adjust_debit = (0, 0, {
+                                    'name': _('Adjustment Entry'),
+                                    'date': timenow,
+                                    'partner_id': False,
+                                    'account_id': acc_id,
+                                    'journal_id': slip.journal_id.id,
+                                    'period_id': period_id.id,
+                                    'debit': credit_sum - debit_sum,
+                                    'credit': 0.0,
+                                    'payslip_id': slip.id,
+                                })
+                                line_ids.append(adjust_debit)
+                            move.update({'line_id': line_ids})
+                            move_id = move_obj.create(move)
+                            if slip.journal_id.entry_posted:
+                                move_obj.post(move_id)
         else:
             raise Warning(
                 _('Erro!'),
                 _('É preciso selecionar um diário para realizar '
                   'a contabilização!')
             )
+
+    def criar_lancamento_contabil(self, period_id, slip, contador_lancamento):
+        name = \
+            NOME_LANCAMENTO[slip.tipo_de_folha] \
+            + str(slip.mes_do_ano) + "/" + str(slip.ano) \
+            + " - " + slip.contract_id.nome_contrato + " - " + \
+            str("%03d" % contador_lancamento)
+        move = {
+            'name': name,
+            'display_name': name,
+            'narration': name,
+            'date': slip.date_from,
+            'ref': slip.number,
+            'journal_id': slip.journal_id.id,
+            'period_id': period_id.id,
+            'payslip_id': slip.id,
+        }
+        move_anterior_id = self._verificar_lancamentos_anteriores(
+            slip.tipo_de_folha, period_id.id
+        )
+        return move, move_anterior_id
