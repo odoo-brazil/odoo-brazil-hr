@@ -116,8 +116,10 @@ class L10nBrHrPayslip(models.Model):
                         debit_account_id, credit_account_id = \
                             slip._buscar_contas(line.salary_rule_id)
                         if debit_account_id or credit_account_id:
-                            move, move_anterior_id = self.criar_lancamento_contabil(
-                                period_id, slip, contador_lancamentos)
+                            move, move_anterior_id = \
+                                self.criar_lancamento_contabil(
+                                    period_id, slip, contador_lancamentos
+                                )
                             contador_lancamentos += 1
                             amt = slip.credit_note and - \
                                 line.total or line.total
@@ -190,13 +192,16 @@ class L10nBrHrPayslip(models.Model):
                                         'debit']
 
                             if float_compare(
-                                    credit_sum, debit_sum, precision_digits=precision
+                                    credit_sum, debit_sum,
+                                    precision_digits=precision
                             ) == -1:
-                                acc_id = slip.journal_id.default_credit_account_id.id
+                                acc_id = slip.journal_id\
+                                    .default_credit_account_id.id
                                 if not acc_id:
                                     raise Warning(_('Configuration Error!'),
-                                                  _('The Expense Journal "%s" has not '
-                                                    'properly configured the '
+                                                  _('The Expense Journal "%s" '
+                                                    'has not properly '
+                                                    'configured the '
                                                     'Credit Account!'
                                                     ) % slip.journal_id.name)
                                 adjust_credit = (0, 0, {
@@ -213,14 +218,17 @@ class L10nBrHrPayslip(models.Model):
                                 line_ids.append(adjust_credit)
 
                             elif float_compare(
-                                    debit_sum, credit_sum, precision_digits=precision
+                                    debit_sum, credit_sum,
+                                    precision_digits=precision
                             ) == -1:
-                                acc_id = slip.journal_id.default_debit_account_id.id
+                                acc_id = slip.journal_id\
+                                    .default_debit_account_id.id
                                 if not acc_id:
                                     raise Warning(_('Configuration Error!'),
                                                   _('The Expense Journal "%s" '
-                                                    'has not properly configured'
-                                                    ' the Debit Account!'
+                                                    'has not properly '
+                                                    'configured the '
+                                                    'Debit Account!'
                                                     ) % slip.journal_id.name)
                                 adjust_debit = (0, 0, {
                                     'name': _('Adjustment Entry'),
