@@ -60,10 +60,11 @@
                                     <field name="provisao_13_account_credit"/>
                                 </group>
                             </group>
--->
+
                             <group>
                                 <field name="move_id" readonly="1"/>
                             </group>
+-->
                             <field name="move_lines_id"/>
                         </page>
                     </notebook>
