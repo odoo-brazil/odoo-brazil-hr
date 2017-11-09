@@ -197,6 +197,7 @@ class HrVacationControl(models.Model):
             dias_de_direito = 18
         elif self.faltas > 5:
             dias_de_direito = 24
+        dias_de_direito -= self.dias_gozados_anteriormente
         return dias_de_direito
 
     def _compute_calcular_avos(self):
