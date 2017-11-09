@@ -7,11 +7,18 @@ from __future__ import (
     division, print_function, unicode_literals, absolute_import
 )
 
+import os
+import tempfile
 import logging
 import base64
 import pybrasil
+import sh
+from py3o.template import Template
+from datetime import timedelta
 from openerp import api, fields, models, _
 from openerp.exceptions import ValidationError
+from pybrasil.valor import formata_valor
+from pybrasil.data import formata_data
 
 from openerp.addons.l10n_br_base.tools.misc import punctuation_rm
 
@@ -25,6 +32,7 @@ from ..constantes_rh import (
 )
 
 _logger = logging.getLogger(__name__)
+CURDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class SefipAttachments(models.Model):
@@ -52,6 +60,21 @@ class SefipAttachments(models.Model):
 class L10nBrSefip(models.Model):
     _name = b'l10n_br.hr.sefip'
     _inherit = [b'abstract.arquivos.governo.workflow', b'mail.thread']
+
+    @api.multi
+    @api.onchange('company_id')
+    def onchange_company_id(self):
+        for sefip in self:
+            if sefip.responsible_user_id:
+                if sefip.responsible_user_id.parent_id != \
+                        sefip.company_id.partner_id:
+                    sefip.responsible_user_id = False
+            return {
+                'domain': {
+                    'responsible_user_id':
+                        [('parent_id', '=', sefip.company_id.partner_id.id)]
+                }
+            }
 
     @api.multi
     def name_get(self):
@@ -503,6 +526,7 @@ class L10nBrSefip(models.Model):
         folha_ids = self.env['hr.payslip'].search([
             ('mes_do_ano', '=', self.mes),
             ('ano', '=', self.ano),
+            ('tipo_de_folha', 'in', ['normal','rescisao']),
            # ('state', 'in', ['done','verify']),
             ('company_id.partner_id.cnpj_cpf', 'like', raiz)
         ])
@@ -589,6 +613,197 @@ class L10nBrSefip(models.Model):
             'sefip_id': self.id,
         }
 
+    def prepara_financial_move_darf(self, codigo_receita, valor):
+        '''
+         Tratar dados do sefip e criar um dict para criar financial.move de
+         guia DARF.
+        :param DARF:  float com valor total do recolhimento
+        :return: dict com valores para criar financial.move
+        '''
+        data = self.ano + '-' + self.mes + '-' + str(
+            self.company_id.darf_dia_vencimento)
+        data_vencimento = fields.Date.from_string(data)
+        data_vencimento = data_vencimento + timedelta(days=31)
+
+        sequence_id = self.company_id.darf_sequence_id.id
+        doc_number = str(self.env['ir.sequence'].next_by_id(sequence_id))
+
+        dir_base = os.path.dirname(os.path.dirname(os.path.dirname(CURDIR)))
+        arquivo_template_darf = os.path.join(dir_base,
+                                            'kmee_odoo_addons',
+                                            'l10n_br_hr_payroll_report',
+                                            'data',
+                                            'darf.odt'
+                                            )
+
+        if os.path.exists(arquivo_template_darf):
+
+            template_darf = open(arquivo_template_darf, 'rb')
+            arquivo_temporario = tempfile.NamedTemporaryFile(delete=False)
+
+            vals_impressao = {
+                'vias': '11',
+                'razao_social': self.company_id.legal_name or '',
+                'telefone': self.company_id.phone or '',
+                'mes': self.mes or '',
+                'ano': self.ano or '',
+                'cnpj_cpf': self.company_id.cnpj_cpf or '',
+                'codigo_receita': codigo_receita or '',
+                'referencia': '',
+                'vencimento': formata_data(data_vencimento) or '',
+                'valor': formata_valor(valor) or '',
+                'multa': formata_valor(0) or '',
+                'juros': formata_valor(0) or '',
+                'total': formata_valor(valor) or '',
+            }
+
+            template = Template(template_darf, arquivo_temporario.name)
+            template.render(vals_impressao)
+            sh.libreoffice('--headless', '--invisible', '--convert-to', 'pdf',
+                           '--outdir', '/tmp', arquivo_temporario.name)
+
+            pdf = open(arquivo_temporario.name + '.pdf', 'rb').read()
+
+            os.remove(arquivo_temporario.name + '.pdf')
+            os.remove(arquivo_temporario.name)
+
+        vals_darf =  {
+            'date_document': fields.Date.today(),
+            'partner_id': self.env.ref('base.user_root').id,
+            'doc_source_id': 'l10n_br.hr.sefip,' + str(self.id),
+            'company_id': self.company_id.id,
+            'amount_document': valor,
+            'document_number': 'DARF-' + str(doc_number),
+            'account_id': self.company_id.darf_account_id.id,
+            'document_type_id': self.company_id.darf_document_type.id,
+            'type': '2pay',
+            'date_maturity': data_vencimento,
+            'payment_mode_id': self.company_id.darf_carteira_cobranca.id,
+            'sefip_id': self.id,
+        }
+
+        financial_move_darf = self.env['financial.move'].create(
+            vals_darf
+        )
+
+        if os.path.exists(arquivo_template_darf):
+            vals_anexo = {
+                'name': 'DARF.pdf',
+                'datas_fname': 'DARF.pdf',
+                'res_model': 'financial.move',
+                'res_id': financial_move_darf.id,
+                'datas': pdf.encode('base64'),
+                'mimetype': 'application/pdf',
+            }
+
+            anexo = self.env['ir.attachment'].create(
+                vals_anexo
+            )
+
+        return financial_move_darf
+
+
+    def prepara_financial_move_gps(self, empresa_id, dados_empresa):
+        '''
+         Criar financial.move de guia GPS, imprimir GPS e anexá-la ao move.
+        :param GPS: float com valor total do recolhimento
+        :return: financial.move
+        '''
+
+        empresa = self.env['res.company'].browse(empresa_id)
+
+        sequence_id = empresa.darf_sequence_id.id
+        doc_number = str(self.env['ir.sequence'].next_by_id(sequence_id))
+
+        GPS = dados_empresa['INSS_funcionarios'] + \
+              dados_empresa['INSS_empresa'] + \
+              dados_empresa['INSS_outras_entidades'] + \
+              dados_empresa['INSS_rat_fap']
+
+        INSS = dados_empresa['INSS_funcionarios'] + \
+               dados_empresa['INSS_empresa'] + \
+               dados_empresa['INSS_rat_fap']
+
+        TERCEIROS = dados_empresa['INSS_outras_entidades']
+
+        dir_base = os.path.dirname(os.path.dirname(os.path.dirname(CURDIR)))
+        arquivo_template_gps = os.path.join(dir_base,
+                                            'kmee_odoo_addons',
+                                            'l10n_br_hr_payroll_report',
+                                            'data',
+                                            'gps.odt'
+                                            )
+
+        if os.path.exists(arquivo_template_gps):
+
+            template_gps = open(arquivo_template_gps, 'rb')
+            arquivo_temporario = tempfile.NamedTemporaryFile(delete=False)
+
+            vals_impressao = {
+                'codigo': self.codigo_recolhimento_gps or '',
+                'cnpj_cpf': self.company_id.cnpj_cpf or '',
+                'legal_name': self.company_id.legal_name or '',
+                'endereco': self.company_id.street or '' +
+                            self.company_id.number or '',
+                'telefone': self.company_id.phone or '',
+                'bairro': self.company_id.district or '',
+                'cidade': self.company_id.l10n_br_city_id.name or '',
+                'estado': self.company_id.state_id.name or '',
+                'cep': self.company_id.zip or '',
+                'data_vencimento':
+                    formata_data(self.data_recolhimento_gps),
+                'mes_do_ano': self.mes or '',
+                'ano': self.ano or '',
+                'valor_inss': formata_valor(INSS),
+                'total_bruto_inss_terceiros': formata_valor(TERCEIROS),
+                'total_liquido_inss': formata_valor(GPS),
+            }
+
+            template = Template(template_gps, arquivo_temporario.name)
+            template.render(vals_impressao)
+            sh.libreoffice('--headless', '--invisible', '--convert-to', 'pdf',
+                           '--outdir', '/tmp', arquivo_temporario.name)
+
+            pdf = open(arquivo_temporario.name + '.pdf', 'rb').read()
+
+            os.remove(arquivo_temporario.name + '.pdf')
+            os.remove(arquivo_temporario.name)
+
+        vals_gps = {
+            'date_document': fields.Date.today(),
+            'partner_id': self.env.ref('base.user_root').id,
+            'doc_source_id': 'l10n_br.hr.sefip,' + str(self.id),
+            'company_id': empresa_id,
+            'amount_document': GPS,
+            'document_number': 'GPS-' + str(doc_number),
+            'account_id': empresa.gps_account_id.id,
+            'document_type_id': empresa.gps_document_type.id,
+            'type': '2pay',
+            'date_maturity': self.data_recolhimento_gps,
+            'payment_mode_id': empresa.gps_carteira_cobranca.id,
+            'sefip_id': self.id,
+        }
+
+        financial_move_gps = self.env['financial.move'].create(
+            vals_gps
+        )
+
+        if os.path.exists(arquivo_template_gps):
+            vals_anexo = {
+                'name': 'GPS.pdf',
+                'datas_fname': 'GPS.pdf',
+                'res_model': 'financial.move',
+                'res_id': financial_move_gps.id,
+                'datas': pdf.encode('base64'),
+                'mimetype': 'application/pdf',
+            }
+
+            anexo = self.env['ir.attachment'].create(
+                vals_anexo
+            )
+
+        return financial_move_gps
+
     @api.multi
     def gerar_boletos(self):
         '''
@@ -596,10 +811,28 @@ class L10nBrSefip(models.Model):
         1. Configurar os dados para criação das financial.moves
         2. Criar os financial.moves
         '''
+
+        #
+        # Excluir registros financeiros anteriores
+        #
+        #for id in self.
+        #    id.unlink()
+
         contribuicao_sindical = {}
         for record in self:
             created_ids = []
+            empresas = {}
+            darfs = {}
             for holerite in self.folha_ids:
+                if not empresas.get(holerite.company_id.id):
+                    empresas.update({
+                        holerite.company_id.id: {
+                            'INSS_funcionarios': 0.00,
+                            'INSS_empresa': 0.00,
+                            'INSS_outras_entidades': 0.00,
+                            'INSS_rat_fap': 0.00,
+                        }
+                    })
                 for line in holerite.line_ids:
                     remuneracao = line.slip_id.line_ids.filtered(
                         lambda x: x.code == 'LIQUIDO')
@@ -621,6 +854,33 @@ class L10nBrSefip(models.Model):
                                 'qtd_contribuintes'] = 1
                             contribuicao_sindical[id_sindicato][
                                 'total_remuneracao'] = remuneracao.total
+                    elif line.code == 'INSS':
+                        empresas[line.slip_id.company_id.id][
+                            'INSS_funcionarios'] += line.total
+                    elif line.code == 'INSS_EMPRESA':
+                        empresas[line.slip_id.company_id.id][
+                            'INSS_empresa'] += line.total
+                    elif line.code == 'INSS_OUTRAS_ENTIDADES':
+                        empresas[line.slip_id.company_id.id][
+                            'INSS_outras_entidades'] += line.total
+                    elif line.code == 'INSS_RAT_FAP':
+                        empresas[line.slip_id.company_id.id][
+                            'INSS_rat_fap'] += line.total
+                    elif line.code == 'IRPF':
+                        if line.slip_id.contract_id.categoria in \
+                                ['721', '722']:
+                            codigo_darf = '0588'
+                        else:
+                            codigo_darf = '0561'
+
+                        if darfs.get(codigo_darf):
+                            darfs[codigo_darf] += line.total
+                        else:
+                            darfs.update(
+                                {
+                                    codigo_darf: line.total
+                                }
+                            )
 
             for sindicato in contribuicao_sindical:
                 vals = self.prepara_financial_move(
@@ -628,6 +888,17 @@ class L10nBrSefip(models.Model):
 
                 financial_move = self.env['financial.move'].create(vals)
                 created_ids.append(financial_move.id)
+
+            for company in empresas:
+                dados_empresa = empresas[company]
+                financial_move_gps = self.prepara_financial_move_gps(
+                    company, dados_empresa)
+                created_ids.append(financial_move_gps.id)
+
+            for cod_darf in darfs:
+                financial_move_darf = \
+                    self.prepara_financial_move_darf(cod_darf, darfs[cod_darf])
+                created_ids.append(financial_move_darf.id)
 
             return {
                 'domain': "[('id', 'in', %s)]" % created_ids,
@@ -688,8 +959,11 @@ class L10nBrSefip(models.Model):
                     self._preencher_registro_12(company_id, sefip))
 
                 for folha in folhas_da_empresa.sorted(
-                        key=lambda folha: punctuation_rm(
-                            folha.employee_id.pis_pasep)):
+                        key=lambda folha:
+                        (
+                                punctuation_rm(folha.employee_id.pis_pasep),
+                                folha.contract_id.categoria_sefip
+                        )):
                     record.sefip += self._valida_tamanho_linha(
                         record._preencher_registro_30(sefip, folha))
 
@@ -732,9 +1006,21 @@ class L10nBrSefip(models.Model):
         sefip.data_recolh_ps = fields.Datetime.from_string(
             self.data_recolhimento_gps).strftime('%d%m%Y') \
             if self.data_recolhimento_gps else ''
+        if not self.company_id.supplier_partner_id:
+            raise ValidationError(
+                'Campo "Fornecedor do Sistema" não está preenchido nesta '
+                'Empresa ! - Favor preenchê-lo antes de gerar a SEFIP'
+            )
+        elif not self.company_id.supplier_partner_id.cnpj_cpf:
+            raise ValidationError(
+                'Campo "CNPJ/CPF" do Fornecedor do Sistema '
+                'não está preenchido! - Favor preenchê-lo '
+                'antes de gerar a SEFIP'
+            )
         sefip.tipo_inscr_fornec = (
             '1' if self.company_id.supplier_partner_id.is_company else '3')
         sefip.inscr_fornec = self.company_id.supplier_partner_id.cnpj_cpf
+
         return sefip._registro_00_informacoes_responsavel()
 
     def _preencher_registro_10(self, company_id, sefip):
@@ -825,25 +1111,25 @@ class L10nBrSefip(models.Model):
         #
         if folha.tipo_de_folha == 'decimo_terceiro':
             return result
-        # #
-        # # As remunerações pagas após rescisão do contrato de trabalho e
-        # # conforme determinação do Art. 466 da CLT,
-        # # não devem vir acompanhadas das respectivas movimentações.
-        # #
-        # elif False:
-        #     # TODO:
-        #     result = 0.00
+        #
+        # As remunerações pagas após rescisão do contrato de trabalho e
+        # conforme determinação do Art. 466 da CLT,
+        # não devem vir acompanhadas das respectivas movimentações.
+        #
+        #elif False:
+        #    # TODO:
+        #    result = 0.00
 
-        # #
-        # # Obrigatório
-        # #
+        #
+        # Obrigatório
+        #
         # elif folha.contract_id.categoria_sefip in (
         #         '05', '11', '13', '14', '15', '16', '17', '18', '22', '23',
         #         '24', '25'):
         #     result = folha.base_inss
-        # #
-        # # Opcional
-        # #
+        #
+        # Opcional
+        #
         # elif folha.contract_id.categoria_sefip in (
         #         '01', '02', '03', '04', '06', '07', '12', '19', '20', '21',
         #         '26'):
@@ -968,6 +1254,9 @@ class L10nBrSefip(models.Model):
          -
 
         """
+        if folha.contract_id.cnpj_empregador_cedente:
+            return '05'
+
         folha_ids = self._get_folha_ids()
         count = 0
         for folha_id in folha_ids:
@@ -1189,7 +1478,7 @@ class L10nBrSefip(models.Model):
                                     folha.contract_id.job_id.cbo_id.code[:4]
         # Revisar daqui para a frente
         sefip.trabalhador_remun_sem_13 = \
-            self._trabalhador_remun_sem_13(folha) or ''
+                self._trabalhador_remun_sem_13(folha) or ''
 
         sefip.trabalhador_remun_13 = self._trabalhador_remun_13(folha) or ''
 

@@ -108,7 +108,7 @@ class HrContract(models.Model):
     def action_button_update_controle_ferias(self):
         """
         Ação disparada pelo botão na view, que atualiza as linhas de controle
-        de férias desde que nao contenham férias atreladas a elas
+        de férias
         """
         #self.verificar_controle_ferias()
         #self.atualizar_linhas_controle_ferias(self.date_start)
