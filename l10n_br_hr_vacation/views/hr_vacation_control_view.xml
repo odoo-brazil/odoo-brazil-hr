@@ -10,7 +10,7 @@
                 <xpath expr="//page[@string='Work Permit']" position="after">
                     <page string="Controle de Férias">
                         <field name="vacation_control_ids">
-                            <tree string="Férias">
+                            <tree string="Férias" decoration-muted="inicio_gozo == False">
                                 <field name="inicio_aquisitivo" widget="date"/>
                                 <field name="fim_aquisitivo" widget="date"/>
                                 <field name="inicio_concessivo" widget="date"/>
@@ -23,8 +23,8 @@
                                 <field name="faltas"/>
                                 <field name="afastamentos"/>
                                 <field name="dias"/>
-                                <field name="saldo"/>
                                 <field name="dias_gozados"/>
+                                <field name="saldo"/>
                                 <field name="avos"/>
                                 <field name="proporcional"/>
                                 <field name="vencida"/>

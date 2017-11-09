@@ -93,6 +93,27 @@ class HrHolidays(models.Model):
         string=u'Fim',
     )
 
+    inicio_aquisitivo = fields.Date(
+        string=u'Início do Período Aquisitivo',
+        compute='_compute_periodo_aquisitivo',
+        store=True,
+    )
+    fim_aquisitivo = fields.Date(
+        string=u'Fim do Período Aquisitivo',
+        compute='_compute_periodo_aquisitivo',
+        store=True,
+    )
+
+    @api.multi
+    @api.depends('controle_ferias')
+    def _compute_periodo_aquisitivo(self):
+        for holiday in self:
+            if holiday.controle_ferias:
+                holiday.inicio_aquisitivo = \
+                    holiday.controle_ferias[0].inicio_aquisitivo
+                holiday.fim_aquisitivo = \
+                    holiday.controle_ferias[0].fim_aquisitivo
+
     @api.depends('parent_id')
     def _compute_verificar_regularidade(self):
         for holiday in self:
@@ -101,11 +122,11 @@ class HrHolidays(models.Model):
             dias_de_direito = holiday.parent_id.number_of_days_temp
             dias_selecionados = holiday.number_of_days_temp
             holiday.saldo_final = dias_de_direito - dias_selecionados
-            if holiday.saldo_final >= 0 and holiday.date_from >= \
-                    holiday.controle_ferias[0].inicio_concessivo:
-                holiday.regular = True
-            else:
-                holiday.regular = False
+            holiday.regular = False
+            if holiday.controle_ferias:
+                if holiday.saldo_final >= 0 and holiday.date_from >= \
+                        holiday.controle_ferias[0].inicio_concessivo:
+                    holiday.regular = True
 
     @api.depends('vacations_days', 'sold_vacations_days')
     def _compute_days_temp(self):

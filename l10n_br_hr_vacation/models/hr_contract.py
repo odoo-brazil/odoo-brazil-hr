@@ -7,6 +7,11 @@ from dateutil.relativedelta import relativedelta
 from lxml import etree
 from openerp.exceptions import Warning as UserError
 
+try:
+    from pybrasil import data
+
+except ImportError:
+    _logger.info('Cannot import pybrasil')
 
 class HrContract(models.Model):
     _inherit = 'hr.contract'
@@ -99,73 +104,107 @@ class HrContract(models.Model):
             ultimo_controle.inicio_concessivo = vals.get('inicio_concessivo')
             ultimo_controle.fim_concessivo = vals.get('fim_concessivo')
 
-    def verificar_controle_ferias(self):
-        """
-        Função que verifica se em algum controle de férias ja tem um pedido de
-        Férias ja aprovado. Se nao existir nenhum, exclui todas as linhas de
-        controle de férias e chama a função para criar novas
-        :return:
-        """
-        vacation_id = self.env.ref(
-            'l10n_br_hr_holiday.holiday_status_vacation').id
-
-        holidays_ferias_do_contrato = self.env['hr.holidays'].search([
-            ('type', '=', 'remove'),
-            ('contrato_id', '=', self.id),
-            ('holiday_status_id', '=', vacation_id),
-        ])
-        if holidays_ferias_do_contrato:
-            raise UserError(_(
-                "Não é possível modificar contratos "
-                "que possuem ocorrências ou férias confirmadas."))
-
-        for holiday in holidays_ferias_do_contrato:
-            holiday.unlink()
-
-        for linha in self.vacation_control_ids:
-            linha.unlink()
-
     @api.multi
     def action_button_update_controle_ferias(self):
         """
         Ação disparada pelo botão na view, que atualiza as linhas de controle
         de férias desde que nao contenham férias atreladas a elas
         """
-        self.verificar_controle_ferias()
-        self.atualizar_linhas_controle_ferias(self.date_start)
+        #self.verificar_controle_ferias()
+        #self.atualizar_linhas_controle_ferias(self.date_start)
 
-    @api.multi
-    def atualizar_linhas_controle_ferias(self, date_start):
-        """
-        Dada uma data inicial, Apagar todo o controle de férias existente e
-        gerar novas linhas de controle de férias
-        :param date_start: string - 2017-05-01 Data de admissao do funcionario
-        :return:
-        """
-        for linha in self.vacation_control_ids:
-                linha.unlink()
-        if not date_start:
-            date_start = self.date_start
-        inicio = fields.Date.from_string(date_start)
-        hoje = fields.Date.from_string(fields.Date.today())
-        lista_controle_ferias = []
-        controle_ferias_obj = self.env['hr.vacation.control']
+        for contrato in self:
 
-        while(inicio <= hoje):
-            vals = controle_ferias_obj.calcular_datas_aquisitivo_concessivo(
-                str(inicio)
-            )
-            controle_ferias = controle_ferias_obj.create(vals)
-            inicio = inicio + relativedelta(years=1)
-            lista_controle_ferias.append(controle_ferias.id)
-        self.vacation_control_ids = sorted(lista_controle_ferias, reverse=True)
-        # verificar se o contrato ja foi encerrado
-        self.atualizar_data_demissao()
-        # gerar automaticamente as ferias (holidays) dos 2 ultimos controles
-        ultimos_controles = self.vacation_control_ids[:2]
-        for controle_ferias in ultimos_controles:
-            controle_ferias.gerar_holidays_ferias()
-        return self
+            # Apagar todos os períodos aquisitivos do contrato
+            #
+            for periodo_aquisitivo in contrato.vacation_control_ids:
+                periodo_aquisitivo.unlink()
+
+            # Criar os períodos aquisitivos
+            #
+            inicio = fields.Date.from_string(contrato.date_start)
+            hoje = fields.Date.from_string(fields.Date.today())
+            lista_controle_ferias = []
+            controle_ferias_obj = self.env['hr.vacation.control']
+
+            while inicio <= hoje:
+                vals = \
+                    controle_ferias_obj.calcular_datas_aquisitivo_concessivo(
+                        str(inicio)
+                    )
+                controle_ferias = controle_ferias_obj.create(vals)
+                inicio = inicio + relativedelta(years=1)
+                lista_controle_ferias.append(controle_ferias.id)
+
+            # Ordena períodos aquisitivos recalculados
+            #
+            contrato.vacation_control_ids = sorted(lista_controle_ferias,
+                                               reverse=True)
+
+            # Buscar Férias registradas e atualizar os períodos aquisitivos
+            #
+            domain = [
+                ('contract_id', '=', contrato.id),
+                ('tipo_de_folha', '=', 'ferias'),
+                ('is_simulacao', '=', False),
+                ('state', 'in', ['done', 'verify']),
+            ]
+            holerites_ids = \
+                self.env['hr.payslip'].search(domain, order='date_from')
+
+            for holerite in holerites_ids:
+                for periodo in contrato.vacation_control_ids:
+
+                    # Busca o aviso de férias do mesmo período aquisitivo
+                    if periodo.inicio_aquisitivo == holerite.inicio_aquisitivo\
+                            and not periodo.inicio_gozo:
+
+                        # Calcula dias gozados
+                        #
+                        data_inicio = \
+                            fields.Date.from_string(holerite.date_from)
+                        data_fim = fields.Date.from_string(holerite.date_to)
+                        abono_pecuniario = \
+                            holerite.holidays_ferias.sold_vacations_days
+                        dias_gozados = (data_fim - data_inicio).days + 1 + \
+                                       abono_pecuniario
+
+                        # Cria novo período aquisitivo se ainda houver saldo
+                        #
+                        if (periodo.saldo - dias_gozados) > 0:
+                            novo_periodo = periodo.copy()
+                            novo_periodo.dias_gozados_anteriormente = \
+                                dias_gozados + \
+                                periodo.dias_gozados_anteriormente
+
+                        # Altera os valores do período aquisitivo com os dados
+                        # do aviso de férias
+                        #
+                        periodo.inicio_gozo = holerite.date_from
+                        periodo.fim_gozo = holerite.date_to
+                        periodo.data_aviso = holerite.date_from
+                        periodo.dias_gozados = dias_gozados
+                        holerite.periodo_aquisitivo = periodo
+
+            domain = [
+                ('contrato_id', '=', contrato.id),
+                ('holiday_status_id.tipo', '=', 'ferias'),
+            ]
+            holidays = self.env['hr.holidays'].search(domain)
+
+            for holiday in holidays:
+                if holiday.inicio_aquisitivo:
+                    for periodo in contrato.vacation_control_ids:
+                        if holiday.inicio_aquisitivo == \
+                                periodo.inicio_aquisitivo:
+                            holiday.controle_ferias = [periodo.id]
+
+            # Atualizar último periodo aquisitivo caso a data de demissão
+            # esteja definida
+            #
+            self.atualizar_data_demissao()
+
+            # self.atualizar_linhas_controle_ferias(self.date_start)
 
     @api.model
     def fields_view_get(self, view_id=None, view_type='form',

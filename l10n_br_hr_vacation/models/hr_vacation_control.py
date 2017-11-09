@@ -80,6 +80,11 @@ class HrVacationControl(models.Model):
         default=0,
     )
 
+    dias_gozados_anteriormente = fields.Float(
+        string=u'Dias Gozados Anteriormente',
+        default=0,
+    )
+
     avos = fields.Integer(
         string=u'Avos',
         compute='_compute_calcular_avos',
@@ -219,7 +224,8 @@ class HrVacationControl(models.Model):
     def _compute_calcular_saldo_dias(self):
         for record in self:
             saldo = record.dias_de_direito() * record.avos / 12.0
-            record.saldo = saldo - record.dias_gozados
+            record.saldo = saldo - record.dias_gozados - \
+                           record.dias_gozados_anteriormente
 
     def _compute_calcular_dias(self):
         for record in self:
