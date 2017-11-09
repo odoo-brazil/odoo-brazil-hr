@@ -185,19 +185,13 @@ class HrContract(models.Model):
                         periodo.data_aviso = holerite.date_from
                         periodo.dias_gozados = dias_gozados
                         holerite.periodo_aquisitivo = periodo
-
-            domain = [
-                ('contrato_id', '=', contrato.id),
-                ('holiday_status_id.tipo', '=', 'ferias'),
-            ]
-            holidays = self.env['hr.holidays'].search(domain)
-
-            for holiday in holidays:
-                if holiday.inicio_aquisitivo:
-                    for periodo in contrato.vacation_control_ids:
-                        if holiday.inicio_aquisitivo == \
-                                periodo.inicio_aquisitivo:
-                            holiday.controle_ferias = [periodo.id]
+                        domain = [
+                            ('data_inicio', '=', periodo.inicio_gozo),
+                            ('data_fim', '=', periodo.fim_gozo)
+                        ]
+                        holidays = self.env['hr.holidays'].search(domain)
+                        if holidays:
+                            holidays.controle_ferias = [(4, periodo.id)]
 
             # Atualizar último periodo aquisitivo caso a data de demissão
             # esteja definida
