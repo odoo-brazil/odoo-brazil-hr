@@ -140,7 +140,8 @@ class HrContract(models.Model):
             #
             contrato.vacation_control_ids = sorted(lista_controle_ferias,
                                                reverse=True)
-
+            for vacation_control in contrato.vacation_control_ids:
+                vacation_control.gerar_holidays_ferias()
             # Buscar Férias registradas e atualizar os períodos aquisitivos
             #
             domain = [
@@ -187,11 +188,17 @@ class HrContract(models.Model):
                         holerite.periodo_aquisitivo = periodo
                         domain = [
                             ('data_inicio', '=', periodo.inicio_gozo),
-                            ('data_fim', '=', periodo.fim_gozo)
+                            ('data_fim', '=', periodo.fim_gozo),
+                            ('contrato_id', '=', self.id),
+                            ('type', '=', 'remove')
                         ]
                         holidays = self.env['hr.holidays'].search(domain)
                         if holidays:
+                            holerite.holidays_ferias = holidays.id
                             holidays.controle_ferias = [(4, periodo.id)]
+                            for holiday in periodo.hr_holiday_ids:
+                                if holiday.type == "add":
+                                    holidays.parent_id = holiday
 
             # Atualizar último periodo aquisitivo caso a data de demissão
             # esteja definida
