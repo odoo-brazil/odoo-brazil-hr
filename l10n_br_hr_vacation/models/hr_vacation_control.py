@@ -117,13 +117,23 @@ class HrVacationControl(models.Model):
         string=u'Contrato Vigente',
     )
 
-    hr_holiday_ids = fields.Many2many(
+    # hr_holiday_ids = fields.Many2many(
+    #     comodel_name='hr.holidays',
+    #     relation='vacation_control_holidays_rel',
+    #     column1='hr_vacation_control_id',
+    #     column2='holiday_id',
+    #     string=u'Período Aquisitivo',
+    #     ondelete='set null',
+    # )
+
+    hr_holiday_add_id = fields.Many2one(
         comodel_name='hr.holidays',
-        relation='vacation_control_holidays_rel',
-        column1='hr_vacation_control_id',
-        column2='holiday_id',
-        string=u'Período Aquisitivo',
-        ondelete='set null',
+        string=u'Férias (ADD)',
+    )
+
+    hr_holiday_remove_id = fields.Many2one(
+        comodel_name='hr.holidays',
+        string=u'Pedido de férias',
     )
 
     display_name = fields.Char(
@@ -132,20 +142,20 @@ class HrVacationControl(models.Model):
         store=True
     )
 
-    @api.depends('hr_holiday_ids')
-    @api.multi
-    def _compute_have_holidays(self):
-        for controle in self:
-            if controle.hr_holiday_ids:
-                for holiday in controle.hr_holiday_ids:
-                    if holiday.type == 'add':
-                        controle.have_holidays = True
+    # @api.depends('hr_holiday_ids')
+    # @api.multi
+    # def _compute_have_holidays(self):
+    #     for controle in self:
+    #         if controle.hr_holiday_ids:
+    #             for holiday in controle.hr_holiday_ids:
+    #                 if holiday.type == 'add':
+    #                     controle.have_holidays = True
 
-    have_holidays = fields.Boolean(
-        string=u'Have Holidays?',
-        compute='_compute_have_holidays',
-        default=False,
-    )
+    # have_holidays = fields.Boolean(
+    #     string=u'Have Holidays?',
+    #     compute='_compute_have_holidays',
+    #     default=False,
+    # )
 
     @api.depends('inicio_aquisitivo', 'fim_aquisitivo')
     def _compute_display_name(self):
@@ -226,8 +236,7 @@ class HrVacationControl(models.Model):
     def _compute_calcular_saldo_dias(self):
         for record in self:
             saldo = record.dias_de_direito() * record.avos / 12.0
-            record.saldo = saldo - record.dias_gozados - \
-                           record.dias_gozados_anteriormente
+            record.saldo = saldo - record.dias_gozados
 
     def _compute_calcular_dias(self):
         for record in self:

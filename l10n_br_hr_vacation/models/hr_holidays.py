@@ -82,6 +82,12 @@ class HrHolidays(models.Model):
         column2='hr_vacation_control_id',
         string=u'Controle de Férias',
     )
+    controle_ferias_ids = fields.One2many(
+        comodel_name='hr.vacation.control',
+        string=u'Controle de Férias',
+        inverse_name='hr_holiday_add_id',
+    )
+
     saldo_disponivel = fields.Float(
         string='Saldo de dias de férias',
         related='parent_id.number_of_days_temp',
