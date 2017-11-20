@@ -75,6 +75,11 @@ class HrHolidays(models.Model):
         ondelete='cascade',
         index=True,
     )
+    child_ids = fields.One2many(
+        comodel_name='hr.holidays',
+        inverse_name='parent_id',
+        string='Child Holidays',
+    )
     controle_ferias = fields.Many2many(
         comodel_name='hr.vacation.control',
         relation='vacation_control_holidays_rel',

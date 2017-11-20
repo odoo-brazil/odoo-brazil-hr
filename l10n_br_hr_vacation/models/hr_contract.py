@@ -109,7 +109,7 @@ class HrContract(models.Model):
             ultimo_controle.fim_concessivo = vals.get('fim_concessivo')
 
     @api.multi
-    def action_button_update_controle_ferias(self):
+    def action_button_update_controle_ferias(self, data_referencia):
         """
         Ação disparada pelo botão na view, que atualiza as linhas de controle
         de férias
@@ -126,8 +126,7 @@ class HrContract(models.Model):
             # Criar os períodos aquisitivos
             #
             inicio = fields.Date.from_string(contrato.date_start)
-            hoje = fields.Date.today()
-            hoje = fields.Date.from_string(hoje)
+            hoje = fields.Date.from_string(data_referencia)
 
             while inicio <= hoje:
                 vals = \
@@ -142,11 +141,6 @@ class HrContract(models.Model):
             #
             contrato.vacation_control_ids = \
                 sorted(lista_controle_ferias, reverse=True)
-
-            # Criar holiday de férias para cada controle de férias
-            #
-            # for vacation_control in contrato.vacation_control_ids:
-            #     vacation_control.gerar_holidays_ferias()
 
             # Buscar holerites de Férias registradas
             #
@@ -203,17 +197,11 @@ class HrContract(models.Model):
                 #
                 controle_id.hr_holiday_remove_id = holerite.holidays_ferias
 
-
                 # Recuperar a alocação de férias (holiday add) da
                 # solicitação de férias
                 #
                 controle_id.hr_holiday_add_id = \
                     holerite.holidays_ferias.parent_id
-
-                # Setar o holidays de férias ao novo holiday do tipo remove
-                #
-                # holerite.holidays_ferias.parent_id = \
-                #     controle_id.hr_holiday_add_id
 
             # Buscar os holiday do tipo ADD que perderam a relação com o
             # controle de férias
@@ -239,69 +227,11 @@ class HrContract(models.Model):
             for controle_id in contrato.vacation_control_ids:
                 if not controle_id.hr_holiday_add_id:
                     controle_id.gerar_holidays_ferias()
+
             #
+            # Atualizar último periodo aquisitivo caso a data de demissão
+            # esteja definida
             #
-            # holidays.holidays_reset()
-            # holidays.unlink()
-            #
-            #
-            #
-            #
-            #
-            #     for periodo in contrato.vacation_control_ids:
-            #
-            #         # Busca o aviso de férias do mesmo período aquisitivo
-            #         if periodo.inicio_aquisitivo == holerite.inicio_aquisitivo\
-            #                 and not periodo.inicio_gozo:
-            #
-            #             # Calcula dias gozados
-            #             #
-            #             data_inicio = \
-            #                 fields.Date.from_string(holerite.date_from)
-            #             data_fim = fields.Date.from_string(holerite.date_to)
-            #             abono_pecuniario = \
-            #                 holerite.holidays_ferias.sold_vacations_days
-            #             dias_gozados = (data_fim - data_inicio).days + 1 + \
-            #                            abono_pecuniario
-            #
-            #             # Altera os valores do período aquisitivo com os dados
-            #             # do holerite (aviso de férias)
-            #             #
-            #             periodo.inicio_gozo = holerite.date_from
-            #             periodo.fim_gozo = holerite.date_to
-            #             periodo.data_aviso = holerite.date_from
-            #             periodo.dias_gozados = dias_gozados
-            #
-            #             # Como os periodos foram excluidos, marcar o holerite
-            #             # com o periodo de férias que esta sendo criado
-            #             #
-            #             holerite.periodo_aquisitivo = periodo
-            #
-            #             # Cria novo período aquisitivo se ainda houver saldo
-            #             #
-            #             if (periodo.saldo - dias_gozados) > 0:
-            #                 novo_periodo = periodo.copy()
-            #                 novo_periodo.dias_gozados_anteriormente = \
-            #                     dias_gozados + \
-            #                     periodo.dias_gozados_anteriormente
-            #
-            #             domain = [
-            #                 ('data_inicio', '=', periodo.inicio_gozo),
-            #                 ('data_fim', '=', periodo.fim_gozo),
-            #                 ('contrato_id', '=', self.id),
-            #                 ('type', '=', 'remove')
-            #             ]
-            #             holidays = self.env['hr.holidays'].search(domain)
-            #             if holidays:
-            #                 holerite.holidays_ferias = holidays.id
-            #                 holidays.controle_ferias = [(4, periodo.id)]
-            #                 for holiday in periodo.hr_holiday_ids:
-            #                     if holiday.type == "add":
-            #                         holidays.parent_id = holiday
-            #
-            # # Atualizar último periodo aquisitivo caso a data de demissão
-            # # esteja definida
-            # #
             # self.atualizar_data_demissao()
 
             # self.atualizar_linhas_controle_ferias(self.date_start)
@@ -326,17 +256,24 @@ class HrContract(models.Model):
         return res
 
     @api.multi
-    def atualizar_controle_ferias(self):
+    def cron_atualizar_controle_ferias(self):
         """
         Função disparada  pelo cron que dispara diarimente.
         Atualiza o controle de férias, verificando por periodos
         aquisitivos que se encerraram ontem, para criar novas linhas de
         controle de ferias.
         """
+
+        # Dominio para selecionar apenas contratos ativos
+        #
         domain = [
             '|',
             ('date_end', '>', fields.Date.today()),
             ('date_end', '=', False),
         ]
+
+        # chamar a funcao passando a data corrente
+        #
         contratos_ids = self.env['hr.contract'].search(domain)
-        contratos_ids.action_button_update_controle_ferias()
+        hoje = fields.Date.today()
+        contratos_ids.action_button_update_controle_ferias(hoje)

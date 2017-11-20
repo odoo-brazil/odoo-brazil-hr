@@ -83,7 +83,7 @@
                             <field name="perdido_afastamento"/>
                         </group>
                     </group>
-                    <group>
+                    <group groups="base.group_no_one">
                         <field name="hr_holiday_add_id"/>
                         <field name="hr_holiday_remove_id"/>
                     </group>
