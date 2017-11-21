@@ -84,29 +84,40 @@ class HrContract(models.Model):
             hr_contract_id.atualizar_data_demissao()
         return hr_contract_id
 
+    @api.multi
     def atualizar_data_demissao(self):
         """
         Se o contrato ja foi encerrado, replica a informação para o
         controle de ferias computar corretamente as ferias de direito
         :return:
         """
-        if self.date_end and \
-                self.vacation_control_ids and \
-                self.vacation_control_ids[0].fim_aquisitivo > self.date_end:
-            self.vacation_control_ids[0].fim_aquisitivo = self.date_end
-            self.vacation_control_ids[0].inicio_concessivo = ''
-            self.vacation_control_ids[0].fim_concessivo = ''
+        for contrato in self:
+            if contrato.date_end and \
+                    contrato.vacation_control_ids and \
+                    contrato.vacation_control_ids[0].fim_aquisitivo > \
+                            contrato.date_end:
+                contrato.vacation_control_ids[0].fim_aquisitivo = \
+                    contrato.date_end
+                contrato.vacation_control_ids[0].inicio_concessivo = ''
+                contrato.vacation_control_ids[0].fim_concessivo = ''
 
-        # Se estiver reativando o contrato, isto é, removendo a data de demiss
-        if not self.date_end:
-            vc_obj = self.vacation_control_ids
-            inicio_aquisit = self.vacation_control_ids[0].inicio_aquisitivo
-            vals = vc_obj.calcular_datas_aquisitivo_concessivo(inicio_aquisit)
-            # Atualizar datas do ultimo controle de ferias
-            ultimo_controle = self.vacation_control_ids[0]
-            ultimo_controle.fim_aquisitivo = vals.get('fim_aquisitivo')
-            ultimo_controle.inicio_concessivo = vals.get('inicio_concessivo')
-            ultimo_controle.fim_concessivo = vals.get('fim_concessivo')
+            # Se estiver reativando o contrato, isto é, removendo a data de
+            # demissão
+            #
+            if not contrato.date_end:
+                vc_obj = contrato.vacation_control_ids
+                inicio_aquisit = \
+                    contrato.vacation_control_ids[0].inicio_aquisitivo
+                vals = \
+                    vc_obj.calcular_datas_aquisitivo_concessivo(inicio_aquisit)
+                # Atualizar datas do ultimo controle de ferias
+                ultimo_controle = contrato.vacation_control_ids[0]
+                ultimo_controle.fim_aquisitivo = \
+                    vals.get('fim_aquisitivo')
+                ultimo_controle.inicio_concessivo = \
+                    vals.get('inicio_concessivo')
+                ultimo_controle.fim_concessivo = \
+                    vals.get('fim_concessivo')
 
     @api.multi
     def action_button_update_controle_ferias(
@@ -116,8 +127,11 @@ class HrContract(models.Model):
         de férias
         """
 
+        recalculo = True
         if not data_referencia:
             data_referencia = fields.Date.today()
+            recalculo = False
+
 
         for contrato in self:
 
@@ -138,6 +152,8 @@ class HrContract(models.Model):
                     controle_ferias_obj.calcular_datas_aquisitivo_concessivo(
                         str(inicio)
                     )
+                if inicio + relativedelta(years=1) > hoje and recalculo:
+                    vals['fim_aquisitivo'] = hoje
                 controle_ferias = controle_ferias_obj.create(vals)
                 inicio = inicio + relativedelta(years=1)
                 lista_controle_ferias.append(controle_ferias.id)
