@@ -109,11 +109,16 @@ class HrContract(models.Model):
             ultimo_controle.fim_concessivo = vals.get('fim_concessivo')
 
     @api.multi
-    def action_button_update_controle_ferias(self, data_referencia):
+    def action_button_update_controle_ferias(
+            self, context=False, data_referencia=False):
         """
         Ação disparada pelo botão na view, que atualiza as linhas de controle
         de férias
         """
+
+        if not data_referencia:
+            data_referencia = fields.Date.today()
+
         for contrato in self:
 
             controle_ferias_obj = self.env['hr.vacation.control']
@@ -276,4 +281,5 @@ class HrContract(models.Model):
         #
         contratos_ids = self.env['hr.contract'].search(domain)
         hoje = fields.Date.today()
-        contratos_ids.action_button_update_controle_ferias(hoje)
+        contratos_ids.action_button_update_controle_ferias(
+            data_referencia=hoje)
