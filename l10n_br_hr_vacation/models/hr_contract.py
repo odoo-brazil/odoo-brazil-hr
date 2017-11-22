@@ -189,40 +189,42 @@ class HrContract(models.Model):
                     ('contract_id', '=', contrato.id)
                 ])
 
-                # Recuperar datas do aviso de férias para construir
-                # controle de ferias
-                #
-                data_inicio = \
-                    fields.Date.from_string(holerite.date_from)
-                data_fim = fields.Date.from_string(holerite.date_to)
-                abono_pecuniario = \
-                    holerite.holidays_ferias.sold_vacations_days
-                dias_gozados = (data_fim - data_inicio).days + 1 + \
-                               abono_pecuniario
+                if controle_id:
 
-                # se houver saldo de dias, isto é, se o funcinoario tirou
-                # apenas uma parte das férias, duplicar controle vazio
-                #
-                if (controle_id.saldo - dias_gozados) > 0:
-                    novo_periodo = controle_id.copy()
-                    novo_periodo.dias_gozados_anteriormente += dias_gozados
+                    # Recuperar datas do aviso de férias para construir
+                    # controle de ferias
+                    #
+                    data_inicio = \
+                        fields.Date.from_string(holerite.date_from)
+                    data_fim = fields.Date.from_string(holerite.date_to)
+                    abono_pecuniario = \
+                        holerite.holidays_ferias.sold_vacations_days
+                    dias_gozados = (data_fim - data_inicio).days + 1 + \
+                                   abono_pecuniario
 
-                # Setar datas do novo controle de férias baseado no holerite
-                # de férias (aaviso de férias)
-                controle_id.inicio_gozo = holerite.date_from
-                controle_id.fim_gozo = holerite.date_to
-                controle_id.data_aviso = holerite.date_from
-                controle_id.dias_gozados = dias_gozados
+                    # se houver saldo de dias, isto é, se o funcinoario tirou
+                    # apenas uma parte das férias, duplicar controle vazio
+                    #
+                    if (controle_id.saldo - dias_gozados) > 0:
+                        novo_periodo = controle_id.copy()
+                        novo_periodo.dias_gozados_anteriormente += dias_gozados
 
-                # Recuperar a solicitação de férias (holiday remove) holerite
-                #
-                controle_id.hr_holiday_remove_id = holerite.holidays_ferias
+                    # Setar datas do novo controle de férias baseado no holerite
+                    # de férias (aaviso de férias)
+                    controle_id.inicio_gozo = holerite.date_from
+                    controle_id.fim_gozo = holerite.date_to
+                    controle_id.data_aviso = holerite.date_from
+                    controle_id.dias_gozados = dias_gozados
 
-                # Recuperar a alocação de férias (holiday add) da
-                # solicitação de férias
-                #
-                controle_id.hr_holiday_add_id = \
-                    holerite.holidays_ferias.parent_id
+                    # Recuperar a solicitação de férias (holiday remove) holerite
+                    #
+                    controle_id.hr_holiday_remove_id = holerite.holidays_ferias
+
+                    # Recuperar a alocação de férias (holiday add) da
+                    # solicitação de férias
+                    #
+                    controle_id.hr_holiday_add_id = \
+                        holerite.holidays_ferias.parent_id
 
             # Buscar os holiday do tipo ADD que perderam a relação com o
             # controle de férias
