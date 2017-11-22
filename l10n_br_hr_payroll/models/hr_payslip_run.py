@@ -8,6 +8,8 @@ from dateutil.relativedelta import relativedelta
 from pybrasil.data import ultimo_dia_mes
 import logging
 
+from openerp import api, fields, models, _
+from openerp.exceptions import Warning as UserError
 _logger = logging.getLogger(__name__)
 
 MES_DO_ANO = [
@@ -233,3 +235,18 @@ class HrPayslipRun(models.Model):
             for holerite in lote.slip_ids:
                 holerite.hr_verify_sheet()
         super(HrPayslipRun, self).close_payslip_run()
+
+    @api.multi
+    def unlink(self):
+        """
+        Validacao para exclusao de lote de holerites
+        Nao permitir excluir o lote se ao menos um holerite nao estiver no
+        state draft.vali
+        """
+        for lote in self:
+            if any(l != 'draft' for l in lote.slip_ids.mapped('state')):
+                raise UserError(
+                    _('Erro na exclusão deste Lote !\n'
+                      'Há holerite(s) já confirmados!')
+                )
+        return super(HrPayslipRun, self).unlink()
