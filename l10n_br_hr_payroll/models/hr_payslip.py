@@ -698,10 +698,15 @@ class HrPayslip(models.Model):
                                                 u'DSR_PARA_DESCONTAR',
                                                 quantity_DSR_discount,
                                                 0.0, contract_id)]
+
             # get dias de férias + get dias de abono pecuniario
-            quantidade_dias_ferias, quantidade_dias_abono = \
-                self.env['resource.calendar'].get_quantidade_dias_ferias(
-                    hr_contract, date_from, date_to)
+            if self.tipo_de_folha == 'provisao_ferias':
+                quantidade_dias_abono = 0
+                quantidade_dias_ferias = self.periodo_aquisitivo.saldo
+            else:
+                quantidade_dias_ferias, quantidade_dias_abono = \
+                    self.env['resource.calendar'].get_quantidade_dias_ferias(
+                        hr_contract, date_from, date_to)
 
             result += [
                 self.get_attendances(
@@ -905,11 +910,11 @@ class HrPayslip(models.Model):
             meses = 12
             if self.tipo_de_folha in \
                     ['ferias', 'aviso_previo']:
-                if self.tipo_de_folha in ['provisao_ferias', 'aviso_previo']:
-                    periodo_aquisitivo = \
-                        self.contract_id.vacation_control_ids[0]
-                else:
-                    periodo_aquisitivo = self.periodo_aquisitivo
+                # if self.tipo_de_folha in ['provisao_ferias', 'aviso_previo']:
+                #     periodo_aquisitivo = \
+                #         self.contract_id.vacation_control_ids[0]
+                # else:
+                periodo_aquisitivo = self.periodo_aquisitivo
 
                 if self.tipo_de_folha in ['aviso_previo']:
                     data_de_inicio = fields.Date.from_string(
@@ -1673,12 +1678,9 @@ class HrPayslip(models.Model):
 #            if fields.Date.from_string(payslip.date_from) < fields.Date.\
 #                    from_string(payslip.periodo_aquisitivo.inicio_concessivo):
             if not payslip.saldo_periodo_aquisitivo:
-                dias_abono_ferias.update(
-                    {
-                        'DIAS_FERIAS':
-                            worked_days[u'SALDO_FERIAS'].number_of_days
-                    }
-                )
+                dias_abono_ferias.update({
+                    'DIAS_FERIAS': worked_days[u'SALDO_FERIAS'].number_of_days
+                })
             else:
                 dias_abono_ferias.update(
                     {'DIAS_FERIAS': payslip.saldo_periodo_aquisitivo}
@@ -2108,13 +2110,15 @@ class HrPayslip(models.Model):
                 record.mes_do_ano2 = datetime.now().month
             if record.tipo_de_folha == 'ferias' and record.holidays_ferias:
                 record.periodo_aquisitivo =\
-                    record.holidays_ferias.controle_ferias[0]
+                    record.holidays_ferias.parent_id.controle_ferias_ids[0]
                 record.date_from = record.holidays_ferias.data_inicio
                 record.date_to = record.holidays_ferias.data_fim
                 record.mes_do_ano = \
                     datetime.strptime(record.date_from, '%Y-%m-%d').month
                 record.ano = \
                     datetime.strptime(record.date_from, '%Y-%m-%d').year
+                continue
+            if record.tipo_de_folha =='provisao_ferias':
                 continue
 
             mes = record.mes_do_ano
@@ -2224,7 +2228,7 @@ class HrPayslip(models.Model):
 
                     # Atualizar o controle de férias com informacao de
                     # quantos dias o funcionario gozara
-                    self.periodo_aquisitivo.dias_gozados += \
+                    self.periodo_aquisitivo.dias_gozados = \
                         self.holidays_ferias.number_of_days_temp
 
                     # Caso o funcionario opte por dividir as férias em dois
@@ -2374,11 +2378,11 @@ class HrPayslip(models.Model):
             medias_obj = self.env['l10n_br.hr.medias']
             if self.tipo_de_folha in \
                     ['ferias', 'aviso_previo', 'provisao_ferias']:
-                if self.tipo_de_folha in ['provisao_ferias', 'aviso_previo']:
-                    periodo_aquisitivo = \
-                        self.contract_id.vacation_control_ids[0]
-                else:
-                    periodo_aquisitivo = self.periodo_aquisitivo
+                # if self.tipo_de_folha in ['provisao_ferias', 'aviso_previo']:
+                #     periodo_aquisitivo = \
+                #         self.contract_id.vacation_control_ids[0]
+                # else:
+                periodo_aquisitivo = self.periodo_aquisitivo
 
                 if self.tipo_de_folha in ['aviso_previo']:
                     data_de_inicio = fields.Date.from_string(

@@ -14,7 +14,7 @@
                     <field name="parent_id" string="Período Aquisitivo"
                            options="{'no_create': true, 'create_edit': false}"
                            attrs="{'invisible': ['|',('type','=','add'),('holiday_status_id', '!=', %(l10n_br_hr_holiday.holiday_status_vacation)d)], 'required':  [('date_from','!=',False),('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"
-                           domain="[('type', '=', 'add'), ('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d), ('contrato_id', '=' , contrato_id)]}"/>
+                           domain="[('type', '=', 'add'), ('child_ids', '=', False), ('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d), ('contrato_id', '=' , contrato_id)]}"/>
                 </field>
                 <label string="-" position="replace">
                     <label string="-" class="oe_inline" attrs="{'invisible': [('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"/>
