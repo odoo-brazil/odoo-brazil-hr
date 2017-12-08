@@ -170,6 +170,7 @@ class HrContract(models.Model):
                 ('tipo_de_folha', '=', 'ferias'),
                 ('is_simulacao', '=', False),
                 ('state', 'in', ['done', 'verify']),
+                ('date_from', '<=', hoje)
             ]
             holerites_ids = \
                 self.env['hr.payslip'].search(domain, order='date_from')
@@ -215,6 +216,9 @@ class HrContract(models.Model):
                     controle_id.fim_gozo = holerite.date_to
                     controle_id.data_aviso = holerite.date_from
                     controle_id.dias_gozados = dias_gozados
+
+                    # Linkar Holerite com o Período Aquisitivo
+                    holerite.periodo_aquisitivo = controle_id
 
                     # Recuperar a solicitação de férias (holiday remove) holerite
                     #
