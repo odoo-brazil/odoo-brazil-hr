@@ -77,8 +77,7 @@ class HrContract(models.Model):
     def create(self, vals):
         hr_contract_id = super(HrContract, self).create(vals)
         if vals.get('date_start'):
-            hr_contract_id.atualizar_linhas_controle_ferias(
-                vals.get('date_start'))
+            hr_contract_id.action_button_update_controle_ferias()
         # se o contrato ja se encerrou, replicar no controle de férias
         if vals.get('date_end'):
             hr_contract_id.atualizar_data_demissao()
