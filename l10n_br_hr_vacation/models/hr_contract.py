@@ -264,7 +264,8 @@ class HrContract(models.Model):
             # Atualizar último periodo aquisitivo caso a data de demissão
             # esteja definida
             #
-            self.atualizar_data_demissao()
+            if self.date_end:
+                self.atualizar_data_demissao()
 
             # self.atualizar_linhas_controle_ferias(self.date_start)
 
