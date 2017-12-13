@@ -128,9 +128,15 @@ class HrContract(models.Model):
 
         recalculo = True
         if not data_referencia:
-            data_referencia = fields.Date.today()
+            if self.date_end:
+                data_referencia = self.date_end
+            else:
+                data_referencia = fields.Date.today()
             recalculo = False
-
+        else:
+            if self.date_end:
+                if data_referencia > self.date_end:
+                    data_referencia = self.date_end
 
         for contrato in self:
 
@@ -258,7 +264,7 @@ class HrContract(models.Model):
             # Atualizar último periodo aquisitivo caso a data de demissão
             # esteja definida
             #
-            # self.atualizar_data_demissao()
+            self.atualizar_data_demissao()
 
             # self.atualizar_linhas_controle_ferias(self.date_start)
 
