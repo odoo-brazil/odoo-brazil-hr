@@ -6,6 +6,7 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 from openerp import api, models, fields
+from pybrasil.data import parse_datetime, idade_meses
 
 
 class HrVacationControl(models.Model):
@@ -212,7 +213,7 @@ class HrVacationControl(models.Model):
 
     def _compute_calcular_avos(self):
         for record in self:
-            date_begin = fields.Datetime.from_string(record.inicio_aquisitivo)
+            date_begin = record.inicio_aquisitivo
 
             # Pega data_fim do contexto se existir, para cálculo de simulações
             if "data_fim" in self.env.context:
@@ -221,16 +222,27 @@ class HrVacationControl(models.Model):
                 hoje = fields.Date.today()
 
             if hoje < record.fim_aquisitivo:
-                date_end = fields.Datetime.from_string(hoje)
+                date_end = hoje
             else:
-                date_end = fields.Datetime.from_string(record.fim_aquisitivo)
-            avos_decimal = (date_end - date_begin).days / 30.0
-            decimal = avos_decimal - int(avos_decimal)
+                date_end = record.fim_aquisitivo
 
-            if decimal > 0.5:
-                record.avos = int(avos_decimal) + 1
-            else:
-                record.avos = int(avos_decimal)
+            date_end = fields.Date.from_string(date_end) + relativedelta(days=1)
+            date_end = fields.Date.to_string(date_end)
+
+            #
+            # Calcula os avos
+            #
+            record.avos = idade_meses(parse_datetime(date_begin),
+                                      parse_datetime(date_end),
+                                      quinze_dias=True)
+
+            # avos_decimal = (date_end - date_begin).days / 30.0
+            # decimal = avos_decimal - int(avos_decimal)
+            #
+            # if decimal > 0.5:
+            #     record.avos = int(avos_decimal) + 1
+            # else:
+            #     record.avos = int(avos_decimal)
 
     @api.depends('dias_gozados')
     def _compute_calcular_saldo_dias(self):
