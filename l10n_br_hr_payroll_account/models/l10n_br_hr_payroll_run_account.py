@@ -117,6 +117,8 @@ class L10nBrHrPayslip(models.Model):
         period_obj = self.env['account.period']
 
         for payslip in self:
+
+            # Calcular o mês/ano anterior
             mes_anterior = payslip.mes_do_ano - 1
             ano_anterior = payslip.ano
             if mes_anterior == 0:
@@ -127,25 +129,36 @@ class L10nBrHrPayslip(models.Model):
                 datetime.strptime(str(mes_anterior) + '-' +
                                   str(ano_anterior), '%m-%Y'))
 
+            # Encontrar o Período anterior
             periodo_anterior_id = period_obj.find(primeiro_dia_do_mes)
 
-            move_id = self.env['account.move'].search(
+            # Encontrar o Lote anterior
+            lote_anterior = self.env['hr.payslip.run'].search(
                 [
-                    (
-                        'name',
-                        'like',
-                        NOME_LANCAMENTO_LOTE[tipo_folha]
-                    ),
-                    (
-                        'period_id', '=', periodo_anterior_id.id
-                    )
-                ],
-                limit=1
+                    ('mes_do_ano', '=', mes_anterior),
+                    ('ano', '=', ano_anterior),
+                    ('company_id', '=', payslip.company_id.id),
+                    ('tipo_de_folha', '=', payslip.tipo_de_folha)
+                ]
             )
-            if not move_id:
-                return False
+
+            if lote_anterior:
+                move_ids = self.env['account.move'].search(
+                    [
+                        ('ref', 'like', lote_anterior.display_name),
+                        ('period_id', '=', periodo_anterior_id.id)
+                    ],
+                )
+
+                # Se for provisão de 13º e o mês anterior for Dezembro, não deve
+                # desfazer os lançamentos anteriores
+                #
+                if tipo_folha == 'provisao_13' and mes_anterior == 12:
+                    return False
+
+                return move_ids
             else:
-                return move_id
+                return False
 
     @api.multi
     def _valor_lancamento_lote_anterior_rubrica(self, rubrica):
@@ -242,6 +255,7 @@ class L10nBrHrPayslip(models.Model):
 
             for rubrica in rubricas:
                 line_ids = []
+                move = False
 
                 if rubricas[rubrica].total > 0:
                     move = self.criar_lancamento_contabil(
@@ -314,18 +328,72 @@ class L10nBrHrPayslip(models.Model):
                         'payslip_run_id': payslip_run.id
                     })
                     line_ids.append(adjust_debit)
-                move.update({'line_id': line_ids})
-                move_id = move_obj.create(move)
-                # if not payslip_run.move_id:
-                #     move.update({'line_id': line_ids})
-                #     move_id = move_obj.create(move)
-                # else:
-                #     for line in line_ids:
-                #         line[2].update({'move_id': payslip_run.move_id.id})
-                #         self.env['account.move.line'].create(line[2])
-                #     move_id = payslip_run.move_id
+                if move:
+                    move.update({'line_id': line_ids})
+                    move_id = move_obj.create(move)
+                    # if not payslip_run.move_id:
+                    #     move.update({'line_id': line_ids})
+                    #     move_id = move_obj.create(move)
+                    # else:
+                    #     for line in line_ids:
+                    #         line[2].update({'move_id': payslip_run.move_id.id})
+                    #         self.env['account.move.line'].create(line[2])
+                    #     move_id = payslip_run.move_id
                 if payslip_run.journal_id.entry_posted:
                     move_obj.post(move_id)
+
+            #
+            #  Desfazer lançamentos do mês anterior
+            #
+
+            # Identificar os lançamentos do mês anterior
+            #
+            move_anterior_ids = \
+                self._verificar_lancamentos_lotes_anteriores(
+                    payslip_run.tipo_de_folha, period_id.id,
+                )
+
+            # Rodar todos os lançamentos do mês anterior e criar um movimento
+            # reverso para cada um
+            #
+            if move_anterior_ids:
+                for movimento in move_anterior_ids:
+
+                    name = \
+                        NOME_LANCAMENTO_LOTE[payslip_run.tipo_de_folha] + \
+                        " - " + str(payslip_run.mes_do_ano) + \
+                        "/" + str(payslip_run.ano) + " - " + \
+                        str("%03d" % contador_lancamentos)
+                    move = {
+                        'name': name,
+                        'display_name': name,
+                        'narration': name,
+                        'date': payslip_run.date_end,
+                        'ref': payslip_run.display_name,
+                        'journal_id': payslip_run.journal_id.id,
+                        'period_id': period_id.id,
+                        'payslip_run_id': payslip_run.id,
+                    }
+                    contador_lancamentos += 1
+
+                    line_ids = []
+
+                    for linha in movimento.line_id:
+                        if "(Anterior)" not in linha.name:
+                            line_anterior = (0, 0, {
+                                'name': linha.name + " (Anterior)",
+                                'date': timenow,
+                                'account_id': linha.account_id.id,
+                                'journal_id': linha.journal_id,
+                                'period_id': period_id,
+                                'debit': 0.0 if linha.credit else linha.debit,
+                                'credit': 0.0 if linha.debit else linha.credit,
+                                'payslip_run_id': payslip_run.id,
+                            })
+                            line_ids.append(line_anterior)
+
+                    move.update({'line_id': line_ids})
+                    move_id = move_obj.create(move)
 
     def criar_lancamento_contabil(self, line_ids, payslip_run, period_id,
                                   timenow, contador_lancamento):
@@ -346,28 +414,6 @@ class L10nBrHrPayslip(models.Model):
             'period_id': period_id.id,
             'payslip_run_id': payslip_run.id,
         }
-
-        move_anterior_id = \
-            self._verificar_lancamentos_lotes_anteriores(
-                payslip_run.tipo_de_folha, period_id.id
-            )
-        #
-        # Desfaz o lançamento anterior
-        #
-        if move_anterior_id:
-            for linha in move_anterior_id.line_id:
-                if "(Anterior)" not in linha.name:
-                    line_anterior = (0, 0, {
-                        'name': linha.name + " (Anterior)",
-                        'date': timenow,
-                        'account_id': linha.account_id.id,
-                        'journal_id': linha.journal_id,
-                        'period_id': period_id,
-                        'debit': 0.0 if linha.credit else linha.debit,
-                        'credit': 0.0 if linha.debit else linha.credit,
-                        'payslip_run_id': payslip_run.id,
-                    })
-                    line_ids.append(line_anterior)
         return move
 
     @api.model
