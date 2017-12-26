@@ -2,11 +2,12 @@
 # Copyright 2016 KMEE - Hendrix Costa <hendrix.costa@kmee.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
 from openerp import api, models, fields
-from pybrasil.data import parse_datetime, idade_meses
+from pybrasil.data import parse_datetime, idade_meses, ultimo_dia_mes, \
+    primeiro_dia_mes
 
 
 class HrVacationControl(models.Model):
@@ -232,9 +233,32 @@ class HrVacationControl(models.Model):
             #
             # Calcula os avos
             #
-            record.avos = idade_meses(parse_datetime(date_begin),
-                                      parse_datetime(date_end),
-                                      quinze_dias=True)
+            ultimo_dia_primeiro_mes = ultimo_dia_mes(date_begin)
+            if ultimo_dia_primeiro_mes - \
+                    parse_datetime(date_begin).date() >= \
+                    timedelta(days=15):
+                avos_primeiro_mes = 1
+            else:
+                avos_primeiro_mes = 0
+
+            primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end)
+            ultimo_dia_ultimo_mes = ultimo_dia_mes(date_end)
+            avos_ultimo_mes = 0
+            dias = primeiro_dia_ultimo_mes - parse_datetime(date_end).date()
+            dias_mes = ultimo_dia_ultimo_mes - primeiro_dia_ultimo_mes
+            if dias > timedelta(days=15):
+                avos_ultimo_mes = 1
+            elif dias == timedelta(days=15):
+                if dias_mes != timedelta(days=30):
+                    avos_ultimo_mes = 1
+
+            primeiro_dia_mes_cheio = ultimo_dia_mes(date_begin) + \
+                                     timedelta(days=1)
+            ultimo_dia_mes_cheio = primeiro_dia_mes(date_end)
+            avos_meio = idade_meses(parse_datetime(primeiro_dia_mes_cheio),
+                                    parse_datetime(ultimo_dia_mes_cheio))
+
+            record.avos = avos_primeiro_mes + avos_meio + avos_ultimo_mes
 
             # avos_decimal = (date_end - date_begin).days / 30.0
             # decimal = avos_decimal - int(avos_decimal)
