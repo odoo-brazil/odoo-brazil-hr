@@ -244,7 +244,7 @@ class HrVacationControl(models.Model):
             primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end)
             ultimo_dia_ultimo_mes = ultimo_dia_mes(date_end)
             avos_ultimo_mes = 0
-            dias = primeiro_dia_ultimo_mes - parse_datetime(date_end).date()
+            dias = parse_datetime(date_end).date() - primeiro_dia_ultimo_mes
             dias_mes = ultimo_dia_ultimo_mes - primeiro_dia_ultimo_mes
             if dias > timedelta(days=15):
                 avos_ultimo_mes = 1
