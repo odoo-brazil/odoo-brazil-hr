@@ -29,11 +29,11 @@
                            attrs="{'required':[('type', '=', 'remove')], 'invisible': 1}"
                            class="oe_inline"/>
                     <field name="data_inicio" nolabel="1"
-                           attrs="{'required':[('type', '=', 'remove')], 'invisible': 0}"/>
+                           attrs="{'required':[('type', '=', 'remove')], 'invisible': 0, 'readonly':[('state','in',['validate','validate1','refuse'])]}"/>
                 </field>
                 <field name="date_to" position="replace">
                     <field name="data_fim" nolabel="1"
-                           attrs="{'required':[('type', '=', 'remove')], 'invisible': 0}"/>
+                           attrs="{'required':[('type', '=', 'remove')], 'invisible': 0, 'readonly':[('state','in',['validate','validate1','refuse'])]}"/>
                     <field name="date_to" nolabel="1"
                            on_change="onchange_date_to(date_to, date_from, sold_vacations_days)"
                            attrs="{'required':[('type', '=', 'remove')], 'invisible': 1}"
