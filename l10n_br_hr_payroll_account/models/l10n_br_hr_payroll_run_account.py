@@ -386,8 +386,8 @@ class L10nBrHrPayslip(models.Model):
                                 'account_id': linha.account_id.id,
                                 'journal_id': linha.journal_id,
                                 'period_id': period_id,
-                                'debit': 0.0 if linha.credit else linha.debit,
-                                'credit': 0.0 if linha.debit else linha.credit,
+                                'debit': linha.credit if linha.credit else 0.0,
+                                'credit': linha.debit if linha.debit else 0.0,
                                 'payslip_run_id': payslip_run.id,
                             })
                             line_ids.append(line_anterior)
