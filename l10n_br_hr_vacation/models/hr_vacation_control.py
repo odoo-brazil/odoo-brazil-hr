@@ -227,12 +227,16 @@ class HrVacationControl(models.Model):
             else:
                 date_end = record.fim_aquisitivo
 
-            date_end = fields.Date.from_string(date_end) + relativedelta(days=1)
+            date_end2 = date_end
+            date_end = fields.Date.from_string(date_end) + \
+                       relativedelta(days=1)
             date_end = fields.Date.to_string(date_end)
 
             #
             # Calcula os avos
             #
+            dias_para_adicionar = fields.Date.from_string(date_begin) - \
+                                  primeiro_dia_mes(date_begin)
             ultimo_dia_primeiro_mes = ultimo_dia_mes(date_begin)
             if ultimo_dia_primeiro_mes - \
                     parse_datetime(date_begin).date() >= \
@@ -241,7 +245,58 @@ class HrVacationControl(models.Model):
             else:
                 avos_primeiro_mes = 0
 
-            primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end)
+            #
+            # Se for para cálculo de rescisão, calcule o avo do fim do
+            # período aquisitivo de acordo com instruções abaixo.
+            #
+            """
+            
+O cálculo de férias usa a regra dos 15 dias trabalhados no mês, mas leva em 
+consideração a data de "aniversário" do período aquisitivo, ou seja, dia 06 de 
+cada mês no caso do Antônio, assim teremos; Mar (trabalhou mais de 15 dias), 
+Abr, Mai, Jun, Jul, Ago, Set, Out, Nov e Dez/2016 totalizando 10 avos, 
+para jan/2017, levando em consideração o dia 06 e a data da rescisão (16/01), 
+dá menos que 15 dias trabalhados, não considera o avo.
+
+Transcrevo abaixo o Art. 130 da CLT:
+
+Art. 130 - Após cada período de 12 (doze) meses de vigência do contrato de 
+trabalho, o empregado terá direito a férias, na seguinte proporção: (Redação 
+dada pelo Decreto-lei nº 1.535, de 13.4.1977)
+
+I - 30 (trinta) dias corridos, quando não houver faltado ao serviço mais de 5 
+(cinco) vezes;  (Incluído pelo Decreto-lei nº 1.535, de 13.4.1977)
+
+II - 24 (vinte e quatro) dias corridos, quando houver tido de 6 (seis) a 14 
+(quatorze) faltas; (Incluído pelo Decreto-lei nº 1.535, de 13.4.1977)
+
+III - 18 (dezoito) dias corridos, quando houver tido de 15 (quinze) a 23 
+(vinte e três) faltas; (Incluído pelo Decreto-lei nº 1.535, de 13.4.1977)
+
+IV - 12 (doze) dias corridos, quando houver tido de 24 (vinte e quatro) a 32 
+(trinta e duas) faltas. (Incluído pelo Decreto-lei nº 1.535, de 13.4.1977)
+
+§ 1º - É vedado descontar, do período de férias, as faltas do empregado ao 
+serviço. (Incluído pelo Decreto-lei nº 1.535, de 13.4.1977)
+
+§ 2º - O período das férias será computado, para todos os efeitos, como tempo 
+de serviço.(Incluído pelo Decreto-lei nº 1.535, de 13.4.1977)
+
+Como podemos observar, o artigo leva em consideração a vigência do contrato, 
+isto é, a data de admissão do funcionário, e combinado com o Art. 146 da CLT, 
+fica interpretado que os avos são considerados a partir da data de admissão e 
+não do mês civil.
+
+ Observação: Além das informações acima, consultamos o nosso apoio jurídico 
+ trabalhista IOB.
+ Carlos Eduardo Silva
+            """
+            if date_end2 == record.contract_id.date_end:
+                primeiro_dia_ultimo_mes = \
+                    primeiro_dia_mes(date_end) + dias_para_adicionar
+            else:
+                primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end)
+
             ultimo_dia_ultimo_mes = ultimo_dia_mes(date_end)
             avos_ultimo_mes = 0
             dias = parse_datetime(date_end).date() - primeiro_dia_ultimo_mes
