@@ -130,7 +130,7 @@ class L10nBrHrPayslip(models.Model):
                                 line.salary_rule_id.\
                                     holerite_normal_account_debit
                         if line.salary_rule_id.holerite_normal_account_credit:
-                            debito = line.total
+                            credito = line.total
                             conta_credito = \
                                 line.salary_rule_id.\
                                     holerite_normal_account_credit
@@ -140,7 +140,7 @@ class L10nBrHrPayslip(models.Model):
                             conta_debito = \
                                 line.salary_rule_id.ferias_account_debit
                         if line.salary_rule_id.ferias_account_credit:
-                            debito = line.total
+                            credito = line.total
                             conta_credito = \
                                 line.salary_rule_id.ferias_account_credit
                     elif holerite.tipo_de_folha == 'decimo_terceiro':
@@ -149,7 +149,7 @@ class L10nBrHrPayslip(models.Model):
                             conta_debito = \
                                 line.salary_rule_id.decimo_13_account_debit
                         if line.salary_rule_id.decimo_13_account_credit:
-                            debito = line.total
+                            credito = line.total
                             conta_credito = \
                                 line.salary_rule_id.decimo_13_account_credit
                     elif holerite.tipo_de_folha == 'rescisao':
@@ -158,7 +158,7 @@ class L10nBrHrPayslip(models.Model):
                             conta_debito = \
                                 line.salary_rule_id.rescisao_account_debit
                         if line.salary_rule_id.rescisao_account_credit:
-                            debito = line.total
+                            credito = line.total
                             conta_credito = \
                                 line.salary_rule_id.rescisao_account_credit
                     elif holerite.tipo_de_folha == 'provisao_ferias':
@@ -168,7 +168,7 @@ class L10nBrHrPayslip(models.Model):
                                 line.salary_rule_id.\
                                     provisao_ferias_account_debit
                         if line.salary_rule_id.provisao_ferias_account_credit:
-                            debito = line.total
+                            credito = line.total
                             conta_credito = \
                                 line.salary_rule_id.\
                                     provisao_ferias_account_credit
@@ -178,7 +178,7 @@ class L10nBrHrPayslip(models.Model):
                             conta_debito = \
                                 line.salary_rule_id.provisao_13_account_debit
                         if line.salary_rule_id.provisao_13_account_credit:
-                            debito = line.total
+                            credito = line.total
                             conta_credito = \
                                 line.salary_rule_id.provisao_13_account_credit
 
