@@ -102,6 +102,13 @@ class L10nBrHrPayslip(models.Model):
             period_id = period_obj.find(holerite.date_to)
             contador_lancamentos = 1
 
+            if holerite.payslip_run_id:
+                raise Warning(_('Erro de Consistência!'),
+                              _('Este Holerite faz parte de um lote '
+                                'neste caso a contabilização deve ser feita '
+                                'pelo Lote!'
+                                ))
+
             if not holerite.journal_id:
                 raise Warning(_('Erro de Dados!'),
                               _('O campo Diário neste holerite '
