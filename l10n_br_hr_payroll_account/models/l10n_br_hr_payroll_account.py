@@ -95,163 +95,130 @@ class L10nBrHrPayslip(models.Model):
 
     @api.multi
     def processar_folha(self):
-        if self.journal_id:
+        for holerite in self:
             move_obj = self.env['account.move']
             period_obj = self.env['account.period']
-            precision = self.env['decimal.precision'].precision_get('Payroll')
             timenow = time.strftime('%Y-%m-%d')
+            period_id = period_obj.find(holerite.date_to)
+            contador_lancamentos = 1
 
-            for slip in self:
-                debit_sum = 0.0
-                credit_sum = 0.0
-                contador_lancamentos = 1
-                period_id = period_obj.find(slip.date_to)
-                if slip.move_id:
-                    slip.move_id.unlink()
+            if not holerite.journal_id:
+                raise Warning(_('Erro de Dados!'),
+                              _('O campo Diário neste holerite '
+                                'não foi definido, por favor escolha o '
+                                'Diário antes de calcular o Lançamento '
+                                'Contábil!'
+                                ))
 
-                for line in slip.details_by_salary_rule_category:
-                    line_ids = []
+            # Roda as Rubricas e Cria os lançamentos contábeis
+            for line in holerite.details_by_salary_rule_category:
+                linhas = []
+                if line.total > 0:
+                    conta_credito, conta_debito = False, False
+                    credito, debito = 0, 0
+                    if holerite.tipo_de_folha == 'normal':
+                        if line.salary_rule_id.holerite_normal_account_debit:
+                            debito = line.total
+                            conta_debito = \
+                                line.salary_rule_id.\
+                                    holerite_normal_account_debit
+                        if line.salary_rule_id.holerite_normal_account_credit:
+                            debito = line.total
+                            conta_credito = \
+                                line.salary_rule_id.\
+                                    holerite_normal_account_credit
+                    elif holerite.tipo_de_folha == 'ferias':
+                        if line.salary_rule_id.ferias_account_debit:
+                            debito = line.total
+                            conta_debito = \
+                                line.salary_rule_id.ferias_account_debit
+                        if line.salary_rule_id.ferias_account_credit:
+                            debito = line.total
+                            conta_credito = \
+                                line.salary_rule_id.ferias_account_credit
+                    elif holerite.tipo_de_folha == 'decimo_terceiro':
+                        if line.salary_rule_id.decimo_13_account_debit:
+                            debito = line.total
+                            conta_debito = \
+                                line.salary_rule_id.decimo_13_account_debit
+                        if line.salary_rule_id.decimo_13_account_credit:
+                            debito = line.total
+                            conta_credito = \
+                                line.salary_rule_id.decimo_13_account_credit
+                    elif holerite.tipo_de_folha == 'rescisao':
+                        if line.salary_rule_id.rescisao_account_debit:
+                            debito = line.total
+                            conta_debito = \
+                                line.salary_rule_id.rescisao_account_debit
+                        if line.salary_rule_id.rescisao_account_credit:
+                            debito = line.total
+                            conta_credito = \
+                                line.salary_rule_id.rescisao_account_credit
+                    elif holerite.tipo_de_folha == 'provisao_ferias':
+                        if line.salary_rule_id.provisao_ferias_account_debit:
+                            debito = line.total
+                            conta_debito = \
+                                line.salary_rule_id.\
+                                    provisao_ferias_account_debit
+                        if line.salary_rule_id.provisao_ferias_account_credit:
+                            debito = line.total
+                            conta_credito = \
+                                line.salary_rule_id.\
+                                    provisao_ferias_account_credit
+                    elif holerite.tipo_de_folha == 'provisao_decimo_terceiro':
+                        if line.salary_rule_id.provisao_13_account_debit:
+                            debito = line.total
+                            conta_debito = \
+                                line.salary_rule_id.provisao_13_account_debit
+                        if line.salary_rule_id.provisao_13_account_credit:
+                            debito = line.total
+                            conta_credito = \
+                                line.salary_rule_id.provisao_13_account_credit
 
-                    if line.total > 0:
-                        debit_account_id, credit_account_id = \
-                            slip._buscar_contas(line.salary_rule_id)
-                        if debit_account_id or credit_account_id:
-                            move, move_anterior_id = \
-                                self.criar_lancamento_contabil(
-                                    period_id, slip, contador_lancamentos
-                                )
-                            contador_lancamentos += 1
-                            amt = slip.credit_note and - \
-                                line.total or line.total
-                            if float_is_zero(amt, precision_digits=precision):
-                                continue
-                            if slip.tipo_de_folha in [
-                                'provisao_ferias', 'provisao_decimo_terceiro'
-                            ]:
-                                if move_anterior_id:
-                                    debito, credito, \
-                                        periodo_anterior_id = self.\
-                                        _valor_lancamento_anterior_rubrica(
-                                            move_anterior_id,
-                                            line.salary_rule_id
-                                        )
-                                    if debito or credito:
-                                        line_anterior = (0, 0, {
-                                            'name': line.name + " (Anterior)",
-                                            'date': timenow,
-                                            'account_id':
-                                                debit_account_id.id if debito
-                                                else credit_account_id.id,
-                                            'journal_id': slip.journal_id.id,
-                                            'period_id':
-                                                periodo_anterior_id.id,
-                                            'debit': credito or 0.0,
-                                            'credit': debito or 0.0,
-                                            'payslip_id': slip.id,
-                                        })
-                                        line_ids.append(line_anterior)
-                                        if debito:
-                                            debit_sum += \
-                                                line_anterior[2]['debit'] - \
-                                                line_anterior[2]['credit']
-                                        else:
-                                            credit_sum += \
-                                                line_anterior[2]['credit'] - \
-                                                line_anterior[2]['debit']
-                            if debit_account_id and slip.tipo_de_folha not in [
-                                'provisao_ferias', 'provisao_decimo_terceiro'
-                            ]:
-                                debit_line = (0, 0, {
-                                    'name': line.name,
-                                    'date': timenow,
-                                    'account_id': debit_account_id.id,
-                                    'journal_id': slip.journal_id.id,
-                                    'period_id': period_id.id,
-                                    'debit': amt > 0.0 and amt or 0.0,
-                                    'credit': amt < 0.0 and -amt or 0.0,
-                                    'payslip_id': slip.id,
-                                })
-                                line_ids.append(debit_line)
-                                debit_sum += \
-                                    debit_line[2]['debit'] - debit_line[2][
-                                        'credit']
-                            if credit_account_id:
-                                credit_line = (0, 0, {
-                                    'name': line.name,
-                                    'date': timenow,
-                                    'account_id': credit_account_id.id,
-                                    'journal_id': slip.journal_id.id,
-                                    'period_id': period_id.id,
-                                    'debit': amt < 0.0 and -amt or 0.0,
-                                    'credit': amt > 0.0 and amt or 0.0,
-                                    'payslip_id': slip.id,
-                                })
-                                line_ids.append(credit_line)
-                                credit_sum += \
-                                    credit_line[2]['credit'] - credit_line[2][
-                                        'debit']
+                    #
+                    # Cria o Lançamento Contábil para esta Rubrica
+                    #
+                    if conta_credito or conta_debito:
+                        move = self.criar_lancamento_contabil(
+                                period_id, holerite, contador_lancamentos
+                            )
 
-                            if float_compare(
-                                    credit_sum, debit_sum,
-                                    precision_digits=precision
-                            ) == -1:
-                                acc_id = slip.journal_id\
-                                    .default_credit_account_id.id
-                                if not acc_id:
-                                    raise Warning(_('Configuration Error!'),
-                                                  _('The Expense Journal "%s" '
-                                                    'has not properly '
-                                                    'configured the '
-                                                    'Credit Account!'
-                                                    ) % slip.journal_id.name)
-                                adjust_credit = (0, 0, {
-                                    'name': _('Adjustment Entry'),
-                                    'date': timenow,
-                                    'partner_id': False,
-                                    'account_id': acc_id,
-                                    'journal_id': slip.journal_id.id,
-                                    'period_id': period_id.id,
-                                    'debit': 0.0,
-                                    'credit': debit_sum - credit_sum,
-                                    'payslip_id': slip.id,
-                                })
-                                line_ids.append(adjust_credit)
+                        # Cria a linha do lançamento contábil para Crédito
+                        if conta_credito:
+                            credit_line = (0, 0, {
+                                'name': line.name,
+                                'date': timenow,
+                                'account_id': conta_credito.id,
+                                'journal_id': holerite.journal_id.id,
+                                'period_id': period_id.id,
+                                'debit': 0,
+                                'credit': credito,
+                                'payslip_id': holerite.id,
+                            })
+                            linhas.append(credit_line)
 
-                            elif float_compare(
-                                    debit_sum, credit_sum,
-                                    precision_digits=precision
-                            ) == -1:
-                                acc_id = slip.journal_id\
-                                    .default_debit_account_id.id
-                                if not acc_id:
-                                    raise Warning(_('Configuration Error!'),
-                                                  _('The Expense Journal "%s" '
-                                                    'has not properly '
-                                                    'configured the '
-                                                    'Debit Account!'
-                                                    ) % slip.journal_id.name)
-                                adjust_debit = (0, 0, {
-                                    'name': _('Adjustment Entry'),
-                                    'date': timenow,
-                                    'partner_id': False,
-                                    'account_id': acc_id,
-                                    'journal_id': slip.journal_id.id,
-                                    'period_id': period_id.id,
-                                    'debit': credit_sum - debit_sum,
-                                    'credit': 0.0,
-                                    'payslip_id': slip.id,
-                                })
-                                line_ids.append(adjust_debit)
-                            move.update({'line_id': line_ids})
-                            move_id = move_obj.create(move)
-                            if slip.journal_id.entry_posted:
-                                move_obj.post(move_id)
-        else:
-            raise Warning(
-                _('Erro!'),
-                _('É preciso selecionar um diário para realizar '
-                  'a contabilização!')
-            )
+                        # Cria a linha do lançamento contábil para Débito
+                        if conta_debito:
+                            debit_line = (0, 0, {
+                                'name': line.name,
+                                'date': timenow,
+                                'account_id': conta_debito.id,
+                                'journal_id': holerite.journal_id.id,
+                                'period_id': period_id.id,
+                                'debit': debito,
+                                'credit': 0,
+                                'payslip_id': holerite.id,
+                            })
+                            linhas.append(debit_line)
+
+                        # Fecha e Posta o Lançamento Contábil
+                        move.update({'line_id': linhas})
+                        move_id = move_obj.create(move)
+                        if holerite.journal_id.entry_posted:
+                            move_obj.post(move_id)
+
+                        # Incrementa o contador para a próxima linha
+                        contador_lancamentos += 1
 
     def criar_lancamento_contabil(self, period_id, slip, contador_lancamento):
         name = \
@@ -269,7 +236,4 @@ class L10nBrHrPayslip(models.Model):
             'period_id': period_id.id,
             'payslip_id': slip.id,
         }
-        move_anterior_id = self._verificar_lancamentos_anteriores(
-            slip.tipo_de_folha, period_id.id
-        )
-        return move, move_anterior_id
+        return move
