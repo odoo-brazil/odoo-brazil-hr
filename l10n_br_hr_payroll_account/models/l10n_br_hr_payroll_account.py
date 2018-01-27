@@ -117,6 +117,9 @@ class L10nBrHrPayslip(models.Model):
                                 'Contábil!'
                                 ))
 
+            # Exclui os Lançamento Contábeis anteriors
+            holerite.move_id.unlink()
+
             # Roda as Rubricas e Cria os lançamentos contábeis
             for line in holerite.details_by_salary_rule_category:
                 linhas = []
