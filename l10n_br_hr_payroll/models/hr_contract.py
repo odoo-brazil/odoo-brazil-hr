@@ -72,31 +72,27 @@ class HrContract(models.Model):
         # Checa se há alterações contratuais em estado Rascunho
         # Não continua se houver
         #
-        change = contract_change_obj.search(
-            [
-                ('contract_id', '=', self.id),
-                ('change_type', '=', 'remuneracao'),
-                ('state', '=', 'draft'),
-            ],
-            order="change_date DESC",
+        change = contract_change_obj.search([
+            ('contract_id', '=', self.id),
+            ('change_type', '=', 'remuneracao'),
+            ('state', '=', 'draft'),
+        ], order="change_date DESC",
         )
         if change:
             raise exceptions.ValidationError(
                 "Há alteração de remuneração em estado Rascunho "
-                "neste contrato, por favor exclua o alteração "
+                "neste contrato, por favor exclua a alteração "
                 "contratual ou Aplique-a para torná-la efetiva "
                 "antes de calcular um holerite!"
             )
 
         # Busca todas as alterações de remuneração deste contrato
         #
-        change = contract_change_obj.search(
-            [
-                ('contract_id', '=', self.id),
-                ('change_type', '=', 'remuneracao'),
-                ('state', '=', 'applied'),
-            ],
-            order="change_date DESC",
+        change = contract_change_obj.search([
+            ('contract_id', '=', self.id),
+            ('change_type', '=', 'remuneracao'),
+            ('state', '=', 'applied'),
+        ], order="change_date DESC",
         )
 
         # Calcular o salário proporcional dentro do período especificado
@@ -117,14 +113,14 @@ class HrContract(models.Model):
 
                 dias = (d_fim - d_inicio) + timedelta(days=1)
 
-                # Se a mudança for exatamente no primeiro dia do período
-                # Considere o salário pronto no período inteiro
+                # Se a alteração salarial for exatamente no primeiro dia do
+                # período do holerite, Considere o salário no período inteiro
                 #
                 if data_mudanca == d_inicio:
-                    if i_2 in range(len(change)):
-                        salario_medio = change[i].wage
-                        salario_dia_1 = change[i].wage / dias.days
-                        salario_dia_2 = change[i].wage / dias.days
+                    # if i_2 in range(len(change)):
+                    salario_medio = change[i].wage
+                    salario_dia_1 = change[i].wage / dias.days
+                    salario_dia_2 = change[i].wage / dias.days
                 else:
 
                     # Calcula o número de dias dentro do período e quantos dias

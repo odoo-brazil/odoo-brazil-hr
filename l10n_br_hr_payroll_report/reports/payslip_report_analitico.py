@@ -5,7 +5,7 @@ from datetime import datetime
 
 from openerp import api
 from openerp.addons.report_py3o.py3o_parser import py3o_report_extender
-
+from openerp.addons.l10n_br_hr_payroll.models.hr_payslip import TIPO_DE_FOLHA
 
 class inss_empresa_obj(object):
     def __init__(self, valores_inss_empresa):
@@ -74,19 +74,18 @@ def analytic_report(pool, cr, uid, local_context, context):
             ('company_id', '=', wizard.company_id.id),
             ('mes_do_ano', '=', wizard.mes_do_ano),
             ('ano', '=', wizard.ano),
+            ('state', 'in', ['done', 'verify']),
         ]
         if wizard.tipo_de_folha == "('normal', 'rescisao')":
             busca.append(('tipo_de_folha', 'in', eval(wizard.tipo_de_folha)))
         else:
             busca.append(('tipo_de_folha', '=', eval(wizard.tipo_de_folha)))
-        payslip_ids = \
-            pool['hr.payslip'].search(cr, uid, busca)
+
+        payslip_ids = pool['hr.payslip'].search(cr, uid, busca)
 
         payslips = []
         for payslip_id in payslip_ids:
-            payslips += \
-                pool['hr.payslip']\
-                .browse(cr, uid, payslip_id)
+            payslips += pool['hr.payslip'].browse(cr, uid, payslip_id)
     else:
         payslips = \
             pool['hr.payslip.run']\
@@ -112,6 +111,7 @@ def analytic_report(pool, cr, uid, local_context, context):
         AND payslip.company_id = {company_id} 
         AND payslip.tipo_de_folha in {tipo_de_folha}
         AND payslip.is_simulacao = false
+        AND payslip.state in ('verify', 'done')
     GROUP BY
         salary_rule.code,
         salary_rule.name,
@@ -142,6 +142,7 @@ def analytic_report(pool, cr, uid, local_context, context):
         AND payslip.company_id = {company_id} 
         AND payslip.tipo_de_folha in {tipo_de_folha} 
         AND payslip.is_simulacao = false
+        AND payslip.state in ('verify', 'done')
     GROUP BY
         salary_rule.code,
         salary_rule.name,
@@ -157,6 +158,7 @@ def analytic_report(pool, cr, uid, local_context, context):
         tipo_de_folha=wizard.tipo_de_folha
     )
     cr.execute(SQL_BUSCA_RUBRICAS)
+
     payslip_lines = cr.dictfetchall()
     SQL_BUSCA_SEFIP = SQL_BUSCA_SEFIP.format(
         mes_do_ano=wizard.mes_do_ano,
@@ -165,6 +167,7 @@ def analytic_report(pool, cr, uid, local_context, context):
         tipo_de_folha=wizard.tipo_de_folha
     )
     cr.execute(SQL_BUSCA_SEFIP)
+
     payslip_lines_sefip = cr.dictfetchall()
     proventos = []
     descontos = []
@@ -205,8 +208,8 @@ def analytic_report(pool, cr, uid, local_context, context):
     inss_empresa_autonomo = inss_empresa_obj(inss_empresa_vals)
     inss_empresa_cooperativa = inss_empresa_obj(inss_empresa_vals)
     for rubrica in payslip_lines:
-#       Somar os valores do INSS_EMPRESA e outros calculados nos holerites
-#       Ao invés de recalcular os valores aqui
+        # Somar os valores do INSS_EMPRESA e outros calculados nos holerites
+        # Ao invés de recalcular os valores aqui
         if rubrica['code'] in ('INSS_EMPRESA_BASE', 'INSS_EMPRESA_BASE_FERIAS'):
             inss_empresa_funcionario.base += rubrica['sum']
         elif rubrica['code'] in ('INSS_EMPRESA', 'INSS_EMPRESA_FERIAS'):
@@ -218,6 +221,7 @@ def analytic_report(pool, cr, uid, local_context, context):
         elif rubrica['code'] in ('INSS_OUTRAS_ENTIDADES', 'INSS_OUTRAS_ENTIDADES_FERIAS'):
             inss_empresa_funcionario.terceiros += rubrica['sum']
             inss_empresa_funcionario.total += rubrica['sum']
+#
 #       if rubrica['code'] == 'INSS_EMPRESA':
 #           inss_empresa_funcionario.base = rubrica['sum']
 #           inss_empresa_funcionario.inss_empresa = \
@@ -299,7 +303,14 @@ def analytic_report(pool, cr, uid, local_context, context):
     dia_atual = \
         str(data_atual.day) + "/" + str(data_atual.month) + "/" +\
         str(data_atual.year)
+
+    # aproveitar o selection construido no wizard do relatorio analitico
+    tipo_de_folha = eval(wizard.tipo_de_folha)
+    if isinstance(tipo_de_folha, tuple):
+        tipo_de_folha = tipo_de_folha[0]
+
     data = {
+        'tipo_de_folha': dict(TIPO_DE_FOLHA)[tipo_de_folha],
         'data_atual': dia_atual,
         'legal_name': legal_name,
         'endereco': endereco,
