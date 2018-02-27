@@ -211,6 +211,8 @@ class L10nBrHrPayslip(models.Model):
             for payslip_run in self:
                 for payslip in self.slip_ids:
                     for line in payslip.details_by_salary_rule_category:
+                        # Verificar se na rubrica o cadastro das contas para
+                        # debito e credito estao OK
                         if payslip_run._verificar_existencia_conta_rubrica(
                                 line.salary_rule_id,
                                 payslip_run.tipo_de_folha
@@ -236,6 +238,11 @@ class L10nBrHrPayslip(models.Model):
 
     @api.multi
     def processar_contabilidade_folha(self, rubricas):
+        """
+        
+        :param rubricas: 
+        :return: 
+        """
         conta_debito, conta_credito = self._buscar_contas_lotes()
 
         for payslip_run in self:
@@ -343,8 +350,12 @@ class L10nBrHrPayslip(models.Model):
                     move_obj.post(move_id)
 
             #
-            #  Desfazer lançamentos do mês anterior
+            # Se não for a contabilização do lote de alguma provisão
+            # Não precisa Desfazer lançamentos do mês anterior
             #
+
+            if payslip_run.tipo_de_folha not in ['provisao_ferias', 'provisao_decimo_terceiro']:
+                return
 
             # Identificar os lançamentos do mês anterior
             #
