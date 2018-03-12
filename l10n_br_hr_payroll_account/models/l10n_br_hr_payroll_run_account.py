@@ -86,7 +86,7 @@ class L10nBrHrPayslip(models.Model):
     move_lines_id = fields.One2many(
         comodel_name='account.move.line',
         string=u'Lançamentos',
-        compute=_buscar_lancamentos
+        compute=_buscar_lancamentos,
     )
 
     journal_id = fields.Many2one(
@@ -146,7 +146,8 @@ class L10nBrHrPayslip(models.Model):
                 move_ids = self.env['account.move'].search(
                     [
                         ('ref', 'like', lote_anterior.display_name),
-                        ('period_id', '=', periodo_anterior_id.id)
+                        ('period_id', '=', periodo_anterior_id.id),
+                        ('payslip_run_id', '!=', False),
                     ],
                 )
 
@@ -211,7 +212,7 @@ class L10nBrHrPayslip(models.Model):
             for payslip_run in self:
                 for payslip in self.slip_ids:
                     for line in payslip.details_by_salary_rule_category:
-                        # Verificar se na rubrica o cadastro das contas para
+                        # Verificar se na rubrica, o cadastro das contas para
                         # debito e credito estao OK
                         if payslip_run._verificar_existencia_conta_rubrica(
                                 line.salary_rule_id,
@@ -238,11 +239,6 @@ class L10nBrHrPayslip(models.Model):
 
     @api.multi
     def processar_contabilidade_folha(self, rubricas):
-        """
-        
-        :param rubricas: 
-        :return: 
-        """
         conta_debito, conta_credito = self._buscar_contas_lotes()
 
         for payslip_run in self:
