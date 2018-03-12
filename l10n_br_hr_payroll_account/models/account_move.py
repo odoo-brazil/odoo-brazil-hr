@@ -11,11 +11,13 @@ class AccountMove(models.Model):
     payslip_id = fields.Many2one(
         comodel_name="hr.payslip",
         string="Payslip",
+        ondelete='cascade',
     )
 
     payslip_run_id = fields.Many2one(
         comodel_name="hr.payslip.run",
         string="Payslip Run",
+        ondelete='cascade',
     )
 
     @api.multi
