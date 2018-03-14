@@ -165,8 +165,8 @@ class HrPayslip(models.Model):
                 total_descontos += line.valor_deducao
                 if line.code == 'BASE_FGTS':
                     base_fgts = line.total
-                elif line.code == 'BASE_INSS':
-                    base_inss = line.total
+                elif line.code in ['BASE_INSS', 'BASE_INSS_13']:
+                    base_inss += line.total
                 elif line.code == 'BASE_IRPF':
                     base_irpf = line.total
                 elif line.code == 'FGTS':
@@ -1525,7 +1525,7 @@ class HrPayslip(models.Model):
         :return:     float - Valor pago neste ano
         '''
         domain = [
-            ('tipo_de_folha', 'in', ['normal', 'decimo_terceiro', 'ferias']),
+            ('tipo_de_folha', 'in', ['decimo_terceiro', 'ferias']),
             ('contract_id', '=', self.contract_id.id),
             ('state', 'in', ['done', 'verify']),
             ('ano', '=', self.ano),
