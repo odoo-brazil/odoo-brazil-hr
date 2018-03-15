@@ -164,7 +164,7 @@ class L10nBrHrPayslip(models.Model):
 
     @api.multi
     def _valor_lancamento_lote_anterior_rubrica(self, rubrica):
-        if self.tipo_de_folha == "normal":
+        if self.tipo_de_folha in ["normal", 'adiantamento_13']:
             return \
                 rubrica.salary_rule_id.holerite_normal_account_debit, \
                 rubrica.salary_rule_id.holerite_normal_account_credit
@@ -172,7 +172,7 @@ class L10nBrHrPayslip(models.Model):
             return \
                 rubrica.salary_rule_id.ferias_account_debit, \
                 rubrica.salary_rule_id.ferias_account_credit
-        if self.tipo_de_folha in ["decimo_terceiro", 'adiantamento_13']:
+        if self.tipo_de_folha in ["decimo_terceiro"]:
             return \
                 rubrica.salary_rule_id.decimo_13_account_debit, \
                 rubrica.salary_rule_id.decimo_13_account_credit
@@ -199,11 +199,11 @@ class L10nBrHrPayslip(models.Model):
             if rubrica.provisao_13_account_debit or \
                     rubrica.provisao_13_account_credit:
                 return True
-        elif tipo_de_folha == "normal":
+        elif tipo_de_folha in ["normal", 'adiantamento_13']:
             if rubrica.holerite_normal_account_debit or \
                     rubrica.holerite_normal_account_credit:
                 return True
-        elif tipo_de_folha in ['adiantamento_13', 'decimo_terceiro']:
+        elif tipo_de_folha in ['decimo_terceiro']:
             if rubrica.decimo_13_account_debit or \
                     rubrica.decimo_13_account_credit:
                 return True
