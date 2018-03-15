@@ -10,6 +10,7 @@ from lxml import etree
 
 NOME_LANCAMENTO_LOTE = {
     'provisao_ferias': u'Provisão de Férias em Lote',
+    'adiantamento_13': u'Décimo Terceiro Salário em Lote',
     'provisao_decimo_terceiro': u'Provisão de 13 em Lote',
     'normal': u'Folha normal em Lote',
 }
@@ -100,7 +101,7 @@ class L10nBrHrPayslip(models.Model):
         if self.tipo_de_folha == "normal":
             return self.holerite_normal_account_debit, self.\
                 holerite_normal_account_credit
-        elif self.tipo_de_folha == "decimo_terceiro":
+        elif self.tipo_de_folha in ["decimo_terceiro",'adiantamento_13']:
             return self.decimo_13_account_debit, self.\
                 decimo_13_account_credit
         elif self.tipo_de_folha == "provisao_ferias":
@@ -171,7 +172,7 @@ class L10nBrHrPayslip(models.Model):
             return \
                 rubrica.salary_rule_id.ferias_account_debit, \
                 rubrica.salary_rule_id.ferias_account_credit
-        if self.tipo_de_folha == "decimo_terceiro":
+        if self.tipo_de_folha in ["decimo_terceiro", 'adiantamento_13']:
             return \
                 rubrica.salary_rule_id.decimo_13_account_debit, \
                 rubrica.salary_rule_id.decimo_13_account_credit
@@ -201,6 +202,10 @@ class L10nBrHrPayslip(models.Model):
         elif tipo_de_folha == "normal":
             if rubrica.holerite_normal_account_debit or \
                     rubrica.holerite_normal_account_credit:
+                return True
+        elif tipo_de_folha in ['adiantamento_13', 'decimo_terceiro']:
+            if rubrica.decimo_13_account_debit or \
+                    rubrica.decimo_13_account_credit:
                 return True
         else:
             return False
@@ -239,13 +244,15 @@ class L10nBrHrPayslip(models.Model):
 
     @api.multi
     def processar_contabilidade_folha(self, rubricas):
-        conta_debito, conta_credito = self._buscar_contas_lotes()
-
+        """        
+        :param rubricas: 
+        :return: 
+        """
         for payslip_run in self:
             move_obj = self.env['account.move']
             period_obj = self.env['account.period']
-            precision = \
-                self.env['decimal.precision'].precision_get('Payroll')
+            precision = self.env['decimal.precision'].precision_get('Payroll')
+
             timenow = time.strftime('%Y-%m-%d')
             period_id = period_obj.find(payslip_run.date_start)
             debit_sum = 0.0
