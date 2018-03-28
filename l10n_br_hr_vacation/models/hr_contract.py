@@ -150,6 +150,12 @@ class HrContract(models.Model):
             # Criar os períodos aquisitivos
             #
             inicio = fields.Date.from_string(contrato.date_start)
+
+            # para casos como funcionario cedente, utilizar a data de
+            # admissao no orgao cedente
+            if self.data_admissao_cedente:
+                inicio = fields.Date.from_string(self.data_admissao_cedente)
+
             hoje = fields.Date.from_string(data_referencia)
 
             while inicio <= hoje:

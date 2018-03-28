@@ -233,6 +233,17 @@ class HrHolidays(models.Model):
                         holiday.holiday_status_id.name[:30] + \
                         ' (' + date_from + '-' + date_to + ')'
 
+            elif holiday.holiday_status_id and holiday.employee_id:
+                holiday.name = holiday.holiday_status_id.name[:30] + \
+                               '[' + holiday.employee_id.name[:10] + '] '
+
+            if holiday.controle_ferias_ids and holiday.type == 'add':
+                holiday.name = \
+                    'Periodo Aquisitivo ' + \
+                    ' (' + data.formata_data(holiday.controle_ferias_ids[0].inicio_aquisitivo) + \
+                    ' - ' + \
+                    data.formata_data(holiday.controle_ferias_ids[0].fim_aquisitivo) + ') '
+
     @api.onchange('data_inicio', 'data_fim', 'date_from', 'date_to')
     def setar_datas_core(self):
         for holiday in self:
