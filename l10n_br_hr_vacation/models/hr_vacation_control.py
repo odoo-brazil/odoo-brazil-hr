@@ -313,7 +313,15 @@ não do mês civil.
             avos_meio = idade_meses(parse_datetime(primeiro_dia_mes_cheio),
                                     parse_datetime(ultimo_dia_mes_cheio))
 
-            record.avos = avos_primeiro_mes + avos_meio + avos_ultimo_mes
+            avos = avos_primeiro_mes + avos_meio + avos_ultimo_mes
+
+            # TODO: Essa correção foi criada para que o sistema não aceite
+            # mais que 12 avos em um só período, mas deverá ser corrigido
+            # por uma correção definitiva.
+            if avos > 12:
+                avos = 12;
+
+            record.avos = avos
 
             # avos_decimal = (date_end - date_begin).days / 30.0
             # decimal = avos_decimal - int(avos_decimal)
