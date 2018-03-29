@@ -141,7 +141,7 @@ class HrVacationControl(models.Model):
     display_name = fields.Char(
         string=u'Display name',
         compute='_compute_display_name',
-        store=True
+        store=True,
     )
 
     # @api.depends('hr_holiday_ids')
@@ -170,7 +170,7 @@ class HrVacationControl(models.Model):
             )
             nome = '%s - %s' % (
                 inicio_aquisitivo.strftime('%d/%m/%y'),
-                fim_aquisitivo.strftime('%d/%m/%y')
+                fim_aquisitivo.strftime('%d/%m/%y'),
             )
             controle_ferias.display_name = nome
 
@@ -379,6 +379,7 @@ não do mês civil.
             'sold_vacations_days': 0,
             'number_of_days_temp': 30,
             'controle_ferias': [(6, 0, [self.id])],
+            'controle_ferias_ids': [(6, 0, [self.id])],
         })
         return holiday_id
 
