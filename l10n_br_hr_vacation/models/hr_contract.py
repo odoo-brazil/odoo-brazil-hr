@@ -264,7 +264,7 @@ class HrContract(models.Model):
             # Entao se ficar vazio mesmo depois de toda a rotina, gerar holiday
             for controle_id in contrato.vacation_control_ids:
                 if not controle_id.hr_holiday_add_id:
-                    controle_id.gerar_holidays_ferias()
+                    controle_id.hr_holiday_add_id = controle_id.gerar_holidays_ferias()
 
             #
             # Atualizar último periodo aquisitivo caso a data de demissão
