@@ -241,7 +241,7 @@ class HrPayslipRun(models.Model):
     def gerar_holerites(self):
         self.verificar_holerites_gerados()
         for contrato in self.contract_id:
-            # Provisionamento de férias
+            # Provisionamento de ferias
             if self.tipo_de_folha == 'provisao_ferias':
 
                 # recuperar primeiro dia do mes
@@ -249,7 +249,7 @@ class HrPayslipRun(models.Model):
                               str(self.mes_do_ano).zfill(2) + '-01'
 
                 # se o contrato iniciou na metade do mes corrente
-                # ex.: provisionando mes março e contrato iniciou 15/03
+                # ex.: provisionando mes marco e contrato iniciou 15/03
                 if contrato.date_start > inicio_mes:
                     inicio_mes = contrato.date_start
 
@@ -267,7 +267,7 @@ class HrPayslipRun(models.Model):
 
                             periodo_aquisitivo_provisao = \
                                 str(int(periodo.saldo)) + \
-                                ' dias referente à ' + \
+                                ' dias referente a ' + \
                                 formata_data(periodo.inicio_aquisitivo) + \
                                 ' - ' + \
                                 formata_data(periodo.fim_aquisitivo)
