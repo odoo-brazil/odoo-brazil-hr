@@ -241,7 +241,7 @@ class HrPayslipRun(models.Model):
     def gerar_holerites(self):
         self.verificar_holerites_gerados()
         for contrato in self.contract_id:
-            # Provisionamento de férias
+            # Provisionamento de ferias
             if self.tipo_de_folha == 'provisao_ferias':
 
                 # recuperar primeiro dia do mes
@@ -249,7 +249,7 @@ class HrPayslipRun(models.Model):
                               str(self.mes_do_ano).zfill(2) + '-01'
 
                 # se o contrato iniciou na metade do mes corrente
-                # ex.: provisionando mes março e contrato iniciou 15/03
+                # ex.: provisionando mes marco e contrato iniciou 15/03
                 if contrato.date_start > inicio_mes:
                     inicio_mes = contrato.date_start
 
@@ -267,7 +267,7 @@ class HrPayslipRun(models.Model):
 
                             periodo_aquisitivo_provisao = \
                                 str(int(periodo.saldo)) + \
-                                ' dias referente à ' + \
+                                ' dias referente a ' + \
                                 formata_data(periodo.inicio_aquisitivo) + \
                                 ' - ' + \
                                 formata_data(periodo.fim_aquisitivo)
@@ -303,10 +303,15 @@ class HrPayslipRun(models.Model):
                     if tipo_de_folha == 'adiantamento_13':
                         tipo_de_folha = 'decimo_terceiro'
                     payslip_obj = self.env['hr.payslip']
+
+                    mes_do_ano = self.mes_do_ano
+                    if mes_do_ano == 13:
+                        mes_do_ano = 12
+
                     payslip = payslip_obj.create({
                         'contract_id': contrato.id,
                         'mes_do_ano': self.mes_do_ano,
-                        'mes_do_ano2': self.mes_do_ano,
+                        'mes_do_ano2': mes_do_ano,
                         'ano': self.ano,
                         'employee_id': contrato.employee_id.id,
                         'tipo_de_folha': tipo_de_folha,
