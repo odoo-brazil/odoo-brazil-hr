@@ -22,3 +22,5 @@ from . import l10n_br_hr_medias
 from . import hr_payslip_run
 from . import res_config
 from . import hr_holidays
+from . import hr_ramal
+from . import hr_telefonia

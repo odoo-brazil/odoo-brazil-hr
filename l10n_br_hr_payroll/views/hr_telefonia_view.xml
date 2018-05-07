@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<openerp>
+    <data>
+
+        <menuitem id="menu_hr_root_telefonia" parent="hr.menu_hr_root" name="Telefonia" sequence="48" groups="base.group_hr_manager" />
+
+        <record model="ir.ui.view" id="hr_ramal_form_view">
+            <field name="name">hr.ramal.form</field>
+            <field name="model">hr.ramal</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <h2>Registro Ramal</h2>
+                        <group>
+                            <field name="name" />
+                            <field name="hr_employee_ids">
+                                <tree>
+                                    <field name="name" />
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="hr_ramal_tree_view">
+            <field name="name">hr.ramal.tree</field>
+            <field name="model">hr.ramal</field>
+            <field name="arch" type="xml">
+                <tree string="Ramais">
+                    <field name="name"/>
+                    <field name="hr_employee_ids"/>
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_hr_ramais">
+            <field name="name">Ramais</field>
+            <field name="res_model">hr.ramal</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record model="ir.ui.menu" id="menu_hr_ramal">
+            <field name="name">Ramais</field>
+            <field name="parent_id" ref="l10n_br_hr_payroll.menu_hr_root_telefonia" />
+            <field name="action" ref="l10n_br_hr_payroll.action_hr_ramais" />
+            <field name="sequence" eval="1" />
+            <field name="groups" ref="base.group_hr_manager" />
+        </record>
+
+        <record model="ir.ui.view" id="hr_telefonia_form_view">
+            <field name="name">hr.telefonia.form</field>
+            <field name="model">hr.telefonia</field>
+            <field name="arch" type="xml">
+                <form>
+                    <header>
+                        <button name="button_importar_csv"
+                                string="Importar Ligações" type="object"
+                                class="oe_highlight" />
+                    </header>
+                    <sheet>
+                        <h2><field name="display_name" /></h2>
+                        <group>
+                            <field name="arquivo_ligacoes" />
+                        </group>
+                        <group>
+                            <group>
+                               <field name="mes" />
+                            </group>
+                            <group>
+                                <field name="ano" />
+                            </group>
+                        </group>
+                        <separator string="Registros Ligações" />
+                        <field name="ligacoes_id" />
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="hr_telefonia_tree_view">
+            <field name="name">hr.telefonia.tree</field>
+            <field name="model">hr.telefonia</field>
+            <field name="arch" type="xml">
+                <tree string="Registros Telefonicos">
+                    <field name="mes"/>
+                    <field name="ano"/>
+                    <field name="arquivo_ligacoes"/>
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="hr_telefonia_line_form_view">
+            <field name="name">hr.telefonia.line.form</field>
+            <field name="model">hr.telefonia.line</field>
+            <field name="arch" type="xml">
+                <form>
+                    <header>
+                        <button name="set_particular" string="Particular" type="object" class="oe_highlight"
+                                attrs="{'invisible': [('tipo', '=', 'particular')]}" />
+                        <button name="set_empresa" string="Empresa" type="object" class="oe_highlight"
+                                attrs="{'invisible': [('tipo', '=', 'empresa')]}" />
+                        <field name="tipo" widget="statusbar" nolabel="1" />
+                    </header>
+                    <sheet>
+                        <group>
+                            <field name="employee_id" />
+                            <field name="ramal" />
+                            <field name="numero_discado" readonly="True" />
+                            <field name="state" string="Situação" readonly="True"/>
+                        </group>
+                        <group>
+                            <group>
+                                <field name="data" />
+                                <field name="inicio" />
+                            </group>
+                            <group>
+                                <field name="duracao" />
+                                <field name="valor" />
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="hr_telefonia_line_tree_view">
+            <field name="name">hr.telefonia.line.tree</field>
+            <field name="model">hr.telefonia.line</field>
+            <field name="arch" type="xml">
+                <tree string="Registro Telefonico" colors="black:tipo == 'particular'">
+                    <field name="state" invisible="1"/>
+                    <field name="ramal" />
+                    <field name="employee_id" />
+                    <field name="valor" />
+                    <field name="data" />
+                    <field name="tipo" />
+                    <!--<field name="registro_telefonico_id" />-->
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_hr_telefonia">
+            <field name="name">Registros Telefonicos</field>
+            <field name="res_model">hr.telefonia</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record model="ir.ui.menu" id="menu_hr_telefonia">
+            <field name="name">Registros Telefonicos</field>
+            <field name="parent_id" ref="l10n_br_hr_payroll.menu_hr_root_telefonia" />
+            <field name="action" ref="l10n_br_hr_payroll.action_hr_telefonia" />
+            <field name="sequence" eval="1" />
+            <field name="groups" ref="base.group_hr_manager" />
+        </record>
+
+        <record id="view_hr_telefonia_line_search" model="ir.ui.view">
+            <field name="name">hr.telefonia.line.search</field>
+            <field name="model">hr.telefonia.line</field>
+            <field name="arch" type="xml">
+                <search string="Registros Telefonicos por data">
+                    <group expand="1" string="Group By">
+                        <filter string="Data" icon="terp-accessories-archiver" context="{'group_by':'data'}" name='group_by_data'/>
+                        <filter string="Ramal" icon="terp-accessories-archiver" context="{'group_by':'ramal'}" name='group_by_ramal'/>
+                        <filter string="Empregado" icon="terp-accessories-archiver" context="{'group_by':'employee_id'}" name='group_by_employee'/>
+                        <filter string="Valor" icon="terp-accessories-archiver" context="{'group_by':'valor'}" name='group_by_valor'/>
+                        <filter string="Tipo" icon="terp-accessories-archiver" context="{'group_by':'tipo'}" name='group_by_tipo'/>
+                     </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Ligações individuais -->
+        <record model="ir.actions.act_window" id="action_hr_ligacoes">
+            <field name="name">Registros Telefonicos</field>
+            <field name="res_model">hr.telefonia.line</field>
+            <field name="domain">['|', ('employee_id.user_id.id', '=', uid), ('employee_id', '=', False)]</field>
+            <field name="context">{'search_default_group_by_data': True, 'search_default_group_by_employee': True}</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record model="ir.ui.menu" id="menu_hr_ligacoes">
+            <field name="name">Registros Ligações</field>
+            <field name="parent_id" ref="l10n_br_hr_payroll.menu_hr_root_telefonia" />
+            <field name="action" ref="l10n_br_hr_payroll.action_hr_ligacoes" />
+            <field name="sequence" eval="2" />
+        </record>
+
+    </data>
+</openerp>
