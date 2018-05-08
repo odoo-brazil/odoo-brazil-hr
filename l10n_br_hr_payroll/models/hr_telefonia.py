@@ -122,24 +122,24 @@ class HrTelefoniaLine(models.Model):
         string='Ramal',
         comodel_name='hr.ramal',
         required=True,
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     employee_id = fields.Many2one(
         string='Empregado',
         comodel_name='hr.employee',
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     valor = fields.Float(
         string='Valor',
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     data = fields.Date(
-        string='Data e Hora',
+        string='Data',
         required=True,
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     tipo = fields.Selection(
@@ -150,56 +150,61 @@ class HrTelefoniaLine(models.Model):
             ('empresa', 'Empresa')
         ],
         default='empresa',
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     state = fields.Selection(
         string=u'Situação',
         selection=[
-            ('draft', 'Em aberto'),
-            ('validate', 'Atestado')
+            ('open', 'Em aberto'),
+            ('validate', 'Atestado'),
+            ('paid', 'Debitado'),
         ],
-        default='draft',
+        default='open',
     )
 
+    payslip_id = fields.Many2one(
+        comodel_name='hr.payslip',
+        string='Holerite',
+    )
 
     registro_telefonico_id = fields.Many2one(
         string='Registro Telefonico',
         comodel_name='hr.telefonia',
         required=True,
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     concessionaria = fields.Char(
         string='Concessionária',
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     localidade = fields.Char(
         string='Localidade',
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     hora_inicio = fields.Datetime(
         string='Hora de Início',
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     inicio = fields.Char(
         string='Inicio',
         required=True,
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     duracao = fields.Char(
         string='Duração da ligação',
         required=True,
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     numero_discado = fields.Char(
         string='Numero Discado',
-        states={'validate': [('readonly', True)]},
+        # states={'validate': [('readonly', True)]},
     )
 
     @api.multi
@@ -211,15 +216,26 @@ class HrTelefoniaLine(models.Model):
                     record.ramal.name,record.employee_id[0].name[:14])
 
     @api.multi
+    def set_validate_ligacoes(self):
+        """
+        Rotina para atestar ligacoes como particulares ou nao
+        depois dessa rotina a ligacao sera bloqueada para edicoes
+        :return:
+        """
+        for record in self:
+            # Atesta as ligacoes
+            record.state = 'validate'
+
+    @api.multi
     def set_particular(self):
         """
         Setar as ligações para particular
         :return:
         """
         for record in self:
+            # record.particular = True
             record.tipo = 'particular'
-            record.state = 'validate'
-            # record.employee_id = self.env.user.employee_ids[0]
+
 
     @api.multi
     def set_empresa(self):
@@ -228,6 +244,5 @@ class HrTelefoniaLine(models.Model):
         :return:
         """
         for record in self:
+            # record.particular = False
             record.tipo = 'empresa'
-            record.state = 'validate'
-            # record.employee_id = self.env.user.employee_ids[0]
