@@ -4,50 +4,70 @@
 
         <menuitem id="menu_hr_root_telefonia" parent="hr.menu_hr_root" name="Telefonia" sequence="48" groups="base.group_hr_user" />
 
-        <record model="ir.ui.view" id="hr_ramal_form_view">
-            <field name="name">hr.ramal.form</field>
-            <field name="model">hr.ramal</field>
+        <record model="ir.ui.view" id="hr_employee_ramal_form_view">
+            <field name="name">hr.employee.ramal.form</field>
+            <field name="model">hr.employee</field>
             <field name="arch" type="xml">
-                <form>
+                <form string="Employee">
                     <sheet>
-                        <h2>Registro Ramal</h2>
-                        <group>
-                            <field name="name" />
-                            <field name="hr_employee_ids">
-                                <tree>
-                                    <field name="name" />
-                                </tree>
-                            </field>
-                        </group>
+                        <field name="image_medium" widget='image' class="oe_left oe_avatar"/>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only"/>
+                            <h1>
+                                <field name="name"/>
+                            </h1>
+                            <label for="work_email" class="oe_edit_only"/>
+                            <field name="work_email" widget="email"/>
+                            <label for="work_phone" class="oe_edit_only"/>
+                            <field name="work_phone"/>
+                            <label for="ramais" class="oe_edit_only"/>
+                            <field name="ramais" nolabel="1" widget="many2many_tags"/>
+                        </div>
                     </sheet>
                 </form>
             </field>
         </record>
 
-        <record model="ir.ui.view" id="hr_ramal_tree_view">
-            <field name="name">hr.ramal.tree</field>
-            <field name="model">hr.ramal</field>
+        <record model="ir.ui.view" id="hr_employee_ramal_tree_view">
+            <field name="name">hr.employee.ramal.tree</field>
+            <field name="model">hr.employee</field>
             <field name="arch" type="xml">
                 <tree string="Ramais">
                     <field name="name"/>
-                    <field name="hr_employee_ids"/>
+                    <field name="work_email"/>
+                    <field name="ramais"/>
                 </tree>
             </field>
         </record>
 
-        <record model="ir.actions.act_window" id="action_hr_ramais">
+        <record model="ir.actions.act_window" id="action_hr_employee_ramais">
             <field name="name">Ramais</field>
-            <field name="res_model">hr.ramal</field>
+            <field name="res_model">hr.employee</field>
             <field name="view_mode">tree,form</field>
         </record>
 
-        <record model="ir.ui.menu" id="menu_hr_ramal">
+        <record model="ir.ui.menu" id="menu_hr_employee_ramal">
             <field name="name">Ramais</field>
             <field name="parent_id" ref="l10n_br_hr_payroll.menu_hr_root_telefonia" />
-            <field name="action" ref="l10n_br_hr_payroll.action_hr_ramais" />
+            <field name="action" ref="action_hr_employee_ramais" />
             <field name="sequence" eval="1" />
-            <field name="groups_id" eval="[(4,ref('base.group_hr_manager'))]" />
+            <field name="groups_id" eval="[(6, 0, [ref('l10n_br_hr_payroll.group_manager_ligacoes')])]" />
         </record>
+
+        <record id="act_hr_employee_ramal_tree" model="ir.actions.act_window.view">
+            <field eval="1" name="sequence"/>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="hr_employee_ramal_tree_view"/>
+            <field name="act_window_id" ref="action_hr_employee_ramais"/>
+        </record>
+
+        <record id="act_hr_employee_ramal_form" model="ir.actions.act_window.view">
+            <field eval="2" name="sequence"/>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="hr_employee_ramal_form_view"/>
+            <field name="act_window_id" ref="action_hr_employee_ramais"/>
+        </record>
+
 
         <record model="ir.ui.view" id="hr_telefonia_form_view">
             <field name="name">hr.telefonia.form</field>
@@ -58,13 +78,23 @@
                         <button name="button_importar_csv"
                                 string="Importar Ligações" type="object"
                                 class="oe_highlight"
-                                attrs="{'invisible': [('ligacoes_id','!=',[])]}"
-                        />
+                                attrs="{'invisible': [('ligacoes_id','!=',[])]}" />
+
+                        <button name="button_import_ramais"
+                                string="Importar Ramais" type="object"
+                                class="oe_highlight"
+                                groups="base.group_no_one" />
+
+                        <button name="button_buscar_dono_ligacao"
+                                string="Conciliar Ligacões" type="object"
+                                class="oe_highlight"
+                                groups="l10n_br_hr_payroll.group_manager_ligacoes" />
                     </header>
                     <sheet>
                         <h2><field name="display_name" /></h2>
                         <group>
                             <field name="arquivo_ligacoes" />
+                            <field name="arquivo_ramais" groups="l10n_br_hr_payroll.group_manager_ligacoes"/>
                         </group>
                         <group>
                             <group>
@@ -191,8 +221,8 @@
             <field name="name">Registros Telefonicos</field>
             <field name="parent_id" ref="l10n_br_hr_payroll.menu_hr_root_telefonia" />
             <field name="action" ref="l10n_br_hr_payroll.action_hr_telefonia" />
-            <field name="sequence" eval="1" />
-            <field name="groups_id" eval="[(4,ref('base.group_hr_manager'))]" />
+            <field name="sequence" eval="2" />
+            <field name="groups_id" eval="[(6, 0, [ref('l10n_br_hr_payroll.group_manager_ligacoes')])]" />
         </record>
 
         <record id="view_hr_telefonia_line_search" model="ir.ui.view">
@@ -226,7 +256,7 @@
             <field name="name">Registros Ligações</field>
             <field name="parent_id" ref="l10n_br_hr_payroll.menu_hr_root_telefonia" />
             <field name="action" ref="l10n_br_hr_payroll.action_hr_ligacoes" />
-            <field name="sequence" eval="2" />
+            <field name="sequence" eval="3" />
         </record>
 
     </data>

@@ -25,25 +25,82 @@ class HrTelefonia(models.Model):
         string='Arquivo de retorno',
         filters='*.csv',
         require=True,
-        copy=False
+        copy=False,
+    )
+
+    arquivo_ramais = fields.Binary(
+        string='Listagem de Ramais',
+        filters='*.csv',
+        require=True,
+        copy=False,
     )
 
     mes = fields.Selection(
         string=u'Mês Competência',
         selection=MES_DO_ANO,
-        require=True
+        require=True,
     )
 
     ano = fields.Char(
         string=u'Ano Competência',
         required=True,
-        size=4
+        size=4,
     )
 
     ligacoes_id = fields.One2many(
         comodel_name='hr.telefonia.line',
-        inverse_name='registro_telefonico_id'
+        inverse_name='registro_telefonico_id',
     )
+
+    @api.multi
+    def button_buscar_dono_ligacao(self):
+
+        ligacoes_sem_dono_id = self.env['hr.telefonia.line'].search([('employee_id','=',False)])
+
+        for ligacoes_id in ligacoes_sem_dono_id:
+
+            funcionario_id = self.env['hr.employee'].search([('ramais', '=', ligacoes_id.ramal.name)])
+
+            if len(funcionario_id) == 1:
+                ligacoes_id.employee_id = funcionario_id
+
+    @api.multi
+    def button_import_ramais(self):
+
+        ramal_obj = self.env['hr.ramal']
+
+        for record in self:
+            if record.arquivo_ramais:
+
+                # import csv
+                import base64
+
+                arq = base64.b64decode(record.arquivo_ramais)
+                linhas = arq.splitlines(True)
+
+                for linha in linhas:
+
+                    l = linha.split(',')
+
+                    email_ramal = l[1].strip()
+                    numero_ramal = l[2].strip('\n')
+
+                    funcionario_id = self.env['hr.employee'].search([('work_email','=',email_ramal)])
+
+                    if funcionario_id:
+
+                        ramal_id = ramal_obj.search([('name','=', numero_ramal)])
+
+                        if not numero_ramal in funcionario_id.ramais.mapped('name'):
+
+                            if not ramal_id:
+                                ramal_id = ramal_obj.create({'name': numero_ramal})
+
+                            funcionario_id.ramais = [(4, ramal_id.id)]
+
+                    else:
+                        print ("Nao encontrado funcionario: " + email_ramal)
+
 
     @api.multi
     def button_importar_csv(self):
@@ -70,6 +127,8 @@ class HrTelefonia(models.Model):
                         if not ramal_id:
                             ramal_id = ramal_obj.create({'name': name_ramal})
 
+                        funcionario_id = self.env['hr.employee'].search([('ramais', '=', name_ramal)])
+
                         data = l[1]
                         numero_discado = l[2]
                         concessionaria = l[3]
@@ -88,7 +147,7 @@ class HrTelefonia(models.Model):
                             'duracao': duracao,
                             'valor': valor,
                             'registro_telefonico_id': record.id,
-                            'employee_id': ramal_id.hr_employee_ids[0].id if len(ramal_id.hr_employee_ids) == 1 else False
+                            'employee_id': funcionario_id.id if len(funcionario_id) == 1 else False
                         }
 
                         self.env['hr.telefonia.line'].create(vals)
@@ -211,8 +270,7 @@ class HrTelefoniaLine(models.Model):
     def compute_name(self):
         for record in self:
             if record.employee_id and record.ramal:
-                record.name = 'Ligação Ramal: {} ({})'.format(
-                    record.ramal.name,record.employee_id[0].name[:14])
+                record.name = 'Ligação Ramal: {} '.format(record.ramal.name)
 
     @api.multi
     def set_validate_ligacoes(self):
