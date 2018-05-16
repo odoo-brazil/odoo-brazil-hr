@@ -13,6 +13,23 @@
                 <field name="department_id" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </field>
+                <field name="work_phone" position="replace">
+                    <group>
+                        <field name="work_phone" nolabel="1"/>
+                        <field name="ramais" placeholder="Ramal.." nolabel="1" widget="many2many_tags"/>
+                    </group>
+                </field>
+            </field>
+        </record>
+
+        <record id="view_employee_filter" model="ir.ui.view">
+            <field name="name">Filter Employees in (l10n_br_hr_payroll)</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="hr.view_employee_filter"/>
+            <field name="arch" type="xml">
+                <field name="name" position="after">
+                    <field name="ramais"/>
+                </field>
             </field>
         </record>
 
