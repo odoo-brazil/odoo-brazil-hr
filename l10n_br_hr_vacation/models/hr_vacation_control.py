@@ -291,11 +291,11 @@ não do mês civil.
  trabalhista IOB.
  Carlos Eduardo Silva
             """
-            if date_end2 == record.contract_id.date_end:
-                primeiro_dia_ultimo_mes = \
-                    primeiro_dia_mes(date_end) + dias_para_adicionar
-            else:
-                primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end)
+            # if date_end2 == record.contract_id.date_end:
+            #     primeiro_dia_ultimo_mes = \
+            #         primeiro_dia_mes(date_end) + dias_para_adicionar
+            # else:
+            primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end)
 
             ultimo_dia_ultimo_mes = ultimo_dia_mes(date_end)
             avos_ultimo_mes = 0
