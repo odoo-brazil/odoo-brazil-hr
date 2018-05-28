@@ -106,12 +106,12 @@ class HrHolidays(models.Model):
              u'positivo, o pedido de férias é regular e ja poderá ser gozado.',
         compute='_compute_verificar_regularidade',
     )
-    saldo_periodo_aquisitivo = fields.Float(
+    saldo_dias_periodo_aquisitivo = fields.Integer(
         string='Saldo do período aquisitivo',
         help=u'Indica o Saldo do período aquisitivo.\n'
              u'Na visão de solicitação de férias, mostrar apenas os período '
              u'aquisitivos que tem saldo para gozar férias.',
-        compute='_compute_saldo_periodo_aquisitivo',
+        compute='_compute_saldo_dias_periodo_aquisitivo',
         store=True,
     )
     regular = fields.Boolean(
@@ -169,7 +169,7 @@ class HrHolidays(models.Model):
                     holiday.regular = True\
 
     @api.depends('child_ids', 'child_ids.number_of_days_temp')
-    def _compute_saldo_periodo_aquisitivo(self):
+    def _compute_saldo_dias_periodo_aquisitivo(self):
         """
         Cada pedido de ferias(hr.holiday) deve ter um outro holiday como
         parent_id que indica o periodo aquisitivo daquela solicitação.
@@ -189,7 +189,7 @@ class HrHolidays(models.Model):
                 dias_gozados = \
                     sum(solicitacoes_aprovadas.mapped('number_of_days_temp'))
 
-            holiday_id.saldo_periodo_aquisitivo = \
+            holiday_id.saldo_dias_periodo_aquisitivo = \
                 holiday_id.number_of_days_temp - dias_gozados
 
     @api.depends('vacations_days', 'sold_vacations_days')
