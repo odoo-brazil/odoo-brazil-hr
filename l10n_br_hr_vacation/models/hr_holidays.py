@@ -166,7 +166,7 @@ class HrHolidays(models.Model):
             if holiday.controle_ferias:
                 if holiday.saldo_final >= 0 and holiday.date_from >= \
                         holiday.controle_ferias[0].inicio_concessivo:
-                    holiday.regular = True\
+                    holiday.regular = True
 
     @api.depends('child_ids', 'child_ids.number_of_days_temp')
     def _compute_saldo_dias_periodo_aquisitivo(self):
