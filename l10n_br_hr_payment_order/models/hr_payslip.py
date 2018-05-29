@@ -5,6 +5,10 @@
 from openerp import api, fields, models, _
 from openerp.exceptions import Warning as UserError
 
+from openerp.addons.l10n_br_hr_payroll.models.hr_payslip import (
+    TIPO_DE_FOLHA,
+)
+
 
 class HrPayslip(models.Model):
 
@@ -70,14 +74,21 @@ class HrPayslip(models.Model):
         self.write({'state': 'done'})
         return True
 
-    def create_payorder(self, mode_payment):
+    def create_payorder(self):
         '''
-        Cria um payment order com base no metodo de pagamento
+        Cria um payment order do holerite com base no metodo de pagamento
         :param mode_payment: Modo de pagamento
         :return: objeto do payment.order
         '''
         payment_order_model = self.env['payment.order']
-        vals = {'mode': mode_payment.id, }
+        vals = {
+            'mode': self.payment_mode_id.id,
+            'tipo_pagamento': 'folha',
+            'tipo_de_folha': self.tipo_de_folha,
+            'reference':
+                dict(TIPO_DE_FOLHA).get(self.tipo_de_folha) +
+                ' ' + self.data_mes_ano,
+        }
         return payment_order_model.create(vals)
 
     @api.multi
@@ -116,24 +127,50 @@ class HrPayslip(models.Model):
                     "No Payment Mode on holerite %s") % holerite.number)
 
             # Buscar ordens de pagamento do mesmo tipo
-            payorders = payment_order_model.search([
+            payorder = payment_order_model.search([
+                ('tipo_pagamento', '=', 'folha'),
                 ('mode', '=', holerite.payment_mode_id.id),
-                ('state', '=', 'draft')]
-            )
+                ('state', '=', 'draft'),
+                ('tipo_de_folha', '=', holerite.tipo_de_folha),
+            ], limit=1)
 
-            if payorders:
-                payorder = payorders[0]
-            else:
-                payorder = self.create_payorder(holerite.payment_mode_id)
+            if not payorder:
+                payorder = self.create_payorder()
+
+            # Seta a ordem de pagamento do holerite
+            self.payment_order_id = payorder
 
             for rubrica in holerite.line_ids:
+
                 if rubrica.code == 'LIQUIDO':
                     self.create_payment_order_line(
                         payorder, rubrica.total,
                         'SALARIO ' + holerite.data_mes_ano, rubrica.partner_id)
+
+                if rubrica.code == 'LIQUIDO_FERIAS':
+                    self.create_payment_order_line(
+                        payorder, rubrica.total,
+                        'FERIAS ' + holerite.data_mes_ano, rubrica.partner_id)
 
                 if rubrica.code == 'PENSAO_ALIMENTICIA':
                     self.create_payment_order_line(
                         payorder, rubrica.total,
                         'PENSAO ALIMENTICIA ' + holerite.data_mes_ano,
                         rubrica.partner_id)
+
+    @api.multi
+    def button_payment_order_form_view(self):
+
+        res_id = \
+            self.payment_order_id.ids and self.payment_order_id.ids[0] or False
+
+        return {
+            'name': _('Pagamentos'),
+            'res_model': 'payment.order',
+            'res_id': res_id,
+            'type': 'ir.actions.act_window',
+            'view_id': False,
+            'view_mode': 'form,tree',
+            'view_type': 'form',
+            'limit': 80,
+        }
