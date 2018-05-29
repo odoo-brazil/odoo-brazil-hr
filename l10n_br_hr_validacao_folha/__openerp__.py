@@ -28,6 +28,6 @@
     'test': [
         'tests/test_hr_payslip_10.py',
     ],
-    'installable': True,
+    'installable': False,
     'auto_install': False,
 }

@@ -106,6 +106,14 @@ class HrHolidays(models.Model):
              u'positivo, o pedido de férias é regular e ja poderá ser gozado.',
         compute='_compute_verificar_regularidade',
     )
+    saldo_dias_periodo_aquisitivo = fields.Integer(
+        string='Saldo do período aquisitivo',
+        help=u'Indica o Saldo do período aquisitivo.\n'
+             u'Na visão de solicitação de férias, mostrar apenas os período '
+             u'aquisitivos que tem saldo para gozar férias.',
+        compute='_compute_saldo_dias_periodo_aquisitivo',
+        store=True,
+    )
     regular = fields.Boolean(
         string=u'Regular',
         compute='_compute_verificar_regularidade',
@@ -159,6 +167,30 @@ class HrHolidays(models.Model):
                 if holiday.saldo_final >= 0 and holiday.date_from >= \
                         holiday.controle_ferias[0].inicio_concessivo:
                     holiday.regular = True
+
+    @api.depends('child_ids', 'child_ids.number_of_days_temp')
+    def _compute_saldo_dias_periodo_aquisitivo(self):
+        """
+        Cada pedido de ferias(hr.holiday) deve ter um outro holiday como
+        parent_id que indica o periodo aquisitivo daquela solicitação.
+        O periodo aquisitivo (holiday parent_id tipo add) deve contabilizar
+        o saldo do periodo aquisitivo, isto é, a somatoria dos holidays filhos.
+        Na visao de solicitação de férias exibir apenas o periodo aquisitivo
+        que tiver saldo disponivel.
+        :return:
+        """
+        for holiday_id in self:
+            dias_gozados = 0
+            if holiday_id.type == 'add':
+
+                solicitacoes_aprovadas = holiday_id.child_ids.filtered(
+                    lambda x: x.state in ['confirm', 'validate', 'validate1'])
+
+                dias_gozados = \
+                    sum(solicitacoes_aprovadas.mapped('number_of_days_temp'))
+
+            holiday_id.saldo_dias_periodo_aquisitivo = \
+                holiday_id.number_of_days_temp - dias_gozados
 
     @api.depends('vacations_days', 'sold_vacations_days')
     def _compute_days_temp(self):
