@@ -1354,18 +1354,18 @@ class HrPayslip(models.Model):
             ('is_simulacao', '=', True),
             ('date_from', '=', data_inicio),
             ('date_to', '=', data_fim),
+            ('contract_id', '=', self.contract_id.id),
         ]
         payslip_simulacao = self.env['hr.payslip'].search(domain)
         if payslip_simulacao:
-            payslip_simulacao_criada = payslip_simulacao
-        else:
-            payslip_simulacao_criada = self.gerar_simulacao(
-                'decimo_terceiro', self.mes_do_ano,
-                self.ano, data_inicio,
-                data_fim
-            )
-        return self._buscar_valor_bruto_simulacao(
-            payslip_simulacao_criada)
+            payslip_simulacao.state = 'draft'
+            payslip_simulacao.unlink()
+
+        payslip_simulacao_criada = self.gerar_simulacao(
+            'decimo_terceiro', self.mes_do_ano, self.ano, data_inicio, data_fim
+        )
+
+        return self._buscar_valor_bruto_simulacao(payslip_simulacao_criada)
 
     @api.multi
     def BUSCAR_VALOR_PROPORCIONAL(
@@ -2420,8 +2420,10 @@ class HrPayslip(models.Model):
             ])
 
             if holerite_id:
-                record.date_from = record.data_afastamento
-                record.date_to = record.data_afastamento
+                record.update({
+                    'date_from': record.data_afastamento,
+                    'date_to': record.data_afastamento,
+                })
 
     @api.multi
     def _buscar_holerites_periodo_aquisitivo(self):
