@@ -170,7 +170,7 @@
                             </group>
                         </group>
                         <group>
-                            <field name="payslip_id" />
+                            <field name="payslip_id" groups="base.group_no_one" />
                         </group>
                     </sheet>
                 </form>
