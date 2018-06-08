@@ -242,7 +242,8 @@ class HrHolidays(models.Model):
         if self.parent_id:
             self.controle_ferias = self.parent_id.controle_ferias
 
-    @api.depends('date_from', 'date_to', 'holiday_status_id', 'employee_id')
+    @api.depends('date_from', 'date_to', 'holiday_status_id', 'employee_id',
+                 'data_inicio', 'data_fim')
     def _compute_name_holiday(self):
         """
         Função que configura o nome automaticamente do holidays. Se começar e
@@ -255,14 +256,18 @@ class HrHolidays(models.Model):
                 date_from = data.formata_data(holiday.data_inicio)
                 date_to = data.formata_data(holiday.data_fim)
 
+                # Pegar apenas os dois primeiros nomes
+                employee_name = holiday.employee_id.name.split()
+                employee_name =  ' '.join(employee_name[:2])
+
                 if date_from == date_to:
                     holiday.name = holiday.holiday_status_id.name[:30] + \
-                        '[' + holiday.employee_id.name[:10] + '] ' + \
+                        ' [' + employee_name + '] ' + \
                         ' (' + date_to + ')'
                 else:
                     holiday.name = \
-                        '[' + holiday.employee_id.name + '] ' + \
                         holiday.holiday_status_id.name[:30] + \
+                        ' [' + employee_name + '] ' + \
                         ' (' + date_from + '-' + date_to + ')'
 
             elif holiday.holiday_status_id and holiday.employee_id:
