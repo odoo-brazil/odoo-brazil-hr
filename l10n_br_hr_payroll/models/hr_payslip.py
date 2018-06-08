@@ -1924,7 +1924,7 @@ class HrPayslip(models.Model):
                     == mes_do_ano:
                 dia_fim_contrato = \
                     fields.Date.from_string(payslip.contract_id.date_end).day
-                if dia_fim_contrato <= 15:
+                if dia_fim_contrato < 15:
                     avos_13 -= 1
         #
         # Quando for rescisao, verificar se ja foi calculado o holerite do mes.
@@ -2430,37 +2430,30 @@ class HrPayslip(models.Model):
             ])
 
             if holerite_id:
-                record.update({
-                    'date_from': record.data_afastamento,
-                    'date_to': record.data_afastamento,
-                })
+                record.date_to = record.data_afastamento
+                record.date_from = record.data_afastamento
 
     @api.multi
     def _buscar_holerites_periodo_aquisitivo(self):
         if not self.periodo_aquisitivo:
             return False
         else:
-            payslips = self.search(
-                [
-                    ('contract_id', '=', self.contract_id.id),
-                    ('date_from', '>=',
-                     self.periodo_aquisitivo.inicio_aquisitivo),
-                    ('date_to', '<=', self.periodo_aquisitivo.fim_aquisitivo),
-                    ('tipo_de_folha', '=', 'normal'),
-                    ('state', 'in', ['done', 'verify']),
-                ]
-            )
+            payslips = self.search([
+                ('contract_id', '=', self.contract_id.id),
+                ('date_from', '>=', self.periodo_aquisitivo.inicio_aquisitivo),
+                ('date_to', '<=', self.periodo_aquisitivo.fim_aquisitivo),
+                ('tipo_de_folha', '=', 'normal'),
+                ('state', 'in', ['done', 'verify']),
+            ])
             return payslips
 
     @api.multi
     def _checar_holerites_aprovados(self):
-        return self.env['hr.payslip'].search(
-            [
-                ('contract_id', '=', self.contract_id.id),
-                ('tipo_de_folha', '=', 'normal'),
-                ('state', 'in', ['done', 'verify'])
-            ]
-        )
+        return self.search([
+            ('contract_id', '=', self.contract_id.id),
+            ('tipo_de_folha', '=', 'normal'),
+            ('state', 'in', ['done', 'verify'])
+        ])
 
     @api.multi
     def compute_sheet(self):
