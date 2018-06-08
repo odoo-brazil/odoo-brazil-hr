@@ -8,7 +8,7 @@
             <field name="inherit_id" ref="hr_holidays.edit_holiday_new"/>
             <field name="arch" type="xml">
                 <field name="holiday_status_id" position="replace">
-                    <field name="saldo_dias_periodo_aquisitivo" invisible="1" />
+                    <field name="saldo_periodo_referencia" invisible="1" />
 
                     <field name="holiday_status_id"
                            attrs="{'invisible': [('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"
@@ -21,7 +21,7 @@
                            options="{'no_create': true, 'create_edit': false}"
                            attrs="{'invisible': ['|',('type','=','add'),('holiday_status_id', '!=', %(l10n_br_hr_holiday.holiday_status_vacation)d)],
                                    'required':  [('date_from','!=',False),('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"
-                           domain="[('type', '=', 'add'), ('saldo_dias_periodo_aquisitivo','>',0), ('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d), ('contrato_id', '=' , contrato_id)]}" />
+                           domain="[('type', '=', 'add'), ('saldo_periodo_referencia','>',0),('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d), ('contrato_id', '=' , contrato_id)]}" />
                 </field>
 
                 <label string="-" position="replace">

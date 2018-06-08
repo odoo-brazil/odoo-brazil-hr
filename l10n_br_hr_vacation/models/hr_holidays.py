@@ -106,12 +106,12 @@ class HrHolidays(models.Model):
              u'positivo, o pedido de férias é regular e ja poderá ser gozado.',
         compute='_compute_verificar_regularidade',
     )
-    saldo_dias_periodo_aquisitivo = fields.Integer(
+    saldo_periodo_referencia = fields.Integer(
         string='Saldo do período aquisitivo',
         help=u'Indica o Saldo do período aquisitivo.\n'
              u'Na visão de solicitação de férias, mostrar apenas os período '
              u'aquisitivos que tem saldo para gozar férias.',
-        compute='_compute_saldo_dias_periodo_aquisitivo',
+        compute='_compute_saldo_periodo_referencia',
         store=True,
     )
     regular = fields.Boolean(
@@ -169,7 +169,7 @@ class HrHolidays(models.Model):
                     holiday.regular = True
 
     @api.depends('child_ids', 'child_ids.number_of_days_temp')
-    def _compute_saldo_dias_periodo_aquisitivo(self):
+    def _compute_saldo_periodo_referencia(self):
         """
         Cada pedido de ferias(hr.holiday) deve ter um outro holiday como
         parent_id que indica o periodo aquisitivo daquela solicitação.
@@ -177,20 +177,31 @@ class HrHolidays(models.Model):
         o saldo do periodo aquisitivo, isto é, a somatoria dos holidays filhos.
         Na visao de solicitação de férias exibir apenas o periodo aquisitivo
         que tiver saldo disponivel.
+
+        No mesmo raciocinio do periodo aquisitivo teremos outros periodos
+        (hr.holidays tipo compensacao de horas) chamados de referencia que
+        indicam o saldo de horas do funcionario.
+
         :return:
         """
         for holiday_id in self:
-            dias_gozados = 0
-            if holiday_id.type == 'add':
+            eventos_gozados = 0
 
-                solicitacoes_aprovadas = holiday_id.child_ids.filtered(
-                    lambda x: x.state in ['confirm', 'validate', 'validate1'])
+            solicitacoes_aprovadas = holiday_id.child_ids.filtered(
+                lambda x: x.state in ['confirm', 'validate', 'validate1'])
 
-                dias_gozados = \
+            if holiday_id.type == 'add' and holiday_id.tipo == 'compensacao':
+
+                eventos_gozados = \
+                    sum(solicitacoes_aprovadas.mapped('horas_compensadas'))
+
+            elif holiday_id.type == 'add' and holiday_id.tipo != 'compensacao':
+
+                eventos_gozados = \
                     sum(solicitacoes_aprovadas.mapped('number_of_days_temp'))
 
-            holiday_id.saldo_dias_periodo_aquisitivo = \
-                holiday_id.number_of_days_temp - dias_gozados
+            holiday_id.saldo_periodo_referencia = \
+                holiday_id.number_of_days_temp - eventos_gozados
 
     @api.depends('vacations_days', 'sold_vacations_days')
     def _compute_days_temp(self):
