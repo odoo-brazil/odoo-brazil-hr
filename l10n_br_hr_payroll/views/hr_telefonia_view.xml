@@ -4,6 +4,7 @@
 
         <menuitem id="menu_hr_root_telefonia" parent="hr.menu_hr_root" name="Telefonia" sequence="48" groups="base.group_user" />
 
+        <!-- Visao que mostra os funcionários e seus ramais-->
         <record model="ir.ui.view" id="hr_employee_ramal_form_view">
             <field name="name">hr.employee.ramal.form</field>
             <field name="model">hr.employee</field>
@@ -27,7 +28,6 @@
                 </form>
             </field>
         </record>
-
         <record model="ir.ui.view" id="hr_employee_ramal_tree_view">
             <field name="name">hr.employee.ramal.tree</field>
             <field name="model">hr.employee</field>
@@ -39,28 +39,24 @@
                 </tree>
             </field>
         </record>
-
         <record model="ir.actions.act_window" id="action_hr_employee_ramais">
-            <field name="name">Ramais</field>
+            <field name="name">Funcionários</field>
             <field name="res_model">hr.employee</field>
             <field name="view_mode">tree,form</field>
         </record>
-
         <record model="ir.ui.menu" id="menu_hr_employee_ramal">
-            <field name="name">Ramais</field>
+            <field name="name">Funcionários</field>
             <field name="parent_id" ref="l10n_br_hr_payroll.menu_hr_root_telefonia" />
             <field name="action" ref="action_hr_employee_ramais" />
             <field name="sequence" eval="1" />
             <field name="groups_id" eval="[(6, 0, [ref('l10n_br_hr_payroll.group_manager_ligacoes')])]" />
         </record>
-
         <record id="act_hr_employee_ramal_tree" model="ir.actions.act_window.view">
             <field eval="1" name="sequence"/>
             <field name="view_mode">tree</field>
             <field name="view_id" ref="hr_employee_ramal_tree_view"/>
             <field name="act_window_id" ref="action_hr_employee_ramais"/>
         </record>
-
         <record id="act_hr_employee_ramal_form" model="ir.actions.act_window.view">
             <field eval="2" name="sequence"/>
             <field name="view_mode">form</field>
@@ -69,6 +65,59 @@
         </record>
 
 
+        <!-- Visao que mostra os Ramais e quem esta alocado a ele-->
+        <record model="ir.ui.view" id="hr_telefonia_ramal_form_view">
+            <field name="name">hr.telefonia.ramal.form</field>
+            <field name="model">hr.ramal</field>
+            <field name="arch" type="xml">
+                <form string="Ramal">
+                    <sheet>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                        <group>
+                            <field name="employee_ids" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record model="ir.ui.view" id="hr_telefonia_ramal_tree_view">
+            <field name="name">hr.telefonia.ramal.tree</field>
+            <field name="model">hr.ramal</field>
+            <field name="arch" type="xml">
+                <tree string="Ramais">
+                    <field name="name" />
+                    <field name="employee_ids" />
+                </tree>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_hr_telefonia_ramais">
+            <field name="name">Ramais</field>
+            <field name="res_model">hr.ramal</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <record model="ir.ui.menu" id="menu_hr_telefonia_ramal">
+            <field name="name">Ramal</field>
+            <field name="parent_id" ref="l10n_br_hr_payroll.menu_hr_root_telefonia" />
+            <field name="action" ref="action_hr_telefonia_ramais" />
+            <field name="sequence" eval="1" />
+            <field name="groups_id" eval="[(6, 0, [ref('l10n_br_hr_payroll.group_manager_ligacoes')])]" />
+        </record>
+        <record id="act_hr_telefonia_ramal_tree" model="ir.actions.act_window.view">
+            <field eval="1" name="sequence"/>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="hr_telefonia_ramal_tree_view"/>
+            <field name="act_window_id" ref="action_hr_telefonia_ramais"/>
+        </record>
+        <record id="act_hr_telefonia_ramal_form" model="ir.actions.act_window.view">
+            <field eval="2" name="sequence"/>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="hr_telefonia_ramal_form_view"/>
+            <field name="act_window_id" ref="action_hr_telefonia_ramais"/>
+        </record>
+
+        <!--Visao que contem o registro telefonica com suas varias chamadas -->
         <record model="ir.ui.view" id="hr_telefonia_form_view">
             <field name="name">hr.telefonia.form</field>
             <field name="model">hr.telefonia</field>
@@ -95,6 +144,9 @@
                         <group>
                             <field name="arquivo_ligacoes" />
                             <field name="arquivo_ramais" groups="base.group_no_one"/>
+                        </group>
+                        <group>
+                            <field name="company_id" />
                         </group>
                         <group>
                             <group>
@@ -132,6 +184,7 @@
                 <tree string="Registros Telefonicos">
                     <field name="mes"/>
                     <field name="ano"/>
+                    <field name="company_id"/>
                     <field name="arquivo_ligacoes"/>
                 </tree>
             </field>
@@ -188,10 +241,7 @@
                     <field name="inicio" />
                     <field name="duracao" />
                     <field name="valor" />
-
-                    <!--<button class="oe_inline oe_stat_button" name="action_open_to_transit_moves"-->
-              <!--type="object" icon="fa-upload">-->
-              <!--<field string="To transit moves" name="to_transit_moves_count" widget="statinfo" />-->
+                    <field name="tipo" />
 
                     <button name="set_particular" string="Particular" type="object"
                             attrs="{'readonly': ['|',('tipo', '=', 'particular'),('state','in',['validate','paid'])]}"
@@ -201,7 +251,6 @@
                             attrs="{'readonly': ['|',('tipo', '=', 'empresa'),('state','in',['validate','paid'])]}"
                             help="Definir ligação como Empresarial" />
 
-                    <field name="tipo" />
                     <field name="employee_id" invisible="1"/>
                     <field name="ramal" invisible="1" />
                     <field name="state" />
@@ -228,11 +277,18 @@
             <field name="model">hr.telefonia.line</field>
             <field name="arch" type="xml">
                 <search string="Registros Telefonicos por data">
-                    <filter name="filter_ligacoes_open" icon="terp-document-new" string="Ligações em aberto" domain="[('state','in',['open'])]" help="Apenas Ligações não foram debitadas"/>
-                    <filter name="filter_minhas_ligacoes" icon="terp-document-new" string="Minhas Ligacoes" domain="[('employee_id.user_id', '=',uid)]" help="Apenas Minhas Ligações"/>
+                    <field name="employee_id"/>
+                    <field name="ramal"/>
+                    <field name="data"/>
+                    <filter name="filter_ligacoes_open" icon="terp-call-start" string="Ligações em aberto"
+                            domain="[('state','in',['open'])]" help="Apenas Ligações não foram debitadas"/>
+                    <filter name="filter_minhas_ligacoes" icon="terp-call-start" string="Minhas Ligacoes"
+                            domain="[('employee_id.user_id', '=',uid)]" help="Apenas Minhas Ligações"/>
+                    <filter name="filter_minhas_ligacoes_abertas" icon="terp-call-start" string="Minhas Ligacoes em aberto"
+                            domain="[ ('employee_id.user_id','=',uid),('state','in',['open'])]" help="Apenas Minhas Ligações que estão em aberto"/>
                     <group expand="1" string="Group By">
                         <filter string="Data" icon="terp-accessories-archiver" context="{'group_by':'data'}" name='group_by_data'/>
-                        <filter string="Ramal" icon="terp-accessories-archiver" context="{'group_by':'ramal'}" name='group_by_ramal'/>
+                        <filter string="Ramal" icon="terp-call-start" context="{'group_by':'ramal'}" name='group_by_ramal'/>
                         <filter string="Empregado" icon="terp-accessories-archiver" context="{'group_by':'employee_id'}" name='group_by_employee'/>
                         <filter string="Valor" icon="terp-accessories-archiver" context="{'group_by':'valor'}" name='group_by_valor'/>
                         <filter string="Tipo" icon="terp-accessories-archiver" context="{'group_by':'tipo'}" name='group_by_tipo'/>
@@ -245,9 +301,11 @@
         <record model="ir.actions.act_window" id="action_hr_ligacoes">
             <field name="name">Registros Telefonicos</field>
             <field name="res_model">hr.telefonia.line</field>
-            <field name="context">{"search_default_filter_ligacoes_open":1}</field>
+            <!--<field name="context">{"search_default_group_by_ramal":1}</field>-->
             <!--<field name="context">{'search_default_group_by_data': True, "search_default_filter_ligacoes_open":1}</field>-->
+            <field name="context">{"search_default_filter_minhas_ligacoes_abertas":1}</field>
             <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="l10n_br_hr_payroll.view_hr_telefonia_line_search"/>
         </record>
 
         <record model="ir.ui.menu" id="menu_hr_ligacoes">

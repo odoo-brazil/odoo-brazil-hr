@@ -12,8 +12,9 @@ class HrTelefonia(models.Model):
 
     def _get_display_name(self):
         for record in self:
-            display_name = "Registros Telefônicos - {}/{}".format(
-                record.mes, record.ano
+            display_name = "Registros Telefônicos - {} - {}/{}".format(
+                record.company_id.display_name or '',
+                dict(MES_DO_ANO).get(record.mes), record.ano
             )
             record.display_name = display_name
 
@@ -52,29 +53,42 @@ class HrTelefonia(models.Model):
         inverse_name='registro_telefonico_id',
     )
 
+    company_id = fields.Many2one(
+        string='Empresa',
+        comodel_name='res.company',
+    )
+
     @api.multi
     def button_buscar_dono_ligacao(self):
+        """
+        Conciliar ligacoes
+        :return:
+        """
 
-        ligacoes_sem_dono_id = self.env['hr.telefonia.line'].search([('employee_id','=',False)])
+        ligacoes_sem_dono_id = \
+            self.env['hr.telefonia.line'].search([('employee_id','=',False)])
 
         for ligacoes_id in ligacoes_sem_dono_id:
-
-            funcionario_id = self.env['hr.employee'].search([('ramais', '=', ligacoes_id.ramal.name)])
+            funcionario_id = self.env['hr.employee'].search([
+                ('ramais', '=', ligacoes_id.ramal.name)])
 
             if len(funcionario_id) == 1:
                 ligacoes_id.employee_id = funcionario_id
 
     @api.multi
     def button_import_ramais(self):
+        """
+        Botao habilitado apenas para quem for do grupo de gerenciamento
+        técnico pois ira acontecer apenas uma vez
+        :return:
+        """
 
         ramal_obj = self.env['hr.ramal']
 
         for record in self:
             if record.arquivo_ramais:
-
                 # import csv
                 import base64
-
                 arq = base64.b64decode(record.arquivo_ramais)
                 linhas = arq.splitlines(True)
 
@@ -85,16 +99,21 @@ class HrTelefonia(models.Model):
                     email_ramal = l[1].strip()
                     numero_ramal = l[2].strip('\n')
 
-                    funcionario_id = self.env['hr.employee'].search([('work_email','=',email_ramal)])
+                    funcionario_id = self.env['hr.employee'].search([
+                        ('work_email','=',email_ramal)])
 
                     if funcionario_id:
 
-                        ramal_id = ramal_obj.search([('name','=', numero_ramal)])
+                        ramal_id = ramal_obj.search([
+                            ('name','=', numero_ramal)])
 
-                        if not numero_ramal in funcionario_id.ramais.mapped('name'):
+                        if not numero_ramal in \
+                               funcionario_id.ramais.mapped('name'):
 
                             if not ramal_id:
-                                ramal_id = ramal_obj.create({'name': numero_ramal})
+                                ramal_id = ramal_obj.create(
+                                    {'name': numero_ramal}
+                                )
 
                             funcionario_id.ramais = [(4, ramal_id.id)]
 
@@ -104,6 +123,10 @@ class HrTelefonia(models.Model):
 
     @api.multi
     def button_importar_csv(self):
+        """
+        Botao para importar ligacoes do arquivo CSV fornecido pelo PABX
+        :return:
+        """
 
         ramal_obj = self.env['hr.ramal']
 
@@ -127,7 +150,9 @@ class HrTelefonia(models.Model):
                         if not ramal_id:
                             ramal_id = ramal_obj.create({'name': name_ramal})
 
-                        funcionario_id = self.env['hr.employee'].search([('ramais', '=', name_ramal)])
+                        funcionario_id = self.env['hr.employee'].search([
+                            ('ramais', '=', name_ramal)
+                        ])
 
                         data = l[1]
                         numero_discado = l[2]
@@ -137,20 +162,31 @@ class HrTelefonia(models.Model):
                         duracao = l[6]
                         valor = float(l[7].replace(',','.'))
 
-                        vals = {
-                            'ramal': ramal_id.id,
-                            'data': data,
-                            'numero_discado': numero_discado,
-                            'concessionaria': concessionaria,
-                            'localidade': localidade,
-                            'inicio': inicio,
-                            'duracao': duracao,
-                            'valor': valor,
-                            'registro_telefonico_id': record.id,
-                            'employee_id': funcionario_id.id if len(funcionario_id) == 1 else False
-                        }
+                        # Verificar se a ligacao ja foi importada
+                        existe_ligacao = self.env['hr.telefonia.line'].search([
+                            ('ramal', '=', ramal_id.id),
+                            ('data', '=', data),
+                            ('numero_discado', '=', numero_discado),
+                            ('inicio', '=', inicio),
+                            ('valor', '=', valor),
+                        ])
 
-                        self.env['hr.telefonia.line'].create(vals)
+                        if not existe_ligacao:
+                            vals = {
+                                'ramal': ramal_id.id,
+                                'data': data,
+                                'numero_discado': numero_discado,
+                                'concessionaria': concessionaria,
+                                'localidade': localidade,
+                                'inicio': inicio,
+                                'duracao': duracao,
+                                'valor': valor,
+                                'registro_telefonico_id': record.id,
+                                'employee_id': funcionario_id.id
+                                        if len(funcionario_id) == 1 else False,
+                                'company_id': record.company_id.id or False,
+                            }
+                            self.env['hr.telefonia.line'].create(vals)
 
 
 class HrTelefoniaLine(models.Model):
@@ -162,7 +198,8 @@ class HrTelefoniaLine(models.Model):
         for record in self:
             title = '{} - {}{}'.format(
                 record.ramal.name,
-                record.employee_id.name.encode('utf-8') + ' - ' if record.employee_id else '',
+                record.employee_id.name.encode('utf-8') + ' - '
+                if record.employee_id else '',
                 record.data
             )
             record.display_name = title
@@ -263,6 +300,11 @@ class HrTelefoniaLine(models.Model):
     numero_discado = fields.Char(
         string='Numero Discado',
         readonly=True,
+    )
+
+    company_id = fields.Many2one(
+        string='Empresa',
+        comodel_name='res.company',
     )
 
     @api.multi
