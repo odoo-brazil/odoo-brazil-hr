@@ -106,7 +106,7 @@ class HrHolidays(models.Model):
              u'positivo, o pedido de férias é regular e ja poderá ser gozado.',
         compute='_compute_verificar_regularidade',
     )
-    saldo_periodo_referencia = fields.Integer(
+    saldo_periodo_referencia = fields.Float(
         string='Saldo do período aquisitivo',
         help=u'Indica o Saldo do período aquisitivo.\n'
              u'Na visão de solicitação de férias, mostrar apenas os período '
@@ -168,7 +168,7 @@ class HrHolidays(models.Model):
                         holiday.controle_ferias[0].inicio_concessivo:
                     holiday.regular = True
 
-    @api.depends('child_ids', 'child_ids.number_of_days_temp')
+    @api.depends('child_ids', 'child_ids.number_of_days_temp', 'vacations_days')
     def _compute_saldo_periodo_referencia(self):
         """
         Cada pedido de ferias(hr.holiday) deve ter um outro holiday como
@@ -185,23 +185,36 @@ class HrHolidays(models.Model):
         :return:
         """
         for holiday_id in self:
-            eventos_gozados = 0
 
             solicitacoes_aprovadas = holiday_id.child_ids.filtered(
-                lambda x: x.state in ['confirm', 'validate', 'validate1'])
+                lambda x: x.state in ['validate', 'validate1'])
 
+            #  Se o holiday for do tipo de compensacao, a contabilidade devera
+            #  se basear na configuração de horas do holidays_status
             if holiday_id.type == 'add' and holiday_id.tipo == 'compensacao':
-
                 eventos_gozados = \
                     sum(solicitacoes_aprovadas.mapped('horas_compensadas'))
 
-            elif holiday_id.type == 'add' and holiday_id.tipo != 'compensacao':
+                horas_de_direito = \
+                    holiday_id.number_of_days_temp * \
+                    holiday_id.holiday_status_id.hours_limit
+
+                holiday_id.saldo_periodo_referencia = \
+                    horas_de_direito - eventos_gozados
+
+            #  Se o holiday NAO for do tipo compensacao, a contabilidade devera
+            #  se basear na configuração de DIAS do holidays_status
+            if holiday_id.type == 'add' and holiday_id.tipo != 'compensacao':
 
                 eventos_gozados = \
                     sum(solicitacoes_aprovadas.mapped('number_of_days_temp'))
 
-            holiday_id.saldo_periodo_referencia = \
-                holiday_id.number_of_days_temp - eventos_gozados
+                dias_de_direito = \
+                    holiday_id.number_of_days_temp * \
+                    holiday_id.holiday_status_id.days_limit
+
+                holiday_id.saldo_periodo_referencia = \
+                    dias_de_direito - eventos_gozados
 
     @api.depends('vacations_days', 'sold_vacations_days')
     def _compute_days_temp(self):
@@ -262,6 +275,12 @@ class HrHolidays(models.Model):
          senão só mostra a data que acontecerá o holidays
         """
         for holiday in self:
+
+            if holiday.employee_id:
+                # Pegar apenas os dois primeiros nomes
+                employee_name = holiday.employee_id.name.split()
+                employee_name = ' '.join(employee_name[:2])
+
             if holiday.data_inicio and holiday.data_fim and \
                     holiday.holiday_status_id and holiday.employee_id:
                 date_from = data.formata_data(holiday.data_inicio)
@@ -283,7 +302,7 @@ class HrHolidays(models.Model):
 
             elif holiday.holiday_status_id and holiday.employee_id:
                 holiday.name = holiday.holiday_status_id.name[:30] + \
-                               '[' + holiday.employee_id.name[:10] + '] '
+                               ' [' + employee_name + '] '
 
             if holiday.controle_ferias_ids and holiday.type == 'add':
                 holiday.name = \
@@ -291,6 +310,8 @@ class HrHolidays(models.Model):
                     ' (' + data.formata_data(holiday.controle_ferias_ids[0].inicio_aquisitivo) + \
                     ' - ' + \
                     data.formata_data(holiday.controle_ferias_ids[0].fim_aquisitivo) + ') '
+
+
 
     @api.onchange('data_inicio', 'data_fim', 'date_from', 'date_to')
     def setar_datas_core(self):
