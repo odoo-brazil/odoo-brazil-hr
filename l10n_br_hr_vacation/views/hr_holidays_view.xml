@@ -29,7 +29,7 @@
                 </label>
 
                 <label string="Duration" position="replace">
-                    <label for="date_from" string="Período"/>
+                    <label for="date_from" string="Disponibilizar (dias)"/>
                 </label>
 
                 <field name="date_from" position="replace">
