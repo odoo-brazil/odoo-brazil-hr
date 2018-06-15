@@ -27,6 +27,7 @@ class HrHolidays(models.Model):
                 ('id', '!=', holiday.id),
                 ('type', '=', holiday.type),
                 ('state', 'not in', ['cancel', 'refuse']),
+                ('holiday_status_id', '=', holiday.holiday_status_id.id),
             ]
             nholidays = self.search_count(domain)
             if nholidays:
@@ -108,7 +109,7 @@ class HrHolidays(models.Model):
     )
     saldo_periodo_referencia = fields.Float(
         string='Saldo do período aquisitivo',
-        help=u'Indica o Saldo do período aquisitivo.\n'
+        help=u'Indica o Saldo do período de referência.\n'
              u'Na visão de solicitação de férias, mostrar apenas os período '
              u'aquisitivos que tem saldo para gozar férias.',
         compute='_compute_saldo_periodo_referencia',
@@ -191,7 +192,7 @@ class HrHolidays(models.Model):
 
             #  Se o holiday for do tipo de compensacao, a contabilidade devera
             #  se basear na configuração de horas do holidays_status
-            if holiday_id.type == 'add' and holiday_id.tipo == 'compensacao':
+            if holiday_id.type == 'add' and holiday_id.holiday_status_id.controle_horas:
                 eventos_gozados = \
                     sum(solicitacoes_aprovadas.mapped('horas_compensadas'))
 
@@ -204,7 +205,7 @@ class HrHolidays(models.Model):
 
             #  Se o holiday NAO for do tipo compensacao, a contabilidade devera
             #  se basear na configuração de DIAS do holidays_status
-            if holiday_id.type == 'add' and holiday_id.tipo != 'compensacao':
+            if holiday_id.type == 'add' and not holiday_id.holiday_status_id.controle_horas:
 
                 eventos_gozados = \
                     sum(solicitacoes_aprovadas.mapped('number_of_days_temp'))
