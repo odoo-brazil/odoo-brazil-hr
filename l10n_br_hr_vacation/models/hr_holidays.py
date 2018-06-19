@@ -259,6 +259,20 @@ class HrHolidays(models.Model):
 
     @api.multi
     def onchange_date_from(self, date_to, date_from, sold_vacations_days):
+        """
+        On change disparado na view
+        :param date_to:
+        :param date_from:
+        :param sold_vacations_days:
+        :return:
+        """
+        # se for do tipo fields.Date converter para datetime para chamar rotina
+        if date_to and len(date_to) == 10:
+            date_to += ' 00:00:00'
+
+        if date_from and len(date_from) == 10:
+            date_from += ' 00:00:00'
+
         result = super(HrHolidays, self).onchange_date_to(date_to, date_from)
         result['value']['vacations_days'] = \
             result['value']['number_of_days_temp']
