@@ -24,12 +24,13 @@
                            domain="[('type', '=', 'add'), ('saldo_periodo_referencia','>',0),('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d), ('contrato_id', '=' , contrato_id)]}" />
                 </field>
 
-                <label string="-" position="replace">
-                    <label string="-" class="oe_inline" attrs="{'invisible': [('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"/>
-                </label>
+                <!--<label string="-" position="replace">-->
+                    <!--<label string="-" class="oe_inline" attrs="{'invisible': [('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"/>-->
+                <!--</label>-->
 
                 <label string="Duration" position="replace">
-                    <label for="date_from" string="Disponibilizar (dias)"/>
+                    <label for="date_from" string="Período" attrs="{'invisible': [('holiday_status_id', '!=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"/>
+                    <label for="date_from" string="Disponibilizar (dias)" attrs="{'invisible': [('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"/>
                 </label>
 
                 <field name="date_from" position="replace">
@@ -55,6 +56,7 @@
                         <field name="vacations_days" class="oe_inline" nolabel="1"
                                string='Dias de férias'/>
                     </group>
+                    <!--<div  class="oe_inline">dias</div>-->
                 </field>
 
                 <field name="notes" position="before">
