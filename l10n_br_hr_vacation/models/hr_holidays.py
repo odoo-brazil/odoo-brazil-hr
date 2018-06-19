@@ -4,6 +4,7 @@
 
 import logging
 from openerp import api, models, fields
+from datetime import datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -185,37 +186,53 @@ class HrHolidays(models.Model):
 
         :return:
         """
+
+
         for holiday_id in self:
+            eventos_gozados = 0
 
             solicitacoes_aprovadas = holiday_id.child_ids.filtered(
-                lambda x: x.state in ['validate', 'validate1'])
+                lambda x: x.state in ['confirm', 'validate', 'validate1'])
 
-            #  Se o holiday for do tipo de compensacao, a contabilidade devera
-            #  se basear na configuração de horas do holidays_status
-            if holiday_id.type == 'add' and holiday_id.holiday_status_id.controle_horas:
-                eventos_gozados = \
-                    sum(solicitacoes_aprovadas.mapped('horas_compensadas'))
-
-                horas_de_direito = \
-                    holiday_id.number_of_days_temp * \
-                    holiday_id.holiday_status_id.hours_limit
-
-                holiday_id.saldo_periodo_referencia = \
-                    horas_de_direito - eventos_gozados
-
-            #  Se o holiday NAO for do tipo compensacao, a contabilidade devera
-            #  se basear na configuração de DIAS do holidays_status
-            if holiday_id.type == 'add' and not holiday_id.holiday_status_id.controle_horas:
+            if holiday_id.type == 'add' and holiday_id.child_ids:
 
                 eventos_gozados = \
                     sum(solicitacoes_aprovadas.mapped('number_of_days_temp'))
 
-                dias_de_direito = \
-                    holiday_id.number_of_days_temp * \
-                    holiday_id.holiday_status_id.days_limit
+            holiday_id.saldo_periodo_referencia = \
+                holiday_id.number_of_days_temp - eventos_gozados
 
-                holiday_id.saldo_periodo_referencia = \
-                    dias_de_direito - eventos_gozados
+        # for holiday_id in self:
+        #
+        #     solicitacoes_aprovadas = holiday_id.child_ids.filtered(
+        #         lambda x: x.state in ['validate', 'validate1'])
+        #
+        #     #  Se o holiday for do tipo de compensacao, a contabilidade devera
+        #     #  se basear na configuração de horas do holidays_status
+        #     if holiday_id.type == 'add' and holiday_id.holiday_status_id.controle_horas:
+        #         eventos_gozados = \
+        #             sum(solicitacoes_aprovadas.mapped('horas_compensadas'))
+        #
+        #         horas_de_direito = \
+        #             holiday_id.number_of_days_temp * \
+        #             holiday_id.holiday_status_id.hours_limit
+        #
+        #         holiday_id.saldo_periodo_referencia = \
+        #             horas_de_direito - eventos_gozados
+        #
+        #     #  Se o holiday NAO for do tipo compensacao, a contabilidade devera
+        #     #  se basear na configuração de DIAS do holidays_status
+        #     if holiday_id.type == 'add' and not holiday_id.holiday_status_id.controle_horas:
+        #
+        #         eventos_gozados = \
+        #             sum(solicitacoes_aprovadas.mapped('number_of_days_temp'))
+        #
+        #         dias_de_direito = \
+        #             holiday_id.number_of_days_temp * \
+        #             holiday_id.holiday_status_id.days_limit
+        #
+        #         holiday_id.saldo_periodo_referencia = \
+        #             dias_de_direito - eventos_gozados
 
     @api.depends('vacations_days', 'sold_vacations_days')
     def _compute_days_temp(self):
