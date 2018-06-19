@@ -310,17 +310,14 @@ class HrHolidays(models.Model):
 
             if holiday.employee_id:
                 # Pegar apenas os dois primeiros nomes
-                employee_name = holiday.employee_id.name.split()
+                employee_name = filter(
+                    lambda x: len(x) != 2, holiday.employee_id.name.split())
                 employee_name = ' '.join(employee_name[:2])
 
             if holiday.data_inicio and holiday.data_fim and \
                     holiday.holiday_status_id and holiday.employee_id:
                 date_from = data.formata_data(holiday.data_inicio)
                 date_to = data.formata_data(holiday.data_fim)
-
-                # Pegar apenas os dois primeiros nomes
-                employee_name = holiday.employee_id.name.split()
-                employee_name =  ' '.join(employee_name[:2])
 
                 if date_from == date_to:
                     holiday.name = holiday.holiday_status_id.name[:30] + \
