@@ -10,28 +10,22 @@
         <field name="model">hr.holidays</field>
         <field name="inherit_id" ref="hr_holidays.edit_holiday_new"/>
         <field name="arch" type="xml">
-            <button name="validate" position="attributes">
-                <attribute name="groups">abgf_holidays.group_manager_holidays</attribute>
-            </button>
-            <button name="second_validate" position="attributes">
-                <attribute name="groups">abgf_holidays.group_manager_holidays</attribute>
-            </button>
-            <button name="refuse" position="attributes">
-                <attribute name="groups">abgf_holidays.group_manager_holidays</attribute>
-            </button>
-            <field name="date_from" position="attributes">
-                <attribute name="string">Período</attribute>
-            </field>
+
             <field name="employee_id" position="replace">
                 <field name="employee_id" invisible="1"/>
-                <field name="contrato_id" required="1" attrs="{'readonly':[('state','in',['validate','validate1','refuse'])]}"/>
+                <field name="contrato_id"
+                       attrs="{'readonly':[('state','in',['validate','validate1','refuse'])],
+                               'required':[('type','=', 'remove')],
+                               'invisible':[('holiday_type','=', 'category')]}"/>
             </field>
+
             <field name="holiday_status_id" position="before">
-                <field name="tipo" invisible="1"/>
+                <field name="tipo"
+                       attrs="{'invisible':[('type','=', 'remove')],
+                               'readonly':[('state','in',['validate','validate1','refuse'])],
+                               'required':[('type','=', 'add')]}"/>
             </field>
-            <field name="holiday_type" position="replace">
-                <field name="holiday_type" invisible="1"/>
-            </field>
+
             <field name="notes" position="before">
                 <field name="payroll_discount"  invisible="1" />
                 <h2><field name="message" readonly="1" /></h2>
@@ -45,6 +39,11 @@
             </field>
 
         </field>
+    </record>
+
+    <!-- Libera o MENU de Pedido de Férias para todos os usuarios-->
+    <record id="hr_holidays.menu_open_ask_holidays_new" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4,ref('base.group_user'))]" />
     </record>
 
     <act_window
@@ -62,11 +61,6 @@
             parent="hr_holidays.menu_open_ask_holidays"
             groups="base.group_user"
             sequence="6"/>
-
-    <!-- Libera o MENU de Pedido de Férias para todos os usuarios-->
-    <record id="hr_holidays.menu_open_ask_holidays_new" model="ir.ui.menu">
-        <field name="groups_id" eval="[(4,ref('base.group_user'))]" />
-    </record>
 
     <record model="ir.actions.act_window" id="open_ask_holidays">
             <field name="name">Pedido de Férias</field>

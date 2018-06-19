@@ -9,6 +9,7 @@ from openerp.exceptions import Warning as UserError
 OCORRENCIA_TIPO = [
     ('ferias', u'Férias'),
     ('ocorrencias', u'Ocorrências'),
+    ('compensacao', u'Compensação de Horas'),
 ]
 
 
@@ -31,11 +32,12 @@ class HrHolidays(models.Model):
     payroll_discount = fields.Boolean(
         string=u'Payroll Discount',
     )
+
     tipo = fields.Selection(
         selection=OCORRENCIA_TIPO,
         string="Tipo",
-        default='ocorrencias',
     )
+
     holiday_status_id = fields.Many2one(
         domain="[('tipo', '=', tipo)]",
     )
@@ -50,6 +52,17 @@ class HrHolidays(models.Model):
         compute='_compute_department_id',
         store=True,
     )
+
+    @api.multi
+    @api.onchange('holiday_status_id')
+    def _onchange_tipo(self):
+        """
+        Definir o tipo de holidays baseado no tipo do holidays_status
+        :return:
+        """
+        for record in self:
+            if record.holiday_status_id and record.holiday_status_id.tipo:
+                record.tipo = record.holiday_status_id.tipo
 
     @api.depends('contrato_id')
     def _compute_department_id(self):
@@ -86,12 +99,12 @@ class HrHolidays(models.Model):
                                 record.holiday_status_id.days_limit:
                             raise UserError(_("Number of days exceeded!"))
                 # Validar Limite de Horas
-                if record.holiday_status_id.hours_limit:
-                    if fields.Datetime.from_string(record.date_to) - \
-                            fields.Datetime.from_string(record.date_from) > \
-                            timedelta(minutes=60 *
-                                      record.holiday_status_id.hours_limit):
-                        raise UserError(_("Number of hours exceeded!"))
+                # if record.holiday_status_id.hours_limit:
+                #     if fields.Datetime.from_string(record.date_to) - \
+                #             fields.Datetime.from_string(record.date_from) > \
+                #             timedelta(minutes=60 *
+                #                       record.holiday_status_id.hours_limit):
+                #         raise UserError(_("Number of hours exceeded!"))
 
     @api.onchange('payroll_discount', 'holiday_status_id')
     def _set_payroll_discount(self):
