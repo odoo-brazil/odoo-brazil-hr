@@ -20,7 +20,8 @@
                     <field name="parent_id" string="Período Aquisitivo"
                            options="{'no_create': true, 'create_edit': false}"
                            attrs="{'invisible': ['|',('type','=','add'),('holiday_status_id', '!=', %(l10n_br_hr_holiday.holiday_status_vacation)d)],
-                                   'required':  [('date_from','!=',False),('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"
+                                   'required': [('date_from','!=',False),('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)],
+                                   'readonly': [('state','in',['validate','validate1','refuse'])]}"
                            domain="[('type', '=', 'add'), ('saldo_periodo_referencia','>',0),('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d), ('contrato_id', '=' , contrato_id)]}" />
                 </field>
 
@@ -65,7 +66,8 @@
                         <field name="controle_ferias"  invisible="1"/>
                         <field name="sell_vacation"/>
                         <field name="sold_vacations_days"
-                               attrs="{'invisible': [('sell_vacation', '=', False)]}"/>
+                               attrs="{'invisible': [('sell_vacation', '=', False)],
+                                       'readonly': [('state','in',['validate','validate1','refuse'])]}"/>
                         <field name="advance_13_salary"/>
                         <field name="advance_current_salary"/>
                     </group>
