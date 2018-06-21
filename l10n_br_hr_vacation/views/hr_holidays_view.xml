@@ -31,7 +31,7 @@
 
                 <label string="Duration" position="replace">
                     <label for="date_from" string="Período" attrs="{'invisible': [('holiday_status_id', '!=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"/>
-                    <label for="date_from" string="Disponibilizar (dias)" attrs="{'invisible': [('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"/>
+                    <label for="date_from" string="Alocação (dias)" attrs="{'invisible': [('holiday_status_id', '=', %(l10n_br_hr_holiday.holiday_status_vacation)d)]}"/>
                 </label>
 
                 <field name="date_from" position="replace">

@@ -2,9 +2,9 @@
    :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
    :alt: License: AGPL-3
 
-=============================
+==============================================
 Contabilidade da Folha de Pagamento Brasileira
-=============================
+==============================================
 
 This module extends the functionality of ... to support ...
 and to allow you to ...
