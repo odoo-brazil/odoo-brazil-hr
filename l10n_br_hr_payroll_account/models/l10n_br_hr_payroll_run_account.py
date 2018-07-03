@@ -11,6 +11,7 @@ from lxml import etree
 NOME_LANCAMENTO_LOTE = {
     'provisao_ferias': u'Provisão de Férias em Lote',
     'adiantamento_13': u'Décimo Terceiro Salário em Lote',
+    'decimo_terceiro': u'Décimo Terceiro Salário em Lote',
     'provisao_decimo_terceiro': u'Provisão de 13 em Lote',
     'normal': u'Folha normal em Lote',
 }
