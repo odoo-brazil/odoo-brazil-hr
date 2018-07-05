@@ -86,6 +86,12 @@ class HrPayslip(models.Model):
                 # contrato é baseado nos holerites validados
                 holerite.contract_id.action_button_update_controle_ferias()
 
+                if holerite.tipo_de_folha == 'rescisao':
+                    holerite.contract_id.resignation_cause_id = \
+                        holerite.mtv_deslig
+                    holerite.contract_id.resignation_date = \
+                        holerite.data_afastamento
+
                 # setar as ligacoes telefonicas como debitadas
                 for ligacao_id in holerite.ligacoes_ids:
                     ligacao_id.state = 'paid'
@@ -622,6 +628,10 @@ class HrPayslip(models.Model):
         comodel_name='hr.telefonia.line',
         inverse_name='payslip_id',
         string=u'Ligações',
+    )
+    mtv_deslig = fields.Char(
+        string='Motivo Desligamento',
+        required=True,
     )
 
     @api.depends('periodo_aquisitivo')
@@ -2575,7 +2585,6 @@ class HrPayslip(models.Model):
                         'tipo': tipo,
                     })
         self.rescisao_ids = rescisao_ids
-
 
     def validacao_holerites_anteriores(self, data_inicio, data_fim, contrato):
         """

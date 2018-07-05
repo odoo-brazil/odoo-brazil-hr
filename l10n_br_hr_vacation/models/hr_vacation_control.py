@@ -374,6 +374,7 @@ não do mês civil.
             'contrato_id': self.contract_id.id,
             'holiday_status_id': vacation_id,
             'type': 'add',
+            'tipo': 'ferias',
             'holiday_type': 'employee',
             'vacations_days': 30,
             'sold_vacations_days': 0,
