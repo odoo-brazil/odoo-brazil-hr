@@ -64,6 +64,7 @@ TIPO_DE_FOLHA = [
     ('licenca_maternidade', u'Licença maternidade'),
     ('auxilio_doenca', u'Auxílio doença'),
     ('auxílio_acidente_trabalho', u'Auxílio acidente de trabalho'),
+    ('rpa', u'Recibo de Pagamento a Autonômo'),
 ]
 
 
@@ -633,6 +634,44 @@ class HrPayslip(models.Model):
         string='Motivo Desligamento',
         required=True,
     )
+    valor_pgto_aviso_previo_indenizado = fields.Float(
+        string='Aviso Prévio Indenizado',
+        compute='_compute_aviso_previo_indenizado',
+        inverse='_set_aviso_previo_indenizado',
+    )
+
+    @api.multi
+    def _compute_aviso_previo_indenizado(self):
+        """
+        Buscar valor do pagamento de aviso prévio indenizado
+        :return:
+        """
+        for record in self:
+            for rubrica in record.line_ids:
+                if rubrica.code == "AVISO_PREV_IND":
+                    return rubrica.total
+            return 0.0
+
+    @api.multi
+    def _set_aviso_previo_indenizado(self):
+        """
+        Função para setar o valor do aviso previo indenizado
+        :return:
+        """
+        for record in self:
+            pass
+
+    @api.multi
+    def buscar_pensao_alimenticia(self):
+        """
+        Verificar se o empregado do contrato paga pensão alimentícia
+        :return:
+        """
+        for dependente in self.contract_id.employee_id.dependent_ids:
+            if dependente.have_alimony:
+                return True
+
+        return False
 
     @api.depends('periodo_aquisitivo')
     @api.model

@@ -1,7 +1,5 @@
 # -*- encoding: utf-8 -*-
 
-# -*- encoding: utf-8 -*-
-
 CATEGORIA_TRABALHADOR = (
     #
     # Empregado e Trabalhador Temporário
@@ -67,7 +65,7 @@ CATEGORIA_TRABALHADOR = (
     #         u'patronal'),
     ('721', u'721 - Contribuinte individual - Diretor não empregado, com FGTS'),
     ('722', u'722 - Contribuinte individual - Diretor não empregado, sem FGTS'),
-    ('723', u'723 - Contribuinte individual - empresários, sócios e membro de conselho de administração ou fiscal'),
+    ('723', u'723 - Contribuinte individual - Empresários, sócios e membro de conselho de administração ou fiscal'),
     ('731', u'731 - Contribuinte individual - Cooperado que presta serviços por intermédio de Cooperativa de Trabalho'),
     # ('732', u'732 - Contrib. Individual – Cooperado que presta serviços a '
     #         u'Entidade Beneficente de Assistência Social isenta da cota '
@@ -83,13 +81,13 @@ CATEGORIA_TRABALHADOR = (
     ('738', u'738 - Contribuinte individual - Cooperado filiado a Cooperativa de Produção'),
     ('741', u'741 - Contribuinte individual - Microempreendedor Individual'),
 
-    ('751', u'751 - Contribuinte individual - magistrado classista temporário da Justiça do Trabalho ou da Justiça Eleitoral que seja aposentado de qualquer regime previdenciário'),
+    ('751', u'751 - Contribuinte individual - Magistrado classista temporário da Justiça do Trabalho ou da Justiça Eleitoral que seja aposentado de qualquer regime previdenciário'),
     ('761', u'761 - Contribuinte individual - Associado eleito para direção de Cooperativa, '
             u'associação ou entidade de classe de qualquer natureza ou finalidade, bem '
             u'como o síndico ou administrador eleito para exercer atividade de direção '
             u'condominial, desde que recebam remuneração'),
     ('771', u'771 - Contribuinte individual - Membro de conselho tutelar, nos termos da Lei no 8.069, de 13 de julho de 1990'),
-    ('781', u'Ministro de confissão religiosa ou membro de vida consagrada, de congregação ou de ordem religiosa'),
+    ('781', u'781 - Ministro de confissão religiosa ou membro de vida consagrada, de congregação ou de ordem religiosa'),
 
     #
     # Bolsista
