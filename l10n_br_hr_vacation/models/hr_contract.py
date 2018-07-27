@@ -27,6 +27,13 @@ class HrContract(models.Model):
         ondelete="cascade",
     )
 
+    forca_inicio_periodo_aquisitivo = fields.Date(
+        string=u'Data inicial Período Aquisitivo',
+        help=u'Data Inicial para cálculo dos períodos aquisitivos.\n'
+             u'Essa data substituirá a data de contratação e a regra do '
+             u'funcionário cedido no cálculo dos períodos aquisitivos.'
+    )
+
     def create_controle_ferias(self, inicio_periodo_aquisitivo):
         fim_aquisitivo = fields.Date.from_string(inicio_periodo_aquisitivo) + \
             relativedelta(years=1, days=-1)

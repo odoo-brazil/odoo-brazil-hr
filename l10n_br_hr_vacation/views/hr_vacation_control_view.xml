@@ -9,6 +9,9 @@
             <field name="arch" type="xml">
                 <xpath expr="//page[@string='Work Permit']" position="after">
                     <page string="Controle de Férias">
+                        <group>
+                            <field name="forca_inicio_periodo_aquisitivo" groups="base.group_no_one"/>
+                        </group>
                         <field name="vacation_control_ids">
                             <tree string="Férias" decoration-muted="inicio_gozo == False">
                                 <field name="inicio_aquisitivo" widget="date"/>
