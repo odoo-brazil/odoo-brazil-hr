@@ -340,8 +340,6 @@ class HrHolidays(models.Model):
                     ' - ' + \
                     data.formata_data(holiday.controle_ferias_ids[0].fim_aquisitivo) + ') '
 
-
-
     @api.onchange('data_inicio', 'data_fim', 'date_from', 'date_to')
     def setar_datas_core(self):
         for holiday in self:
