@@ -137,6 +137,7 @@ class HrPayslipRun(models.Model):
             # pegar todos contratos da empresa que são válidos,
             dominio_contratos = [
                 ('date_start', '<=', lote.date_end),
+                ('tipo', '!=', 'autonomo'),
                 ('company_id', '=', lote.company_id.id),
             ]
 
@@ -321,12 +322,12 @@ class HrPayslipRun(models.Model):
                     payslip._compute_set_employee_id()
                     payslip.compute_sheet()
                     _logger.info(
-                        u"Holerite " + contrato.name +
+                        u"Holerite " + contrato.display_name +
                         u" processado com sucesso!")
                     self.env.cr.commit()
                 except:
                     _logger.warning(
-                        u"Holerite " + contrato.name +
+                        u"Holerite " + contrato.display_name +
                         u" falhou durante o cálculo!")
                     payslip.unlink()
                     continue
