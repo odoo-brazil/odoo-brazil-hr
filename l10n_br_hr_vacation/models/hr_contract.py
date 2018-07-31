@@ -168,6 +168,10 @@ class HrContract(models.Model):
                 inicio = data_admissao.replace(
                     day=2, month=1, year=ano_admissao-1)
 
+            if self.forca_inicio_periodo_aquisitivo:
+                inicio = fields.Date.from_string(
+                    self.forca_inicio_periodo_aquisitivo)
+
             hoje = fields.Date.from_string(data_referencia)
 
             while inicio <= hoje:
