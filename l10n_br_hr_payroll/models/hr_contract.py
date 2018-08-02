@@ -16,6 +16,7 @@ class HrContract(models.Model):
     categoria_sefip = fields.Selection(
         selection=CATEGORIA_TRABALHADOR_SEFIP,
         compute='_compute_categoria_sefip',
+        inverse='_inverse_categoria_sefip',
         store=True,
     )
 
@@ -506,6 +507,11 @@ class HrContract(models.Model):
     )
 
     @api.multi
+    def _inverse_categoria_sefip(self):
+        for record in self:
+            pass
+
+    @api.multi
     @api.depends('categoria')
     def _compute_categoria_sefip(self):
 
@@ -520,7 +526,7 @@ class HrContract(models.Model):
                 # Pró-labore
                 #
                 record.categoria_sefip = '05'
-            elif record.categoria == '722':
+            elif record.categoria in ['722','723']:
                 #
                 # Pró-labore 2
                 #
