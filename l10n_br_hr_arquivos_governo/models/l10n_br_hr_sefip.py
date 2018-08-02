@@ -696,9 +696,9 @@ class L10nBrSefip(models.Model):
         dia = str(self.company_id.darf_dia_vencimento)
         mes = self.mes
 
-        # ou se forem darfs especificas, cair no dia 07 de cada mes
-        if codigo_receita in ['1769', '1661']:
-            dia = '07'
+        # ou se forem darfs especificas, cair no dia 05 de cada mes
+        if codigo_receita in ['1781', '1684']:
+            dia = '05'
             mes = str(int(self.mes) + 1)
 
         data = self.ano + '-' + mes + '-' + dia
@@ -804,7 +804,6 @@ class L10nBrSefip(models.Model):
         1. Configurar os dados para criação das financial.moves
         2. Criar os financial.moves
         '''
-
         #
         # Excluir registros financeiros anteriores
         #
@@ -888,14 +887,14 @@ class L10nBrSefip(models.Model):
                     elif line.code in ['PSS_PATRONAL']:
                         partner_id = line.employee_id.address_home_id
                         financial_move_darf = self.gerar_financial_move_darf(
-                            '1769', line.total, partner_id)
+                            '1781', line.total, partner_id)
                         created_ids.append(financial_move_darf.id)
 
                     # Para rubricas de PSS do funcionario
                     elif line.code in ['PSS']:
                         partner_id = line.employee_id.address_home_id
                         financial_move_darf = self.gerar_financial_move_darf(
-                            '1661', line.total, partner_id)
+                            '1684', line.total, partner_id)
                         created_ids.append(financial_move_darf.id)
 
                 # buscar o valor do IRPF do holerite de 13º
