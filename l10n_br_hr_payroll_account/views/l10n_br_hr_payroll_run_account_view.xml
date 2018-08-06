@@ -29,6 +29,11 @@
                             <separator string="Payslips"/>
                             <field name="slip_ids"/>
                         </page>
+
+                        <page string="Rescisões" attrs="{'invisible': [('payslip_rescisao_ids', '=', [])]}">
+                            <field name="payslip_rescisao_ids" />
+                        </page>
+
                         <page string="Contabilização">
                             <button type="object" name="processar_folha" string="Gerar contabilização"/>
 <!--

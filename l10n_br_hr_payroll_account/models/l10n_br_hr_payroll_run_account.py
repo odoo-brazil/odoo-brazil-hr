@@ -97,6 +97,14 @@ class L10nBrHrPayslip(models.Model):
         default=_buscar_diario_fopag
     )
 
+    payslip_rescisao_ids = fields.Many2many(
+        string="Rescisões",
+        comodel_name="hr.payslip",
+        rel="rel_hr_payslip_run_hr_paysip_rescisao",
+        column1="slip_id",
+        column2="hr_payslip_run_id",
+    )
+
     @api.multi
     def _buscar_contas_lotes(self):
         if self.tipo_de_folha == "normal":
@@ -213,10 +221,26 @@ class L10nBrHrPayslip(models.Model):
 
     @api.multi
     def processar_folha(self):
+        """
+
+        """
+        # Adicionar a rescisao na contabilização do lote
+        self.ensure_one()
+
+        domain = [
+            ('tipo_de_folha', '=', 'rescisao'),
+            ('is_simulacao', '!=', True),
+            ('state', 'in', ['done', 'verify']),
+            ('mes_do_ano', '=', self.mes_do_ano),
+            ('ano', '=', self.ano),
+        ]
+        rescisao_periodo = self.env['hr.payslip'].search(domain)
+        self.payslip_rescisao_ids = rescisao_periodo
+
         if self.journal_id:
             rubricas = {}
             for payslip_run in self:
-                for payslip in self.slip_ids:
+                for payslip in self.slip_ids + self.payslip_rescisao_ids:
                     for line in payslip.details_by_salary_rule_category:
                         # Verificar se na rubrica, o cadastro das contas para
                         # debito e credito estao OK
