@@ -332,6 +332,7 @@ class HrContract(models.Model):
     department_id = fields.Many2one(
         comodel_name='hr.department',
         string='Departamento/Lotação',
+        domain="[('state', '=', 'ativo')]",
         related=False,
         readonly=False,
     )
@@ -504,6 +505,12 @@ class HrContract(models.Model):
         string='Matrícula',
         help="e-Social: S-2299 - matricula",
         default=lambda self: self.get_default_matricula(),
+    )
+    gerente_id = fields.Many2one(
+        string='Gerente',
+        comodel_name='hr.employee',
+        related='department_id.manager_id',
+        store=True,
     )
 
     @api.multi
