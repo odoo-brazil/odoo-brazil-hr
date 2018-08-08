@@ -30,7 +30,13 @@ class HrHolidays(models.Model):
         string=u'Justification'
     )
     payroll_discount = fields.Boolean(
-        string=u'Payroll Discount',
+        string=u'Descontar dia no Holerite?',
+        help=u'Na ocorrência desse evento, será descontado em folha a '
+             u'quantidade de dias em afastamento.',
+    )
+    descontar_DSR = fields.Boolean(
+        string=u'Descontar DSR',
+        help=u'Descontar DSR da semana de ocorrência do evento?',
     )
 
     tipo = fields.Selection(
@@ -109,6 +115,7 @@ class HrHolidays(models.Model):
     @api.onchange('payroll_discount', 'holiday_status_id')
     def _set_payroll_discount(self):
         self.payroll_discount = self.holiday_status_id.payroll_discount
+        self.descontar_DSR = self.holiday_status_id.descontar_DSR
 
     @api.multi
     def get_ocurrences(self, employee_id, data_from, data_to):
@@ -130,24 +137,44 @@ class HrHolidays(models.Model):
             'faltas_nao_remuneradas': [],
             'quantidade_dias_faltas_nao_remuneradas': 0,
         }
+
         domain = [
             ('state', '=', 'validate'),
             ('employee_id', '=', employee_id),
             ('type', '=', 'remove'),
-            ('date_from', '>=', data_from),
-            ('date_to', '<=', data_to),
         ]
-        holidays_ids = self.env['hr.holidays'].search(domain)
 
-        for leave in holidays_ids:
+        clause_1 = [('data_inicio', '>=', data_from), ('data_inicio', '<=', data_to)]
+        holidays_1_ids = self.env['hr.holidays'].search(domain + clause_1)
+
+        clause_2 = [('data_fim', '>=', data_from), ('data_fim', '<=', data_to)]
+        holidays_2_ids = self.env['hr.holidays'].search(domain + clause_2)
+
+        for leave in holidays_1_ids | holidays_2_ids:
+            qtd_dias_dentro_mes = 0
+            data_referencia = fields.Datetime.from_string(leave.data_inicio)
+            data_fim_holidays = fields.Datetime.from_string(leave.data_fim)
+
+            while data_referencia <= data_fim_holidays:
+                if data_referencia >= fields.Datetime.from_string(data_from) and \
+                        data_referencia <= fields.Datetime.from_string(data_to):
+                    # Levar em consideração o tipo de dias
+                    if leave.holiday_status_id.type_day == 'uteis':
+                        rc = self.env['resource.calendar']
+                        if rc.data_eh_dia_util(data_referencia):
+                            qtd_dias_dentro_mes += 1
+                    else:
+                        qtd_dias_dentro_mes += 1
+                data_referencia += timedelta(days=1)
+
             if leave.payroll_discount:
                 faltas['faltas_nao_remuneradas'].append(leave)
                 faltas['quantidade_dias_faltas_nao_remuneradas'] += \
-                    leave.number_of_days_temp
+                    qtd_dias_dentro_mes
             else:
                 faltas['faltas_remuneradas'].append(leave)
                 faltas['quantidade_dias_faltas_remuneradas'] += \
-                    leave.number_of_days_temp
+                    qtd_dias_dentro_mes
         return faltas
 
     @api.multi
