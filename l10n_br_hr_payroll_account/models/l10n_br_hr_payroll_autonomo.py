@@ -41,20 +41,6 @@ class L10nBrHrPayslipAutonomo(models.Model):
     )
 
     @api.multi
-    def _verificar_lancamentos_anteriores(self, tipo_folha, period_id):
-        for payslip in self:
-            move_id = self.env['account.move'].search([
-                ('name', 'like', NOME_LANCAMENTO[tipo_folha]),
-                ('name', 'like', payslip.contract_id.nome_contrato),
-                ('period_id', '!=', period_id)
-            ], limit=1 )
-
-            if not move_id:
-                return False
-            else:
-                return move_id
-
-    @api.multi
     def _valor_lancamento_anterior_rubrica(self, move_id, rubrica_id):
         for line in move_id.line_id:
             if rubrica_id.id == line.id:
