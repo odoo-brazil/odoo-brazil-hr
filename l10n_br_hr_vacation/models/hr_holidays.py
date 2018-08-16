@@ -26,6 +26,7 @@ class HrHolidays(models.Model):
                 ('data_fim', '>=', holiday.data_fim),
                 ('employee_id', '=', holiday.employee_id.id),
                 ('id', '!=', holiday.id),
+                ('tipo', '!=', 'compensacao'),
                 ('type', '=', holiday.type),
                 ('state', 'not in', ['cancel', 'refuse']),
                 ('holiday_status_id', '=', holiday.holiday_status_id.id),
