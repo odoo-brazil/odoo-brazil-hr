@@ -14,6 +14,12 @@ class AccountMove(models.Model):
         ondelete='cascade',
     )
 
+    payslip_autonomo_id = fields.Many2one(
+        comodel_name="hr.payslip.autonomo",
+        string="Payslip Autonomo",
+        ondelete='cascade',
+    )
+
     payslip_run_id = fields.Many2one(
         comodel_name="hr.payslip.run",
         string="Payslip Run",
@@ -40,6 +46,12 @@ class AccountMoveLine(models.Model):
     payslip_id = fields.Many2one(
         comodel_name="hr.payslip",
         string="Payslip",
+    )
+
+    payslip_autonomo_id = fields.Many2one(
+        comodel_name="hr.payslip.autonomo",
+        string="Payslip Autonomo",
+        ondelete='cascade',
     )
 
     payslip_run_id = fields.Many2one(
