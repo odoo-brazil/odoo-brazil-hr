@@ -382,6 +382,7 @@ não do mês civil.
             'controle_ferias': [(6, 0, [self.id])],
             'controle_ferias_ids': [(6, 0, [self.id])],
         })
+
         return holiday_id
 
     @api.multi
