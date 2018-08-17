@@ -187,8 +187,6 @@ class HrHolidays(models.Model):
 
         :return:
         """
-
-
         for holiday_id in self:
             eventos_gozados = 0
 
