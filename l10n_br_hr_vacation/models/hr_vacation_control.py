@@ -382,6 +382,8 @@ não do mês civil.
             'controle_ferias': [(6, 0, [self.id])],
             'controle_ferias_ids': [(6, 0, [self.id])],
         })
+        holiday_id.message_follower_ids = False
+        holiday_id.state = 'validate'
 
         return holiday_id
 
