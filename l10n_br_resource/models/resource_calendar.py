@@ -220,7 +220,6 @@ class ResourceCalendar(models.Model):
                datetime data_end: Data final do intervalo
         :return int : quantidade de dias que devem ser remunerada
         """
-        self.ensure_one()
         # Mes comercial sempre será 30 dias
         if mes_comercial:
             return 30 - data_from.day + 1
