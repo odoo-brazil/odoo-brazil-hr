@@ -97,9 +97,9 @@ class HrContractChange(models.Model):
         default=lambda self: self.env.user,
     )
 
-    departamento_id = fields.Many2one(
-        comodel_name='hr.department',
-        string='Departamento',
+    lotacao_id = fields.Many2one(
+        comodel_name='res.company',
+        string='Lotação',
     )
 
     @api.depends('contract_id', 'change_history_ids')
@@ -141,9 +141,51 @@ class HrContractChange(models.Model):
                 contract.discount_union_contribution
             self.month_base_date = contract.month_base_date
         elif self.change_type == 'lotacao-local':
-            self.departamento_id = contract.department_id
+            self.lotacao_id = contract.company_id
             # self.lotacao_cliente_fornecedor = contract.lotacao_cliente_fornecedor
             # self.month_base_data = contract.month_base_data
+
+    def _gerar_dicionario_dados(self, change):
+        contract = change.contract_id
+        reason = \
+            self.env.ref('l10n_br_hr_payroll.'
+                         'l10n_br_hr_contract_change_valores_iniciais')
+        vals = {
+            'contract_id': contract.id,
+            'change_date': contract.date_start,
+            'change_reason_id': reason.id,
+            'wage': contract.wage,
+            'struct_id': change.struct_id.id,
+            'state': 'applied',
+            'name': change.nome_alteracao,
+        }
+
+        if change.change_type == 'jornada':
+            vals.update(working_hours=contract.working_hours.id)
+        elif change.change_type == 'cargo-atividade':
+            vals.update(
+                job_id=contract.job_id.id,
+                type_id=contract.type_id.id,
+                adminission_type_id=contract.admission_type_id.id,
+                labor_bond_type_id=contract.labor_bond_type_id.id,
+                labor_regime_id=contract.labor_regime_id.id,
+            )
+        elif change.change_type == 'filiacao-sindical':
+            vals.update(
+                union=contract.union,
+                union_cnpj=contract.union_cnpj,
+                union_entity_code=contract.union_entity_code,
+                discount_union_contribution=
+                contract.discount_union_contribution,
+                month_base_date=contract.month_base_date
+            )
+        elif change.change_type == 'lotacao-local':
+            vals.update(
+                lotacao_id=contract.company_id.id,
+                # payment_mode_id=contract.payment_mode_id.id,
+            )
+
+        return vals
 
     @api.multi
     def verificar_primeira_alteracao(self):
@@ -153,6 +195,7 @@ class HrContractChange(models.Model):
         :return: 
         """
         for change in self:
+
             contract = change.contract_id
             # Buscar se existe alterações anteriores
             domain = [
@@ -166,40 +209,7 @@ class HrContractChange(models.Model):
             # se nao existir alterações anteriores, criar a primeira alteração
             # com registro dos dados iniciais do contrato.
             if not alteracoes_anteriores:
-                reason = \
-                    self.env.ref('l10n_br_hr_payroll.'
-                                 'l10n_br_hr_contract_change_valores_iniciais')
-                vals = {
-                    'contract_id': contract.id,
-                    'change_date': contract.date_start,
-                    'change_reason_id': reason.id,
-                    'wage': contract.wage,
-                    'struct_id': change.struct_id.id,
-                    'state': 'applied',
-                    'name': change.nome_alteracao,
-                }
-
-                if change.change_type == 'jornada':
-                    vals.update(working_hours=contract.working_hours.id)
-                elif change.change_type == 'cargo-atividade':
-                    vals.update(
-                        job_id= contract.job_id.id,
-                        type_id= contract.type_id.id,
-                        adminission_type_id= contract.admission_type_id.id,
-                        labor_bond_type_id= contract.labor_bond_type_id.id,
-                        labor_regime_id= contract.labor_regime_id.id,
-                    )
-                elif change.change_type == 'filiacao-sindical':
-                    vals.update(
-                        union=contract.union,
-                        union_cnpj=contract.union_cnpj,
-                        union_entity_code=contract.union_entity_code,
-                        discount_union_contribution=
-                            contract.discount_union_contribution,
-                        month_base_date=contract.month_base_date
-                    )
-                elif change.change_type == 'lotacao-local':
-                    vals.update(departamento_id=contract.department_id.id)
+                vals = self._gerar_dicionario_dados(change)
 
                 # Criar o registro inicial
                 self.create(vals)
@@ -242,8 +252,8 @@ class HrContractChange(models.Model):
                 # Setar variavel de contexto para indicar que a alteração
                 # partiu do menu de alterações contratuais.
                 contract.with_context(
-                    alteracaocontratual=True).department_id = \
-                    alteracao.departamento_id
+                    alteracaocontratual=True).company_id = \
+                    alteracao.lotacao_id
                 # contract.lotacao_cliente_fornecedor = \
                 #     alteracao.lotacao_cliente_fornecedor
                 # contract.month_base_data = alteracao.month_base_data
