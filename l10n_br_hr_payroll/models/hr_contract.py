@@ -8,6 +8,8 @@ from openerp import exceptions
 from datetime import datetime, timedelta
 from ..constantes import CATEGORIA_TRABALHADOR, CATEGORIA_TRABALHADOR_SEFIP
 
+from pybrasil.data import formata_data
+
 
 class HrContract(models.Model):
     _inherit = 'hr.contract'
@@ -71,6 +73,16 @@ class HrContract(models.Model):
         ]
     )
 
+    payslip_autonomo_ids_confirmados = fields.One2many(
+        comodel_name="hr.payslip.autonomo",
+        inverse_name="contract_id",
+        string="Holerites Confirmados",
+        domain=[
+            ('state', '!=', 'draft'),
+            ('is_simulacao', '=', False),
+        ]
+    )
+
     @api.multi
     @api.depends('payslip_ids_confirmados', 'payslip_ids_confirmados.state')
     def _is_editable(self):
@@ -86,13 +98,23 @@ class HrContract(models.Model):
             vals['codigo_contrato'] = self.env['ir.sequence'].get(self._name)
             return super(HrContract, self).create(vals)
 
-    @api.depends('employee_id', 'matricula')
+    @api.depends('employee_id', 'matricula', 'date_start', 'date_end')
     def _compute_nome_contrato(self):
         for contrato in self:
             if contrato.employee_id and contrato.matricula:
                 nome = contrato.employee_id.name
                 nome_contrato = '[%s] %s' % (contrato.matricula, nome)
                 contrato.nome_contrato = nome_contrato if nome else ''
+            if contrato.tipo == 'autonomo' and \
+                    contrato.employee_id and contrato.date_start:
+                nome = contrato.employee_id.name
+                nome_contrato = '%s - [%s]' % \
+                                (nome, formata_data(contrato.date_start))
+                contrato.nome_contrato = nome_contrato if nome else ''
+                if contrato.date_end:
+                    nome_contrato = nome_contrato.replace(
+                        ']', ' - ' + formata_data(contrato.date_end) + ']')
+                    contrato.nome_contrato = nome_contrato
 
     nome_contrato = fields.Char(
         default="[mat] nome - inicio - fim",
