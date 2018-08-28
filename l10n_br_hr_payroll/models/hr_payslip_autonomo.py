@@ -4,9 +4,8 @@
 
 import logging
 from datetime import datetime
+
 from dateutil.relativedelta import relativedelta
-
-
 from lxml import etree
 from openerp import api, fields, models, exceptions, _
 
@@ -221,6 +220,12 @@ class HrPayslipAutonomo(models.Model):
         copy=False
     )
 
+    wage = fields.Float(
+        string='Valor',
+        readonly=True,
+        states={'draft': [('readonly', False)]},
+    )
+
     @api.multi
     @api.depends('mes_do_ano', 'ano', 'contract_id')
     def _compute_name(self):
@@ -360,7 +365,6 @@ class HrPayslipAutonomo(models.Model):
         Validar Holerite Calculado. Estado vai para Done
         """
         for record in self:
-            record.contract_id.date_end = record.date_to
             record.state = 'done'
             record.number = self.env['ir.sequence'].get('salary.slip')
 
@@ -390,6 +394,9 @@ class HrPayslipAutonomo(models.Model):
             holerite._buscar_payslip_line()
 
         return True
+
+    def cancel_sheet(self):
+        return self.write({'state': 'cancel'})
 
     @api.multi
     def unlink(self):
