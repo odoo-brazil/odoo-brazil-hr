@@ -702,6 +702,7 @@ class L10nBrSefip(models.Model):
         # Número do documento da DARF
         sequence_id = self.company_id.darf_sequence_id.id
         doc_number = str(self.env['ir.sequence'].next_by_id(sequence_id))
+        num_referencia = ''
 
         # Definir quem sera o contribuinte da DARF, se nao passar nenhum
         # nos parametros assume que é a empresa
@@ -720,8 +721,10 @@ class L10nBrSefip(models.Model):
 
         if codigo_receita == '1661':
             descricao += ' - PSS Plano de Seguridade Social'
+            num_referencia = partner_id.cnpj_cpf
 
-        if codigo_receita == '1769':
+        if codigo_receita == '1850':
+            num_referencia = self.company_id.partner_id.cnpj_cpf
             descricao += ' - PSS Patronal'
 
         # Calcular data de vencimento da DARF
@@ -729,11 +732,17 @@ class L10nBrSefip(models.Model):
         dia = str(self.company_id.darf_dia_vencimento)
 
         # ou se forem darfs especificas, cair no dia 05 de cada mes
-        if codigo_receita in ['1781', '1684']:
-            dia = '05'
+        if codigo_receita in ['1850', '1661']:
+            dia = '07'
 
         data = self.ano + '-' + self.mes + '-' + dia
-        data_vencimento = fields.Date.from_string(data) + timedelta(days=31)
+        data_vencimento = \
+            fields.Datetime.from_string(data + ' 03:00:00') + timedelta(days=31)
+
+        # Antecipar data caso caia em feriado
+        while not self.company_id.default_resource_calendar_id.\
+                data_eh_dia_util(data_vencimento):
+            data_vencimento -= timedelta(days=1)
 
         # Gerar FINANCEIRO da DARF
         vals_darf = {
@@ -751,6 +760,7 @@ class L10nBrSefip(models.Model):
             'sefip_id': self.id,
             'cod_receita': codigo_receita,
             'descricao': descricao,
+            'num_referencia': num_referencia,
         }
         financial_move_darf = self.env['financial.move'].create(vals_darf)
 
@@ -917,14 +927,14 @@ class L10nBrSefip(models.Model):
                     elif line.code in ['PSS_PATRONAL']:
                         partner_id = line.employee_id.address_home_id
                         financial_move_darf = self.gerar_financial_move_darf(
-                            '1781', line.total, partner_id)
+                            '1850', line.total, partner_id)
                         created_ids.append(financial_move_darf.id)
 
                     # Para rubricas de PSS do funcionario
                     elif line.code in ['PSS']:
                         partner_id = line.employee_id.address_home_id
                         financial_move_darf = self.gerar_financial_move_darf(
-                            '1684', line.total, partner_id)
+                            '1661', line.total, partner_id)
                         created_ids.append(financial_move_darf.id)
 
                 # buscar o valor do IRPF do holerite de 13º

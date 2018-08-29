@@ -28,6 +28,7 @@
                                 <field name="centralizadora"/>
                             </group>
                         </group>
+
                         <separator string="DARF"/>
                         <group>
                             <field name="darf_account_id" />

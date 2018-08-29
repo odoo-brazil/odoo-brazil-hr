@@ -23,6 +23,7 @@
         'views/resource_calendar.xml',
         'views/resource_calendar_leaves.xml',
         'views/menu_resource_calendar.xml',
+        'views/res_company.xml',
         'wizard/workalendar_holiday_import.xml',
     ],
 }

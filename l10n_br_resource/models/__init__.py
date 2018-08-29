@@ -4,3 +4,4 @@
 
 from . import resource_calendar
 from . import resource_calendar_leaves
+from . import res_company
