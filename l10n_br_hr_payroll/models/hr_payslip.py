@@ -959,10 +959,10 @@ class HrPayslip(models.Model):
         """
         tabela_inss_obj = self.env['l10n_br.hr.social.security.tax']
         if BASE_INSS:
-            inss = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
-            return inss
+            inss, aliquota = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
+            return inss, aliquota
         else:
-            return 0
+            return 0, 0
 
     def BASE_IRRF(self, TOTAL_IRRF, INSS):
         """
