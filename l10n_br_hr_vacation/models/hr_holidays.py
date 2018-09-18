@@ -114,7 +114,7 @@ class HrHolidays(models.Model):
         help=u'Indica o Saldo do período de referência.\n'
              u'Na visão de solicitação de férias, mostrar apenas os período '
              u'aquisitivos que tem saldo para gozar férias.',
-        compute='_compute_saldo_periodo_referencia',
+        compute='compute_saldo_periodo_referencia',
         store=True,
     )
     regular = fields.Boolean(
@@ -172,7 +172,7 @@ class HrHolidays(models.Model):
                     holiday.regular = True
 
     @api.depends('child_ids', 'child_ids.number_of_days_temp', 'vacations_days')
-    def _compute_saldo_periodo_referencia(self):
+    def compute_saldo_periodo_referencia(self):
         """
         Cada pedido de ferias(hr.holiday) deve ter um outro holiday como
         parent_id que indica o periodo aquisitivo daquela solicitação.
