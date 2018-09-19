@@ -83,7 +83,7 @@ class HrContract(models.Model):
     @api.model
     def create(self, vals):
         hr_contract_id = super(HrContract, self).create(vals)
-        if vals['tipo'] == 'autonomo':
+        if vals.get('tipo') == 'autonomo':
             return hr_contract_id
         if vals.get('date_start'):
             hr_contract_id.action_button_update_controle_ferias()
