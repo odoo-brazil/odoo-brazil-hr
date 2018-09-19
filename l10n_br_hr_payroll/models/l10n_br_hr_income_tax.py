@@ -55,7 +55,7 @@ class L10nBrHrIncomeTax(models.Model):
                             Decimal(faixa.rate) / 100.00
                         ) - Decimal(faixa.deductable)
                     irrf = irrf.quantize(Decimal('0.01'))
-                    return irrf
+                    return irrf, faixa.rate
         else:
             raise UserError(
                 _('Tabela de IRRF do ano Vigente Não encontrada!')

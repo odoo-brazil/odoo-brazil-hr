@@ -959,10 +959,10 @@ class HrPayslip(models.Model):
         """
         tabela_inss_obj = self.env['l10n_br.hr.social.security.tax']
         if BASE_INSS:
-            inss = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
-            return inss
+            inss, reference = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
+            return inss, reference
         else:
-            return 0
+            return 0, ' '
 
     def BASE_IRRF(self, TOTAL_IRRF, INSS):
         """
@@ -994,12 +994,12 @@ class HrPayslip(models.Model):
     def IRRF(self, BASE_IRRF, INSS):
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
         if BASE_IRRF:
-            irrf = tabela_irrf_obj._compute_irrf(
+            irrf, reference = tabela_irrf_obj._compute_irrf(
                 BASE_IRRF, self.employee_id.id, INSS, self.date_from
             )
-            return irrf
+            return irrf, reference
         else:
-            return 0
+            return 0, ' '
 
     def INSS_vinculo_cedente(self):
         """
@@ -2303,6 +2303,7 @@ class HrPayslip(models.Model):
                     localdict['result_qty'] = 1.0
                     localdict['result_rate'] = 100
                     localdict['rubrica'] = rule
+                    localdict['reference'] = ' '
                     id_rubrica_especifica = 0
                     beneficiario_id = False
                     
@@ -2331,6 +2332,9 @@ class HrPayslip(models.Model):
                         # compute the amount of the rule
                         amount, qty, rate = \
                             obj_rule.compute_rule(rule.id, localdict)
+                        # Pegar Referencia que irá para o holerite
+                        reference = obj_rule.get_reference_rubrica(rule.id, localdict)
+
                         # se ja tiver sido calculado a media dessa rubrica,
                         # utilizar valor da media e multiplicar
                         # pela reinciden.
@@ -2348,6 +2352,11 @@ class HrPayslip(models.Model):
                         # previous_amount = 0
                         # set/overwrite the amount computed
                         # for this rule in the localdict
+
+                        # Registrar a ultima rubrica processada para ser
+                        # possivel identificarmos erros
+                        _logger.info(rule.code)
+
                         tot_rule = Decimal(amount or 0) * Decimal(
                             qty or 0) * Decimal(rate or 0) / 100.0
                         tot_rule = tot_rule.quantize(Decimal('0.01'))
@@ -2398,6 +2407,7 @@ class HrPayslip(models.Model):
                             'employee_id': contract.employee_id.id,
                             'quantity': qty,
                             'rate': rate,
+                            'reference': reference,
                             'partner_id': beneficiario_id or 1,
                         }
                         
