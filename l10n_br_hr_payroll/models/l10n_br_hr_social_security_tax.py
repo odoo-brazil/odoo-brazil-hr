@@ -52,12 +52,12 @@ class L10nBrHrSocialTax(models.Model):
                     inss = Decimal(BASE_INSS)
                     inss *= Decimal(faixa.rate) / 100
                     inss = inss.quantize(Decimal('0.01'), ROUND_DOWN)
-                    return inss
+                    return inss, faixa.rate
 
             inss = Decimal(tabela_vigente[-1].max_wage)
             inss *= Decimal(tabela_vigente[-1].rate) / 100
             inss = inss.quantize(Decimal('0.01'), ROUND_DOWN)
-            return inss
+            return inss, tabela_vigente[-1].rate
 
         else:
             raise exceptions.Warning(

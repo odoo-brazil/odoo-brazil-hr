@@ -730,20 +730,22 @@ class HrPayslip(models.Model):
             # GET dias Base para cálculo do mês
             #
 
+            # DIAS no mês
+            primeiro_dia_do_mes = \
+                str(datetime.strptime(
+                    str(self.mes_do_ano) + '-' + str(self.ano), '%m-%Y'))
+            ultimo_dia_do_mes = str(ultimo_dia_mes(primeiro_dia_do_mes))
+            dias_mes = resource_calendar_obj.get_dias_base(
+                fields.Datetime.from_string(primeiro_dia_do_mes),
+                fields.Datetime.from_string(ultimo_dia_do_mes),
+            )
+            result += [self.get_attendances(
+                u'Dias no Mês', 29, u'DIAS_MES', dias_mes, 0.0, contract_id)]
+
             if self.tipo_de_folha == 'rescisao':
-                # Na rescisao não utilizar mês comercial e sim o total de dias
-                # trabalhados no mês
-                dias_mes = resource_calendar_obj.get_dias_base(
-                    fields.Datetime.from_string(date_from),
-                    fields.Datetime.from_string(date_to),
-                    mes_comercial=False
-                )
 
                 # Quando o afastamento for no primeiro dia do mes,
                 # significa que nao trabalhou nenhum dia
-                primeiro_dia_do_mes = \
-                    str(datetime.strptime(
-                        str(self.mes_do_ano) + '-' + str(self.ano), '%m-%Y'))
                 if self.data_afastamento == primeiro_dia_do_mes[:10]:
                     dias_mes = 0
 
@@ -758,24 +760,12 @@ class HrPayslip(models.Model):
                         self.data_afastamento == self.date_to:
                     dias_mes = 0
 
-            # Quando for admissao levar em consideração apenas os dias
-            # trabalhados e não o mês comercial. Assim se for admitido no
-            # dia 20 em um mês de 31 dias, retornar 11 dias trabalhados no
-            # mês de admissão.
-            elif date_from == contract_id.date_start:
-                dias_mes = resource_calendar_obj.get_dias_base(
-                    fields.Datetime.from_string(date_from),
-                    fields.Datetime.from_string(date_to),
-                    mes_comercial=False
-                )
-
-            # Para todos ou outros casos utilizar mês comercial,
-            # contabilizando mês cheio com 30 dias
+            # Utilizar mes civil para todos outros casos
             else:
                 dias_mes = resource_calendar_obj.get_dias_base(
                     fields.Datetime.from_string(date_from),
                     fields.Datetime.from_string(date_to),
-                    mes_comercial=True
+                    mes_comercial=False
                 )
 
             result += [self.get_attendances(
@@ -825,7 +815,9 @@ class HrPayslip(models.Model):
                 u'DSR a serem descontados', 33, u'DSR_PARA_DESCONTAR',
                 quantity_DSR_discount, 0.0, contract_id)]
 
-            # get dias de férias + get dias de abono pecuniario
+            #
+            # GET dias de FERIAS + get dias de ABONO pecuniario
+            #
             if self.tipo_de_folha == 'provisao_ferias' or self.is_simulacao:
                 quantidade_dias_abono = 0
                 quantidade_dias_ferias = self.periodo_aquisitivo.saldo
@@ -876,7 +868,38 @@ class HrPayslip(models.Model):
                     )
                 ]
 
-            # get Dias Trabalhados
+            #
+            # GET dias de FERIAS na competencia ATUAL (caso de ferias quebrada)
+            #
+            quantidade_dias_ferias, quantidade_dias_abono = \
+                self.env['resource.calendar'].get_quantidade_dias_ferias(
+                    hr_contract, primeiro_dia_do_mes, ultimo_dia_do_mes)
+
+            result += [self.get_attendances(
+                u'Quantidade dias em Férias na Competência Atual', 38,
+                u'FERIAS_COMPETENCIA_ATUAL', quantidade_dias_ferias, 0.0, contract_id
+            )]
+
+            #
+            # GET dias FERIAS na competencia SEGUINTE(caso de ferias quebrada)
+            #
+            primeiro_dia_do_mes_seguinte = \
+                str(datetime.strptime(str(
+                    self.mes_do_ano + 1) + '-' + str(self.ano), '%m-%Y').date())
+            ultimo_dia_do_mes_seguinte = \
+                str(ultimo_dia_mes(primeiro_dia_do_mes_seguinte))
+            quantidade_dias_ferias, quantidade_dias_abono = \
+                self.env['resource.calendar'].get_quantidade_dias_ferias(
+                    hr_contract, primeiro_dia_do_mes_seguinte,
+                    ultimo_dia_do_mes_seguinte)
+            result += [self.get_attendances(
+                u'Quantidade dias em Férias na Competência Seguinte', 39,
+                u'FERIAS_COMPETENCIA_SEGUINTE', quantidade_dias_ferias, 0.0, contract_id
+            )]
+
+            #
+            # GET Dias Trabalhados
+            #
             quantidade_dias_trabalhados = \
                 dias_mes - leaves['quantidade_dias_faltas_nao_remuneradas'] -\
                 quantity_DSR_discount - quantidade_dias_ferias
@@ -959,10 +982,10 @@ class HrPayslip(models.Model):
         """
         tabela_inss_obj = self.env['l10n_br.hr.social.security.tax']
         if BASE_INSS:
-            inss = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
-            return inss
+            inss, reference = tabela_inss_obj._compute_inss(BASE_INSS, self.date_from)
+            return inss, reference
         else:
-            return 0
+            return 0, ' '
 
     def BASE_IRRF(self, TOTAL_IRRF, INSS):
         """
@@ -994,12 +1017,12 @@ class HrPayslip(models.Model):
     def IRRF(self, BASE_IRRF, INSS):
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
         if BASE_IRRF:
-            irrf = tabela_irrf_obj._compute_irrf(
+            irrf, reference = tabela_irrf_obj._compute_irrf(
                 BASE_IRRF, self.employee_id.id, INSS, self.date_from
             )
-            return irrf
+            return irrf, reference
         else:
-            return 0
+            return 0, ' '
 
     def INSS_vinculo_cedente(self):
         """
@@ -1027,7 +1050,8 @@ class HrPayslip(models.Model):
 
             # Seta a Data final do aquisitivo apartir da inicial, para sempre
             # pegar os holerites validos do periodo cheio
-            dt_fim = fields.Datetime.from_string(periodo.inicio_aquisitivo) + relativedelta(years=1, days=-1)
+            dt_fim = fields.Datetime.from_string(periodo.inicio_aquisitivo) + \
+                     relativedelta(years=1, days=-1)
 
             if periodo.saldo != 0:
                 #
@@ -2303,6 +2327,7 @@ class HrPayslip(models.Model):
                     localdict['result_qty'] = 1.0
                     localdict['result_rate'] = 100
                     localdict['rubrica'] = rule
+                    localdict['reference'] = ' '
                     id_rubrica_especifica = 0
                     beneficiario_id = False
                     
@@ -2331,6 +2356,9 @@ class HrPayslip(models.Model):
                         # compute the amount of the rule
                         amount, qty, rate = \
                             obj_rule.compute_rule(rule.id, localdict)
+                        # Pegar Referencia que irá para o holerite
+                        reference = obj_rule.get_reference_rubrica(rule.id, localdict)
+
                         # se ja tiver sido calculado a media dessa rubrica,
                         # utilizar valor da media e multiplicar
                         # pela reinciden.
@@ -2348,6 +2376,11 @@ class HrPayslip(models.Model):
                         # previous_amount = 0
                         # set/overwrite the amount computed
                         # for this rule in the localdict
+
+                        # Registrar a ultima rubrica processada para ser
+                        # possivel identificarmos erros
+                        _logger.info(rule.code)
+
                         tot_rule = Decimal(amount or 0) * Decimal(
                             qty or 0) * Decimal(rate or 0) / 100.0
                         tot_rule = tot_rule.quantize(Decimal('0.01'))
@@ -2398,6 +2431,7 @@ class HrPayslip(models.Model):
                             'employee_id': contract.employee_id.id,
                             'quantity': qty,
                             'rate': rate,
+                            'reference': reference,
                             'partner_id': beneficiario_id or 1,
                         }
                         
