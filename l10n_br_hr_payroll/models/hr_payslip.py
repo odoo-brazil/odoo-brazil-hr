@@ -730,20 +730,23 @@ class HrPayslip(models.Model):
             # GET dias Base para cálculo do mês
             #
 
+            # DIAS no mês
+            primeiro_dia_do_mes = \
+                str(datetime.strptime(
+                    str(self.mes_do_ano) + '-' + str(self.ano), '%m-%Y'))
+            ultimo_dia_do_mes = str(ultimo_dia_mes(primeiro_dia_do_mes))
+            dias_mes = resource_calendar_obj.get_dias_base(
+                fields.Datetime.from_string(primeiro_dia_do_mes),
+                fields.Datetime.from_string(ultimo_dia_do_mes),
+            )
+            result += [self.get_attendances(
+                u'Dias no Mês', 29, u'DIAS_MES', dias_mes, 0.0, contract_id)]
+
+
             if self.tipo_de_folha == 'rescisao':
-                # Na rescisao não utilizar mês comercial e sim o total de dias
-                # trabalhados no mês
-                dias_mes = resource_calendar_obj.get_dias_base(
-                    fields.Datetime.from_string(date_from),
-                    fields.Datetime.from_string(date_to),
-                    mes_comercial=False
-                )
 
                 # Quando o afastamento for no primeiro dia do mes,
                 # significa que nao trabalhou nenhum dia
-                primeiro_dia_do_mes = \
-                    str(datetime.strptime(
-                        str(self.mes_do_ano) + '-' + str(self.ano), '%m-%Y'))
                 if self.data_afastamento == primeiro_dia_do_mes[:10]:
                     dias_mes = 0
 
@@ -758,24 +761,12 @@ class HrPayslip(models.Model):
                         self.data_afastamento == self.date_to:
                     dias_mes = 0
 
-            # Quando for admissao levar em consideração apenas os dias
-            # trabalhados e não o mês comercial. Assim se for admitido no
-            # dia 20 em um mês de 31 dias, retornar 11 dias trabalhados no
-            # mês de admissão.
-            elif date_from == contract_id.date_start:
-                dias_mes = resource_calendar_obj.get_dias_base(
-                    fields.Datetime.from_string(date_from),
-                    fields.Datetime.from_string(date_to),
-                    mes_comercial=False
-                )
-
-            # Para todos ou outros casos utilizar mês comercial,
-            # contabilizando mês cheio com 30 dias
+            # Utilizar mes civil para todos outros casos
             else:
                 dias_mes = resource_calendar_obj.get_dias_base(
                     fields.Datetime.from_string(date_from),
                     fields.Datetime.from_string(date_to),
-                    mes_comercial=True
+                    mes_comercial=False
                 )
 
             result += [self.get_attendances(
@@ -1027,7 +1018,8 @@ class HrPayslip(models.Model):
 
             # Seta a Data final do aquisitivo apartir da inicial, para sempre
             # pegar os holerites validos do periodo cheio
-            dt_fim = fields.Datetime.from_string(periodo.inicio_aquisitivo) + relativedelta(years=1, days=-1)
+            dt_fim = fields.Datetime.from_string(periodo.inicio_aquisitivo) + \
+                     relativedelta(years=1, days=-1)
 
             if periodo.saldo != 0:
                 #
