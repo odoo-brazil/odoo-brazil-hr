@@ -740,7 +740,8 @@ class HrPayslip(models.Model):
                 fields.Datetime.from_string(ultimo_dia_do_mes),
             )
             result += [self.get_attendances(
-                u'Dias no Mês', 29, u'DIAS_MES', dias_mes, 0.0, contract_id)]
+                u'Dias no Mês Atual', 20, u'DIAS_MES_COMPETENCIA_ATUAL',
+                dias_mes, 0.0, contract_id)]
 
             if self.tipo_de_folha == 'rescisao':
 
@@ -896,6 +897,17 @@ class HrPayslip(models.Model):
                 u'Quantidade dias em Férias na Competência Seguinte', 39,
                 u'FERIAS_COMPETENCIA_SEGUINTE', quantidade_dias_ferias, 0.0, contract_id
             )]
+
+            #
+            # GET dias totais do Mês seguinte
+            #
+            dias_mes_seguinte = resource_calendar_obj.get_dias_base(
+                fields.Datetime.from_string(primeiro_dia_do_mes_seguinte),
+                fields.Datetime.from_string(ultimo_dia_do_mes_seguinte),
+            )
+            result += [self.get_attendances(
+                u'Dias no Mês seguinte', 22, u'DIAS_MES_COMPETENCIA_SEGUINTE',
+                dias_mes_seguinte, 0.0, contract_id)]
 
             #
             # GET Dias Trabalhados
