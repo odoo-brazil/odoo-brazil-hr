@@ -1093,13 +1093,8 @@ class HrPayslip(models.Model):
                 # 16h52, foi considerado para o cálculo das médias o mês "cheio"
                 # e para o cálculo dos avos, foi aplicada a regra dos 15 dias de
                 # trab.
-                if self.tipo_de_folha in ['provisao_ferias']:
-                    # media = valor / 12
-                    media += ((valor / 12) / 30) * periodo.saldo
 
-                if self.tipo_de_folha in ['ferias']:
-                    media += ((valor / 12) / 30) * \
-                             self.holidays_ferias.number_of_days_temp
+                media = valor / 12
 
             return media
 
@@ -1109,8 +1104,7 @@ class HrPayslip(models.Model):
             # Para ser usado no cálculo da média
             #
             meses = 12
-            if self.tipo_de_folha in \
-                    ['ferias', 'aviso_previo']:
+            if self.tipo_de_folha in ['ferias', 'aviso_previo']:
                 # if self.tipo_de_folha in ['provisao_ferias', 'aviso_previo']:
                 #     periodo_aquisitivo = \
                 #         self.contract_id.vacation_control_ids[0]
@@ -1145,9 +1139,8 @@ class HrPayslip(models.Model):
                 dates = [dt for dt in rrule(MONTHLY, dtstart=dtstart, until=dtend)]
                 meses = len(dates)
 
-            elif self.tipo_de_folha in [
-                'decimo_terceiro', 'provisao_decimo_terceiro'
-            ]:
+            elif self.tipo_de_folha in \
+                    ['decimo_terceiro', 'provisao_decimo_terceiro']:
                 if self.contract_id.date_start > str(self.ano - 1) + '-12-01':
                     data_de_inicio = self.contract_id.date_start
                 else:
