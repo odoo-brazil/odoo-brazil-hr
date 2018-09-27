@@ -889,13 +889,15 @@ class HrPayslip(models.Model):
                     self.mes_do_ano + 1) + '-' + str(self.ano), '%m-%Y').date())
             ultimo_dia_do_mes_seguinte = \
                 str(ultimo_dia_mes(primeiro_dia_do_mes_seguinte))
-            quantidade_dias_ferias, quantidade_dias_abono = \
+            quantidade_dias_ferias_competencia_seguinte, \
+            quantidade_dias_abono_competencia_seguinte = \
                 self.env['resource.calendar'].get_quantidade_dias_ferias(
                     hr_contract, primeiro_dia_do_mes_seguinte,
                     ultimo_dia_do_mes_seguinte)
             result += [self.get_attendances(
                 u'Quantidade dias em Férias na Competência Seguinte', 39,
-                u'FERIAS_COMPETENCIA_SEGUINTE', quantidade_dias_ferias, 0.0, contract_id
+                u'FERIAS_COMPETENCIA_SEGUINTE',
+                quantidade_dias_ferias_competencia_seguinte, 0.0, contract_id
             )]
 
             #
@@ -1232,9 +1234,8 @@ class HrPayslip(models.Model):
         ])
         if holerite_ferias:
             lines = []
-            for line in holerite_ferias.line_ids:
-                if line.category_id.code == 'PROVENTO':
-                    lines.append(line)
+            for line in holerite_ferias.line_resume_ids:
+                lines.append(line)
         else:
             return False, False
         return lines, holerite_ferias.holidays_ferias
@@ -1723,6 +1724,35 @@ class HrPayslip(models.Model):
                 return line.total
         return 0
 
+
+    def get_reference(self, competencia='atual'):
+        """
+        Definir referência da Rubrica
+        :return: str - referência ('AAAA-MM')
+        """
+        if competencia == 'atual':
+            referencia = self.date_from[:7]
+        else:
+            competencia_atual = fields.Datetime.from_string(self.date_from)
+            competencia_seguinte = competencia_atual + relativedelta(months=1)
+            referencia = str(competencia_seguinte.date())[:7]
+        return referencia
+
+    def get_hr_payslip_line_by_code(self, code, reference):
+        """
+        Buscar linha calculada do holerite
+        :param code: str - Código da rubrica
+        :param reference: str referencia da rubrica
+        :return: float - valor da rubrica processada
+        """
+        domain = [
+            ('contract_id', '=', self.contract_id.id),
+            ('code','ilike', '%{}%'.format(code)),
+            ('reference','=', reference),
+        ]
+        line_id = self.env['hr.payslip.line'].search(domain)
+        return line_id.total
+
     def busca_adiantamento_13(self):
         '''Metodo para recuperar valor pago de adiantamento de 13º no ano
         :return:     float - Valor pago neste ano
@@ -2197,6 +2227,7 @@ class HrPayslip(models.Model):
                         'salary_rule_id': line.salary_rule_id.id,
                         'contract_id': payslip.contract_id.id,
                         'name': name,
+                        'reference': line.reference,
                         'code': line.code + '_FERIAS',
                         'category_id': category_id.id,
                         'sequence': line.sequence - 0.01,
