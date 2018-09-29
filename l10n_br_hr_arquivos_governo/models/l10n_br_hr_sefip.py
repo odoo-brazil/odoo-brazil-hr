@@ -1049,9 +1049,9 @@ class L10nBrSefip(models.Model):
                     record.sefip += self._valida_tamanho_linha(
                         record._preencher_registro_30(sefip, holerites[key]))
 
-                    if folha.tipo_de_folha == 'rescisao':
+                    if holerites[key].tipo_de_folha == 'rescisao':
                         record.sefip += self._valida_tamanho_linha(
-                           record._preencher_registro_32(sefip, folha))
+                           record._preencher_registro_32(sefip, holerites[key]))
 
             record.sefip += sefip._registro_90_totalizador_do_arquivo()
 
@@ -1200,6 +1200,11 @@ class L10nBrSefip(models.Model):
         if folha.tipo_de_folha == 'decimo_terceiro':
             return result
 
+        # Em rescisoes A rubrica de base de FGTS totaliza o salario + 13_salario
+        # Para a SEFIP deverá ser enviado apenas o SALARIO
+        if folha.tipo_de_folha == 'rescisao':
+            return self._valor_rubrica(folha.line_ids, 'SALARIO')
+
         #
         # Para diretores buscar a base do INSS, pois a
         # estrutura de salario deles nao tem BASE_FGTS
@@ -1236,6 +1241,7 @@ class L10nBrSefip(models.Model):
         Rúbrica 13 Base do INSS (Somente na rescisão temos o 16 e o 17!)
 
         """
+
         result = 0.00
 
         # Na competencia 13 nao deve ser informado esses campos
@@ -1648,7 +1654,7 @@ class L10nBrSefip(models.Model):
         sefip.trabalhador_data_movimentacao = \
             formata_data(folha.data_afastamento) or ''
         # Gerado GRRF
-        sefip.trabalhador_indic_recolhimento_fgts = 'S'
+        sefip.trabalhador_indic_recolhimento_fgts = 'N'
 
         return sefip._registro_32_movimentacao_do_trabalhador()
 
