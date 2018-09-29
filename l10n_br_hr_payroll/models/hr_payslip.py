@@ -733,7 +733,7 @@ class HrPayslip(models.Model):
             # DIAS no mês
             primeiro_dia_do_mes = \
                 str(datetime.strptime(
-                    str(self.mes_do_ano) + '-' + str(self.ano), '%m-%Y'))
+                    str(self.mes_do_ano) + '-' + str(self.ano), '%m-%Y'))[:10]
             ultimo_dia_do_mes = str(ultimo_dia_mes(primeiro_dia_do_mes))
             dias_mes = resource_calendar_obj.get_dias_base(
                 fields.Datetime.from_string(primeiro_dia_do_mes),
@@ -743,8 +743,15 @@ class HrPayslip(models.Model):
                 u'Dias no Mês Atual', 20, u'DIAS_MES_COMPETENCIA_ATUAL',
                 dias_mes, 0.0, contract_id)]
 
-            if self.tipo_de_folha == 'rescisao':
 
+            # Utilizar mes civil
+            dias_mes = resource_calendar_obj.get_dias_base(
+                fields.Datetime.from_string(date_from),
+                fields.Datetime.from_string(date_to),
+                mes_comercial=False
+            )
+
+            if self.tipo_de_folha == 'rescisao':
                 # Quando o afastamento for no primeiro dia do mes,
                 # significa que nao trabalhou nenhum dia
                 if self.data_afastamento == primeiro_dia_do_mes[:10]:
@@ -760,14 +767,6 @@ class HrPayslip(models.Model):
                 if self.data_afastamento == self.date_to and \
                         self.data_afastamento == self.date_to:
                     dias_mes = 0
-
-            # Utilizar mes civil para todos outros casos
-            else:
-                dias_mes = resource_calendar_obj.get_dias_base(
-                    fields.Datetime.from_string(date_from),
-                    fields.Datetime.from_string(date_to),
-                    mes_comercial=False
-                )
 
             result += [self.get_attendances(
                 u'Dias Base', 30, u'DIAS_BASE', dias_mes, 0.0, contract_id)]
@@ -876,6 +875,11 @@ class HrPayslip(models.Model):
                 self.env['resource.calendar'].get_quantidade_dias_ferias(
                     hr_contract, primeiro_dia_do_mes, ultimo_dia_do_mes)
 
+            # PAra Simulações da rescisao e provisão da folha
+            if self.tipo_de_folha == 'provisao_ferias' or self.is_simulacao:
+                quantidade_dias_abono = 0
+                quantidade_dias_ferias = self.periodo_aquisitivo.saldo
+
             result += [self.get_attendances(
                 u'Quantidade dias em Férias na Competência Atual', 38,
                 u'FERIAS_COMPETENCIA_ATUAL', quantidade_dias_ferias, 0.0, contract_id
@@ -894,6 +898,7 @@ class HrPayslip(models.Model):
                 self.env['resource.calendar'].get_quantidade_dias_ferias(
                     hr_contract, primeiro_dia_do_mes_seguinte,
                     ultimo_dia_do_mes_seguinte)
+
             result += [self.get_attendances(
                 u'Quantidade dias em Férias na Competência Seguinte', 39,
                 u'FERIAS_COMPETENCIA_SEGUINTE',
@@ -1014,6 +1019,11 @@ class HrPayslip(models.Model):
         """
         ano = fields.Datetime.from_string(self.date_from).year
 
+        dependent_values = self.get_dependent_values_irrf(ano)
+
+        return TOTAL_IRRF - INSS - dependent_values
+
+    def get_dependent_values_irrf(self, ano):
         deducao_dependente_obj = self.env[
             'l10n_br.hr.income.tax.deductable.amount.family'
         ]
@@ -1025,8 +1035,7 @@ class HrPayslip(models.Model):
             if dependente.dependent_verification and \
                     dependente.dependent_dob < self.date_from:
                 dependent_values += deducao_dependente_value.amount
-
-        return TOTAL_IRRF - INSS - dependent_values
+        return dependent_values
 
     def IRRF(self, BASE_IRRF, INSS):
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
@@ -1521,7 +1530,8 @@ class HrPayslip(models.Model):
     def BUSCAR_VALOR_PROPORCIONAL(
             self, tipo_simulacao, um_terco_ferias=None, ferias_vencida=None):
 
-        # Se simulação férias, faça e saia (ignorando o resto do método, precisa refatorar) (TODO)
+        # Se simulação férias, faça e saia
+        # (ignorando o resto do método, precisa refatorar) (TODO)
         if tipo_simulacao=='ferias':
             return self._simulacao_ferias(ferias_vencida, um_terco_ferias)
 
@@ -2259,7 +2269,7 @@ class HrPayslip(models.Model):
                         line.total)
 
                     if line.category_id.code == 'DEDUCAO':
-                       if line.salary_rule_id.compoeq:
+                       if line.salary_rule_id.compoe_base_INSS:
                            baselocaldict['BASE_INSS'] -= line.total
                        if line.salary_rule_id.compoe_base_IR:
                            baselocaldict['BASE_IR'] -= line.total
@@ -2945,3 +2955,70 @@ class HrPayslip(models.Model):
                 return line.total
 
         return total_rubrica
+
+    def buscar_porcentagem_pensao(self):
+        """
+        Função responsável por verificar nas rubricas específicas se existe
+        um apontamento de pensao
+
+        :return: Porcentagem da pensão ou 0
+        """
+        porcentagem_pensao = 0
+        for line in self.contract_id.specific_rule_ids:
+            if line.rule_id.code == 'PENSAO_ALIMENTICIA_PORCENTAGEM':
+                porcentagem_pensao = line.specific_amount
+                break
+
+        return porcentagem_pensao
+
+    def get_valor_pensao(self, porcentagem_pensao, locals):
+        """
+        Função responsável por calcular o valor correto da pensão a partir de
+        uma porcentagem do salário líquido do empregado
+
+        :param porcentagem_pensao: Valor em float da porcentagem da pensão
+        alimentícia
+        :return: Valor total da pensão ou 0
+        """
+
+        pensao = 0
+
+        if porcentagem_pensao:
+            bruto = locals[u'BRUTO']
+            inss = 0
+
+            dependent_values = self.get_dependent_values_irrf(self.ano)
+
+            if self.tipo_de_folha == 'normal':
+                inss = locals[u'INSS']
+            else:
+                inss = locals[u'INSS_COMPETENCIA_ATUAL']
+
+            base_irrf = self.BASE_IRRF(bruto, inss)
+
+            faixa_irrf = self.env['l10n_br.hr.income.tax'].search([
+                ('year', '=', self.ano),
+                ('max_wage', '<=', base_irrf)
+            ], order='max_wage DESC', limit=1)
+
+            aliquota = faixa_irrf.rate
+            deducao_irrf = faixa_irrf.deductable
+
+            pensao_porcentagem_decimal = porcentagem_pensao/100
+            aliquota_porcentagem_decimal = aliquota/100
+
+            # Fórmula utilizada para o pagamento de pensão alimentícia
+            # utilizando uma porcentagem em cima do valor
+            # liquido dos rendimentos
+            # {BRUTO - INSS - [(BRUTO - INSS - DEPENDENTES - PENSAO) * ALIQ_IRRF - DEDUÇAO_IRRF]} * PERC_PENSAO
+
+            valor_1 = bruto - inss
+            valor_2 = (bruto - inss - dependent_values) * \
+                      aliquota_porcentagem_decimal - deducao_irrf
+            valor_3 = (valor_1 - valor_2) * pensao_porcentagem_decimal
+
+            pensao = valor_3 / (1 - (
+                    aliquota_porcentagem_decimal * pensao_porcentagem_decimal
+            ))
+
+        return pensao, porcentagem_pensao
