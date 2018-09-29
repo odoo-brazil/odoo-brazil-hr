@@ -227,7 +227,6 @@ class HrVacationControl(models.Model):
             else:
                 date_end = record.fim_aquisitivo
 
-            date_end2 = date_end
             date_end = fields.Date.from_string(date_end) + \
                        relativedelta(days=1)
             date_end = fields.Date.to_string(date_end)
@@ -235,9 +234,9 @@ class HrVacationControl(models.Model):
             #
             # Calcula os avos
             #
-            dias_para_adicionar = fields.Date.from_string(date_begin) - \
-                                  primeiro_dia_mes(date_begin)
             ultimo_dia_primeiro_mes = ultimo_dia_mes(date_begin)
+
+            # Se no primeiro mes trabalhou mais do que 14 dias contabilizar avo
             if ultimo_dia_primeiro_mes - \
                     parse_datetime(date_begin).date() >= \
                     timedelta(days=14):
@@ -291,15 +290,21 @@ não do mês civil.
  trabalhista IOB.
  Carlos Eduardo Silva
             """
-            # if date_end2 == record.contract_id.date_end:
-            #     primeiro_dia_ultimo_mes = \
-            #         primeiro_dia_mes(date_end) + dias_para_adicionar
-            # else:
-            primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end)
+            avos_ultimo_mes = 0
+
+            # Para contabilizar os avos das férias, levar em consideraçõ o
+            # "aniversario" do  periodo aquisitivo
+            dia_aniversario_periodo_aquisitivo = \
+                fields.Date.from_string(record.inicio_aquisitivo).day
+            primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end).replace(
+                day=dia_aniversario_periodo_aquisitivo)
 
             ultimo_dia_ultimo_mes = ultimo_dia_mes(date_end)
-            avos_ultimo_mes = 0
+
+            # calcular dias tarbalhados no ultimo mes apartir do aniversario
+            # do periodo aquisitivo
             dias = parse_datetime(date_end).date() - primeiro_dia_ultimo_mes
+
             dias_mes = ultimo_dia_ultimo_mes - primeiro_dia_ultimo_mes
             if dias > timedelta(days=15):
                 avos_ultimo_mes = 1
@@ -307,9 +312,11 @@ não do mês civil.
                 if dias_mes != timedelta(days=30):
                     avos_ultimo_mes = 1
 
-            primeiro_dia_mes_cheio = ultimo_dia_mes(date_begin) + \
-                                     timedelta(days=1)
+            primeiro_dia_mes_cheio = \
+                ultimo_dia_mes(date_begin) + timedelta(days=1)
+
             ultimo_dia_mes_cheio = primeiro_dia_mes(date_end)
+
             avos_meio = idade_meses(parse_datetime(primeiro_dia_mes_cheio),
                                     parse_datetime(ultimo_dia_mes_cheio))
 
