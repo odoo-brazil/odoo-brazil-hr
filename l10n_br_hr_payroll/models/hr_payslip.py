@@ -1019,6 +1019,11 @@ class HrPayslip(models.Model):
         """
         ano = fields.Datetime.from_string(self.date_from).year
 
+        dependent_values = self.get_dependent_values_irrf(ano)
+
+        return TOTAL_IRRF - INSS - dependent_values
+
+    def get_dependent_values_irrf(self, ano):
         deducao_dependente_obj = self.env[
             'l10n_br.hr.income.tax.deductable.amount.family'
         ]
@@ -1030,8 +1035,7 @@ class HrPayslip(models.Model):
             if dependente.dependent_verification and \
                     dependente.dependent_dob < self.date_from:
                 dependent_values += deducao_dependente_value.amount
-
-        return TOTAL_IRRF - INSS - dependent_values
+        return dependent_values
 
     def IRRF(self, BASE_IRRF, INSS):
         tabela_irrf_obj = self.env['l10n_br.hr.income.tax']
@@ -2265,7 +2269,7 @@ class HrPayslip(models.Model):
                         line.total)
 
                     if line.category_id.code == 'DEDUCAO':
-                       if line.salary_rule_id.compoeq:
+                       if line.salary_rule_id.compoe_base_INSS:
                            baselocaldict['BASE_INSS'] -= line.total
                        if line.salary_rule_id.compoe_base_IR:
                            baselocaldict['BASE_IR'] -= line.total
@@ -2951,3 +2955,70 @@ class HrPayslip(models.Model):
                 return line.total
 
         return total_rubrica
+
+    def buscar_porcentagem_pensao(self):
+        """
+        Função responsável por verificar nas rubricas específicas se existe
+        um apontamento de pensao
+
+        :return: Porcentagem da pensão ou 0
+        """
+        porcentagem_pensao = 0
+        for line in self.contract_id.specific_rule_ids:
+            if line.rule_id.code == 'PENSAO_ALIMENTICIA_PORCENTAGEM':
+                porcentagem_pensao = line.specific_amount
+                break
+
+        return porcentagem_pensao
+
+    def get_valor_pensao(self, porcentagem_pensao, locals):
+        """
+        Função responsável por calcular o valor correto da pensão a partir de
+        uma porcentagem do salário líquido do empregado
+
+        :param porcentagem_pensao: Valor em float da porcentagem da pensão
+        alimentícia
+        :return: Valor total da pensão ou 0
+        """
+
+        pensao = 0
+
+        if porcentagem_pensao:
+            bruto = locals[u'BRUTO']
+            inss = 0
+
+            dependent_values = self.get_dependent_values_irrf(self.ano)
+
+            if self.tipo_de_folha == 'normal':
+                inss = locals[u'INSS']
+            else:
+                inss = locals[u'INSS_COMPETENCIA_ATUAL']
+
+            base_irrf = self.BASE_IRRF(bruto, inss)
+
+            faixa_irrf = self.env['l10n_br.hr.income.tax'].search([
+                ('year', '=', self.ano),
+                ('max_wage', '<=', base_irrf)
+            ], order='max_wage DESC', limit=1)
+
+            aliquota = faixa_irrf.rate
+            deducao_irrf = faixa_irrf.deductable
+
+            pensao_porcentagem_decimal = porcentagem_pensao/100
+            aliquota_porcentagem_decimal = aliquota/100
+
+            # Fórmula utilizada para o pagamento de pensão alimentícia
+            # utilizando uma porcentagem em cima do valor
+            # liquido dos rendimentos
+            # {BRUTO - INSS - [(BRUTO - INSS - DEPENDENTES - PENSAO) * ALIQ_IRRF - DEDUÇAO_IRRF]} * PERC_PENSAO
+
+            valor_1 = bruto - inss
+            valor_2 = (bruto - inss - dependent_values) * \
+                      aliquota_porcentagem_decimal - deducao_irrf
+            valor_3 = (valor_1 - valor_2) * pensao_porcentagem_decimal
+
+            pensao = valor_3 / (1 - (
+                    aliquota_porcentagem_decimal * pensao_porcentagem_decimal
+            ))
+
+        return pensao, porcentagem_pensao
