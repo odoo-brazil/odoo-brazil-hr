@@ -1344,8 +1344,12 @@ class L10nBrSefip(models.Model):
         :param folha:
         :return:
         """
-        # TODO: Implementar no payslip
-        return []
+        vinculos_ids = folha.contract_id.contribuicao_inss_ids
+
+        if not vinculos_ids:
+            return 0.00
+
+        return folha.line_ids.filtered(lambda x: x.code=='INSS').total or 0.00
 
     def _buscar_ocorrencias(self, folha):
         """ Estas informações devem ser lançadas na folha
@@ -1396,15 +1400,6 @@ class L10nBrSefip(models.Model):
         if folha._name == 'hr.payslip.autonomo':
             return '05'
 
-        folha_ids = self._get_folha_ids()
-        count = 0
-        for folha_id in folha_ids:
-            if folha.employee_id.id == folha_id.employee_id.id:
-                count += 1
-        if count == 2:
-            return '05'
-        ocorrencia = ' '
-
         # TODO:
         if folha.tipo_de_folha == 'rescisao':
             # FIXME:
@@ -1412,10 +1407,10 @@ class L10nBrSefip(models.Model):
             #print ("tipo_afastamento_sefip - Registro 30. Item 19")
             pass
 
-        ocorrencias_no_periodo_ids = self._buscar_ocorrencias(folha)
-
-        if not ocorrencias_no_periodo_ids:
-            return ocorrencia
+        # ocorrencias_no_periodo_ids = self._buscar_ocorrencias(folha)
+        #
+        # if not ocorrencias_no_periodo_ids:
+        #     return ocorrencia
 
         # Vai o código do afastamento mais longo e é sempre informado
         # A lógica abaixo pode ser removida
@@ -1474,18 +1469,7 @@ class L10nBrSefip(models.Model):
             return 0
 
         multiplos_vinculos_ids = self._buscar_multiplos_vinculos(folha)
-
-        if not multiplos_vinculos_ids:
-            return 0.00
-
-            # TODO:
-            # Campo opcional para as ocorrências 05, 06, 07 e 08.
-            # Campo opcional para as categorias de trabalhadores igual a
-            # 01, 02, 04, 06, 07, 12, 19, 20, 21 e 26.
-            # Campo opcional para as categorias de trabalhadores igual a
-            # 05, 11, 13, 15, 17, 18, 24 e 25 a partir da competência 04/2003.
-
-        return 0.00
+        return multiplos_vinculos_ids
 
     def _trabalhador_remun_base_calc_contribuicao_previdenciaria(self, folha):
         """ Registro 30. Item 21
