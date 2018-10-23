@@ -6,7 +6,7 @@
 <data>
 
     <record model="ir.ui.view" id="resource_calendar_leaves_form_view">
-        <field name="name">resource.calendar.leaves.form (in l10n_br_resource)</field>
+        <field name="name">resource.calendar.leaves.form (in l10n_br_hr_resource)</field>
         <field name="model">resource.calendar.leaves</field>
         <field name="inherit_id" ref="resource.resource_calendar_leave_form"/>
         <field name="arch" type="xml">
@@ -23,7 +23,7 @@
     </record>
 
     <record model="ir.ui.view" id="resource_calendar_leaves_search_view">
-        <field name="name">resource.calendar.leaves.search (in l10n_br_resource)</field>
+        <field name="name">resource.calendar.leaves.search (in l10n_br_hr_resource)</field>
         <field name="model">resource.calendar.leaves</field>
         <field name="inherit_id" ref="resource.view_resource_calendar_leaves_search"/>
         <field name="arch" type="xml">
@@ -35,7 +35,7 @@
     </record>
 
     <record model="ir.ui.view" id="resource_calendar_leaves_tree_view">
-        <field name="name">resource.calendar.leaves.tree (in l10n_br_resource)</field>
+        <field name="name">resource.calendar.leaves.tree (in l10n_br_hr_resource)</field>
         <field name="model">resource.calendar.leaves</field>
         <field name="inherit_id" ref="resource.resource_calendar_leave_tree"/>
         <field name="arch" type="xml">
