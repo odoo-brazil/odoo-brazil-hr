@@ -739,6 +739,12 @@ class HrPayslip(models.Model):
                 fields.Datetime.from_string(primeiro_dia_do_mes),
                 fields.Datetime.from_string(ultimo_dia_do_mes),
             )
+
+            # Na rescisao, os calculos de férias deverao ser sob 30 dias
+            # Ferias indenizaddas deverão ser mes comercial
+            if self.tipo_de_folha == 'ferias' and self.is_simulacao:
+                dias_mes = 30
+
             result += [self.get_attendances(
                 u'Dias no Mês Atual', 20, u'DIAS_MES_COMPETENCIA_ATUAL',
                 dias_mes, 0.0, contract_id)]
@@ -1378,7 +1384,6 @@ class HrPayslip(models.Model):
             self, tipo_simulacao, mes_do_ano, ano, data_inicio, data_fim,
             ferias_vencida=None, periodo_aquisitivo=None
     ):
-        hr_payslip_obj = self.env['hr.payslip']
         vals = {
             'contract_id': self.contract_id.id,
             'tipo_de_folha': tipo_simulacao,
@@ -1391,7 +1396,8 @@ class HrPayslip(models.Model):
         }
         if tipo_simulacao == "aviso_previo":
             vals.update({'dias_aviso_previo': self.dias_aviso_previo})
-        payslip_simulacao_criada = hr_payslip_obj.create(vals)
+
+        payslip_simulacao_criada = self.create(vals)
         if tipo_simulacao == "ferias":
             #periodo_ferias_vencida = False
             #if ferias_vencida:
@@ -2761,6 +2767,11 @@ class HrPayslip(models.Model):
                         AVOS="%d" % (int(round(avos, 2))))
 
                     tipo = line.salary_rule_id.category_id.code
+
+                    # Rurica do INSS esta como referência por causa do e-social
+                    if 'INSS' in line.code:
+                        tipo = 'INSS'
+
                     rescisao_ids.append({
                         'codigo': codigo,
                         'name': descricao,
