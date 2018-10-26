@@ -69,10 +69,6 @@ class HrPayslipRun(models.Model):
         comodel_name='hr.contract',
         string='Contratos',
     )
-    contract_id_readonly = fields.Many2many(
-        comodel_name='hr.contract',
-        string='Contratos',
-    )
     departamento_id = fields.Many2one(
         comodel_name='hr.department',
         string='Departamento',
@@ -235,12 +231,10 @@ class HrPayslipRun(models.Model):
 
             lote.write({
                 'contract_id': [(6, 0, contratos_sem_holerite)],
-                'contract_id_readonly': [(6, 0, contratos_sem_holerite)],
             })
 
     @api.multi
     def gerar_holerites(self):
-        self.verificar_holerites_gerados()
         for contrato in self.contract_id:
             # Provisionamento de ferias
             if self.tipo_de_folha == 'provisao_ferias':

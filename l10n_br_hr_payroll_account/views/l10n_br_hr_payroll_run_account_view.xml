@@ -16,16 +16,14 @@
                     </group>
                 </xpath>
                 <separator string="Contratos" position="replace"/>
-                <field name="contract_id" invisible="1" position="replace"/>
-                <field name="contract_id_readonly" readonly="1" position="replace"/>
+                <field name="contract_id" position="replace"/>
                 <separator string="Payslips" position="replace"/>
                 <field name="slip_ids" position="replace"/>
                 <xpath expr="//group[@id='journal']" position="after">
                     <notebook>
                         <page string="Contratos e Holerites">
                             <separator string="Contratos"/>
-                            <field name="contract_id" invisible="1"/>
-                            <field name="contract_id_readonly" readonly="1"/>
+                            <field name="contract_id"/>
                             <separator string="Payslips"/>
                             <field name="slip_ids"/>
                         </page>
