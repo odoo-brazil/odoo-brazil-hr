@@ -269,6 +269,10 @@ class HrPayslip(models.Model):
         string=u"Simulação",
     )
 
+    eh_mes_comercial = fields.Boolean(
+        string=u"Mês Comercial?",
+    )
+
     @api.depends('contract_id', 'dias_aviso_previo_trabalhados')
     @api.multi
     def _calcular_dias_aviso_previo(self):
@@ -738,6 +742,7 @@ class HrPayslip(models.Model):
             dias_mes = resource_calendar_obj.get_dias_base(
                 fields.Datetime.from_string(primeiro_dia_do_mes),
                 fields.Datetime.from_string(ultimo_dia_do_mes),
+                mes_comercial=self.eh_mes_comercial,
             )
 
             # Na rescisao, os calculos de férias deverao ser sob 30 dias
@@ -754,7 +759,7 @@ class HrPayslip(models.Model):
             dias_mes = resource_calendar_obj.get_dias_base(
                 fields.Datetime.from_string(date_from),
                 fields.Datetime.from_string(date_to),
-                mes_comercial=False
+                mes_comercial=self.eh_mes_comercial,
             )
 
             if self.tipo_de_folha == 'rescisao':
@@ -894,9 +899,11 @@ class HrPayslip(models.Model):
             #
             # GET dias FERIAS na competencia SEGUINTE(caso de ferias quebrada)
             #
+            mes_do_ano_ferias = self.mes_do_ano + 1 if self.mes_do_ano < 12 else 1
+            ano_ferias = self.ano if self.mes_do_ano < 12 else self.ano + 1
             primeiro_dia_do_mes_seguinte = \
                 str(datetime.strptime(str(
-                    self.mes_do_ano + 1) + '-' + str(self.ano), '%m-%Y').date())
+                    mes_do_ano_ferias) + '-' + str(ano_ferias), '%m-%Y').date())
             ultimo_dia_do_mes_seguinte = \
                 str(ultimo_dia_mes(primeiro_dia_do_mes_seguinte))
             quantidade_dias_ferias_competencia_seguinte, \
@@ -917,6 +924,7 @@ class HrPayslip(models.Model):
             dias_mes_seguinte = resource_calendar_obj.get_dias_base(
                 fields.Datetime.from_string(primeiro_dia_do_mes_seguinte),
                 fields.Datetime.from_string(ultimo_dia_do_mes_seguinte),
+                mes_comercial=self.eh_mes_comercial,
             )
             result += [self.get_attendances(
                 u'Dias no Mês seguinte', 22, u'DIAS_MES_COMPETENCIA_SEGUINTE',

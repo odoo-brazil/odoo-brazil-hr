@@ -53,7 +53,6 @@ class L10nBrHrPayslip(models.Model):
         comodel_name='account.account',
         string='Conta crédito provisão de Férias',
     )
-
     provisao_13_account_debit = fields.Many2one(
         comodel_name='account.account',
         string='Conta débito provisão Décimo 13º',
@@ -95,14 +94,6 @@ class L10nBrHrPayslip(models.Model):
         comodel_name='account.journal',
         string=u"Diário",
         default=_buscar_diario_fopag
-    )
-
-    payslip_rescisao_ids = fields.Many2many(
-        string="Rescisões",
-        comodel_name="hr.payslip",
-        rel="rel_hr_payslip_run_hr_paysip_rescisao",
-        column1="slip_id",
-        column2="hr_payslip_run_id",
     )
 
     @api.multi
@@ -226,16 +217,6 @@ class L10nBrHrPayslip(models.Model):
         """
         # Adicionar a rescisao na contabilização do lote
         self.ensure_one()
-
-        domain = [
-            ('tipo_de_folha', '=', 'rescisao'),
-            ('is_simulacao', '!=', True),
-            ('state', 'in', ['done', 'verify']),
-            ('mes_do_ano', '=', self.mes_do_ano),
-            ('ano', '=', self.ano),
-        ]
-        rescisao_periodo = self.env['hr.payslip'].search(domain)
-        self.payslip_rescisao_ids = rescisao_periodo
 
         if self.journal_id:
             rubricas = {}
