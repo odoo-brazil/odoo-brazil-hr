@@ -8,36 +8,16 @@
             <field name="priority" eval="105"/>
             <field name="inherit_id" ref="l10n_br_hr_payroll.hr_payslip_run_form_view"/>
             <field name="arch" type="xml">
-                <xpath expr="//separator[@string='Contratos']" position="before">
-                    <group id="journal">
-                        <group>
-                            <field name="journal_id"/>
-                        </group>
-                    </group>
-                </xpath>
-                <separator string="Contratos" position="replace"/>
-                <field name="contract_id" position="replace"/>
-                <separator string="Payslips" position="replace"/>
-                <field name="slip_ids" position="replace"/>
-                <xpath expr="//group[@id='journal']" position="after">
-                    <notebook>
-                        <page string="Contratos e Holerites">
-                            <separator string="Contratos"/>
-                            <field name="contract_id"/>
-                            <separator string="Payslips"/>
-                            <field name="slip_ids"/>
-                        </page>
+                <field name="company_id" position="after">
+                    <field name="journal_id"/>
+                </field>
 
-                        <page string="Rescisões" attrs="{'invisible': [('payslip_rescisao_ids', '=', [])]}">
-                            <field name="payslip_rescisao_ids" />
-                        </page>
-
-                        <page string="Contabilização">
-                            <button type="object" name="processar_folha" string="Gerar contabilização"/>
-                            <field name="move_lines_id"/>
-                        </page>
-                    </notebook>
+                <xpath expr="//notebook" position="inside">
+                    <page string="Contabilização"><button type="object" name="processar_folha" string="Gerar contabilização"/>
+                        <field name="move_lines_id"/>
+                    </page>
                 </xpath>
+
             </field>
         </record>
 
