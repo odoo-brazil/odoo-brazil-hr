@@ -79,7 +79,15 @@ class HrPayslipRun(models.Model):
         default=lambda self: self.env.user.company_id or '',
     )
     eh_mes_comercial = fields.Boolean(
-        string=u"Simulação",
+        string=u"Mês Comercial?",
+    )
+
+    payslip_rescisao_ids = fields.Many2many(
+        string="Rescisões",
+        comodel_name="hr.payslip",
+        rel="rel_hr_payslip_run_hr_paysip_rescisao",
+        column1="slip_id",
+        column2="hr_payslip_run_id",
     )
 
     @api.onchange('tipo_de_folha')
@@ -232,6 +240,15 @@ class HrPayslipRun(models.Model):
                 contratos_sem_holerite = \
                     list(set(contratos_sem_holerite) - set(contratos_ids.ids))
 
+            # Buscar rescisoes da competencia
+            domain = [
+                ('tipo_de_folha', '=', 'rescisao'),
+                ('is_simulacao', '!=', True),
+                ('mes_do_ano', '=', self.mes_do_ano),
+                ('ano', '=', self.ano),
+            ]
+            self.payslip_rescisao_ids = self.env['hr.payslip'].search(domain)
+
             lote.write({
                 'contract_id': [(6, 0, contratos_sem_holerite)],
             })
@@ -334,10 +351,16 @@ class HrPayslipRun(models.Model):
 
     @api.multi
     def close_payslip_run(self):
+        """
+        Só fechar lotes, se não tiver nenhum em rascunho
+        """
         for lote in self:
-            for holerite in lote.slip_ids:
-                holerite.hr_verify_sheet()
-        super(HrPayslipRun, self).close_payslip_run()
+            if any(l == 'draft' for l in lote.slip_ids.mapped('state')):
+                raise UserError(
+                    _('Erro no fechamento deste Lote !\n'
+                      'Há holerite(s) não confirmados!')
+                )
+            return super(HrPayslipRun, self).close_payslip_run()
 
     @api.multi
     def unlink(self):

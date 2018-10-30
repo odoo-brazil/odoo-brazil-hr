@@ -8,70 +8,16 @@
             <field name="priority" eval="105"/>
             <field name="inherit_id" ref="l10n_br_hr_payroll.hr_payslip_run_form_view"/>
             <field name="arch" type="xml">
-                <xpath expr="//separator[@string='Contratos']" position="before">
-                    <group id="journal">
-                        <group>
-                            <field name="journal_id"/>
-                        </group>
-                    </group>
+                <field name="company_id" position="after">
+                    <field name="journal_id"/>
+                </field>
+
+                <xpath expr="//notebook" position="inside">
+                    <page string="Contabilização"><button type="object" name="processar_folha" string="Gerar contabilização"/>
+                        <field name="move_lines_id"/>
+                    </page>
                 </xpath>
-                <separator string="Contratos" position="replace"/>
-                <field name="contract_id" position="replace"/>
-                <separator string="Payslips" position="replace"/>
-                <field name="slip_ids" position="replace"/>
-                <xpath expr="//group[@id='journal']" position="after">
-                    <notebook>
-                        <page string="Contratos e Holerites">
-                            <separator string="Contratos"/>
-                            <field name="contract_id"/>
-                            <separator string="Payslips"/>
-                            <field name="slip_ids"/>
-                        </page>
 
-                        <page string="Rescisões" attrs="{'invisible': [('payslip_rescisao_ids', '=', [])]}">
-                            <field name="payslip_rescisao_ids" />
-                        </page>
-
-                        <page string="Contabilização">
-                            <button type="object" name="processar_folha" string="Gerar contabilização"/>
-<!--
-                            <separator string="Contas Holerite Normal" attrs="{'invisible': [('tipo_de_folha', '!=', 'normal')]}"/>
-                            <group attrs="{'invisible': [('tipo_de_folha', '!=', 'normal')]}">
-                                <group>
-                                    <field name="holerite_normal_account_debit"/>
-                                    <field name="holerite_normal_account_credit"/>
-                                </group>
-                            </group>
-                            <separator string="Contas Décimo 13º" attrs="{'invisible': [('tipo_de_folha', '!=', 'decimo_terceiro')]}"/>
-                            <group attrs="{'invisible': [('tipo_de_folha', '!=', 'decimo_terceiro')]}">
-                                <group>
-                                    <field name="decimo_13_account_debit"/>
-                                    <field name="decimo_13_account_credit"/>
-                                </group>
-                            </group>
-                            <separator string="Contas Provisão Férias" attrs="{'invisible': [('tipo_de_folha', '!=', 'provisao_ferias')]}"/>
-                            <group attrs="{'invisible': [('tipo_de_folha', '!=', 'provisao_ferias')]}">
-                                <group>
-                                    <field name="provisao_ferias_account_debit"/>
-                                    <field name="provisao_ferias_account_credit"/>
-                                </group>
-                            </group>
-                            <separator string="Contas Provisão Décimo Terceiro" attrs="{'invisible': [('tipo_de_folha', '!=', 'provisao_decimo_terceiro')]}"/>
-                            <group attrs="{'invisible': [('tipo_de_folha', '!=', 'provisao_decimo_terceiro')]}">
-                                <group>
-                                    <field name="provisao_13_account_debit"/>
-                                    <field name="provisao_13_account_credit"/>
-                                </group>
-                            </group>
-
-                            <group>
-                                <field name="move_id" readonly="1"/>
-                            </group>
--->
-                            <field name="move_lines_id"/>
-                        </page>
-                    </notebook>
-                </xpath>
             </field>
         </record>
 
