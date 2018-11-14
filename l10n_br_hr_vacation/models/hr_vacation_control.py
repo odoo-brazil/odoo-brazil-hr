@@ -296,8 +296,15 @@ não do mês civil.
             # "aniversario" do  periodo aquisitivo
             dia_aniversario_periodo_aquisitivo = \
                 fields.Date.from_string(record.inicio_aquisitivo).day
-            primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end).replace(
-                day=dia_aniversario_periodo_aquisitivo)
+
+            # Resolver casos que o aniversario do periodo aquisitivo for no dia
+            # 31 e alguns meses nao tem 31 dias.
+            try:
+                primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end).replace(
+                    day=dia_aniversario_periodo_aquisitivo)
+            except ValueError:
+                primeiro_dia_ultimo_mes = primeiro_dia_mes(date_end).replace(
+                    day=dia_aniversario_periodo_aquisitivo-1)
 
             ultimo_dia_ultimo_mes = ultimo_dia_mes(date_end)
 
