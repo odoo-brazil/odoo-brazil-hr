@@ -22,7 +22,7 @@ class HrPayslipRun(models.Model):
     )
 
     def gerar_financial_move_darf(
-            self, codigo_receita, valor, partner_id=False):
+            self, codigo_receita, valor, partner_id=False, num_referencia=False):
         '''
          Tratar dados do sefip e criar um dict para criar financial.move de
          guia DARF.
@@ -33,7 +33,6 @@ class HrPayslipRun(models.Model):
         # Número do documento da DARF
         sequence_id = self.company_id.darf_sequence_id.id
         doc_number = str(self.env['ir.sequence'].next_by_id(sequence_id))
-        num_referencia = ''
 
         # Definir quem sera o contribuinte da DARF, se nao passar nenhum
         # nos parametros assume que é a empresa
@@ -52,23 +51,33 @@ class HrPayslipRun(models.Model):
 
         if codigo_receita == '1661':
             descricao += ' - PSS Plano de Seguridade Social'
-            num_referencia = partner_id.cnpj_cpf
 
         if codigo_receita == '1850':
-            num_referencia = self.company_id.partner_id.cnpj_cpf
             descricao += ' - PSS Patronal'
 
         # Calcular data de vencimento da DARF
         # data de vencimento setada na conf da empresa
         dia = str(self.company_id.darf_dia_vencimento)
 
-        # ou se forem darfs especificas, cair no dia 05 de cada mes
-        if codigo_receita in ['1850', '1661']:
-            dia = '07'
+        # Para guias de final de ano
+        mes_do_ano = self.mes_do_ano if self.mes_do_ano <= 12 else 12
 
-        data = str(self.ano) + '-' + '{:02d}'.format(self.mes_do_ano) + '-' + dia
+        data = '{}-{:02d}-{}'.format(self.ano, mes_do_ano, dia)
         data_vencimento = \
             fields.Datetime.from_string(data + ' 03:00:00') + timedelta(days=31)
+
+        # Código de DARFS de PSS
+        codigo_receita_PSS = ['1850', '1661']
+
+        # Se forem darfs de PSS, sera no primeiro dia
+        if codigo_receita in codigo_receita_PSS:
+            data_vencimento = data_vencimento.replace(day=1)
+
+            # No caso de DARFS para PSS deverá ser no primeiro dia útil.
+            # Caso dia 01 não seja útil, pegar o próximo
+            while not self.company_id.default_resource_calendar_id. \
+                    data_eh_dia_util(data_vencimento):
+                data_vencimento += timedelta(days=1)
 
         # Antecipar data caso caia em feriado
         while not self.company_id.default_resource_calendar_id.\
@@ -151,25 +160,6 @@ class HrPayslipRun(models.Model):
 
         return financial_move_gps
 
-    def buscar_IRPF_holerite_13(self, contrato):
-        """
-        Buscar o valor do IRPF do holerite de 13º
-        :param contrato:
-        :return:
-        """
-        holerite = self.env['hr.payslip'].search([
-            ('contract_id', '=', contrato.id),
-            ('mes_do_ano', '=', '13'),
-            ('ano', '=', self.ano),
-            ('tipo_de_folha', 'in', ['decimo_terceiro']),
-            ('state', 'in', ['done','verify']),
-        ])
-        for line_id in holerite.line_ids:
-            if line_id.code == 'IRPF':
-                return line_id.total, holerite.line_ids.filtered(
-                    lambda x: x.code == 'BASE_IRPF').total or 0.00
-        return 0.0, 0.0
-
     def gerar_guias_pagamento(self):
         """
         Gerar dicionarios contendo os valores das GUIAS
@@ -181,7 +171,7 @@ class HrPayslipRun(models.Model):
         contribuicao_sindical = {}
         darf_analitico = []
 
-        for holerite in self.slip_ids:
+        for holerite in self.slip_ids + self.payslip_rescisao_ids:
             if not empresas.get(holerite.company_id.id):
                 empresas.update({
                     holerite.company_id.id: {
@@ -229,24 +219,24 @@ class HrPayslipRun(models.Model):
                 #
                 # GERAR DARF
                 #
-                # Para rubricas de PSS patronal gerar para cpf do
-                # funcionario
-                elif line.code in ['PSS_PATRONAL']:
+                # Para rubricas de PSS patronal
+                elif line.code in ['PSS_PATRONAL', 'PSS_13_PATRONAL']:
                     guia_pss.append({
                         'code': '1850',
                         'valor': line.total,
-                        'partner_id': line.employee_id.address_home_id})
+                        'partner_id': line.employee_id.company_id.partner_id,
+                        'num_referencia':
+                            line.employee_id.address_home_id.cnpj_cpf,
+                    })
 
                 # Para rubricas de PSS do funcionario
-                elif line.code in ['PSS']:
+                elif line.code in ['PSS', 'PSS_13']:
                     guia_pss.append({
                         'code': '1661',
                         'valor': line.total,
-                        'partner_id': line.employee_id.address_home_id})
-                    # partner_id = line.employee_id.address_home_id
-                    # financial_move_darf = self.gerar_financial_move_darf(
-                    #     '1661', line.total, partner_id)
-                    # created_ids.append(financial_move_darf.id)
+                        'partner_id': line.employee_id.address_home_id,
+                        'num_referencia': '',
+                    })
 
                 # para gerar a DARF, identificar a categoria de contrato pois
                 # cada categoria tem um código de emissao diferente
@@ -278,23 +268,7 @@ class HrPayslipRun(models.Model):
                         'base': base or 0.0,
                     })
 
-            # buscar o valor do IRPF do holerite de 13º
-            valor_13, base_13 = \
-                self.buscar_IRPF_holerite_13(holerite.contract_id)
-            darfs[codigo_darf] += valor_13
-
-            if valor_13:
-                darf_analitico.append({
-                    'nome': line.slip_id.contract_id.display_name,
-                    'code': line.code + '_DECIMO_TERCEIRO',
-                    'valor': line.total,
-                    'codigo_darf': codigo_darf,
-                    'base': base_13,
-                    'company_id': line.slip_id.contract_id.company_id.id,
-                })
-
         return empresas, darfs, contribuicao_sindical, guia_pss, darf_analitico
-
 
     @api.multi
     def gerar_boletos(self):
@@ -335,7 +309,8 @@ class HrPayslipRun(models.Model):
 
             for guia_pss in pss:
                 financial_move_darf = self.gerar_financial_move_darf(
-                    guia_pss.get('code'), guia_pss.get('valor'),guia_pss.get('partner_id'))
+                    guia_pss.get('code'), guia_pss.get('valor'),
+                    guia_pss.get('partner_id'), guia_pss.get('num_referencia'))
                 created_ids.append(financial_move_darf.id)
 
             return {

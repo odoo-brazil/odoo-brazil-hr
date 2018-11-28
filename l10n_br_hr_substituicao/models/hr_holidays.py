@@ -17,6 +17,12 @@ class HrHolidays(models.Model):
         store=True,
     )
 
+    substituicao_ids = fields.One2many(
+        string=u'Substituições',
+        comodel_name='hr.substituicao',
+        inverse_name='holiday_id',
+    )
+
     @api.multi
     def _inverse_gerente_titular(self):
         """
@@ -51,6 +57,15 @@ class HrHolidays(models.Model):
                     user_ids=[record.gerente_titular.user_id.id],
                     subtype_ids=None)
             record.write({'state': 'confirm'})
+            
+    @api.multi
+    def holidays_refuse(self):
+        """
+        Excluir as substituicoes em caso de recusa de evento
+        """
+        for record in self:
+            record.substituicao_ids.unlink()
+        return super(HrHolidays, self).holidays_refuse()
 
     @api.multi
     def write(self, vals):
@@ -64,8 +79,9 @@ class HrHolidays(models.Model):
 
         # Quando validar o holidays, verificar se precisa criar substituicao
         # Quando for compensação de horas nao gerar substituição
-        if vals.get('state') and vals.get('state') in ['validate'] and \
-                not self.holiday_status_id.tipo == 'compensacao':
+        if vals.get('state') and vals.get('state') in ['validate']:
+            if self.holiday_status_id.tipo == 'compensacao' or self.type == 'add':
+                return holidays_id
 
             # Verificar se o funcionario do holiday, eh gerente de
             # algum departamento

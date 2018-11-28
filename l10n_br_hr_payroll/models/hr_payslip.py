@@ -739,9 +739,12 @@ class HrPayslip(models.Model):
             #
 
             # DIAS no mês
+            # Verificação do 13 salario
+            mes_do_ano = \
+                str(self.mes_do_ano) if str(self.mes_do_ano) != '13' else '12'
             primeiro_dia_do_mes = \
                 str(datetime.strptime(
-                    str(self.mes_do_ano) + '-' + str(self.ano), '%m-%Y'))[:10]
+                    mes_do_ano + '-' + str(self.ano), '%m-%Y'))[:10]
             ultimo_dia_do_mes = str(ultimo_dia_mes(primeiro_dia_do_mes))
             dias_mes = resource_calendar_obj.get_dias_base(
                 fields.Datetime.from_string(primeiro_dia_do_mes),
@@ -2603,8 +2606,8 @@ class HrPayslip(models.Model):
                 datetime.strptime(str(mes) + '-' +
                                   str(record.ano), '%m-%Y'))
 
-            record.date_from = primeiro_dia_do_mes
             record.date_to = ultimo_dia_do_mes
+            record.date_from = primeiro_dia_do_mes
 
             data_de_inicio = record.contract_id.date_start
             data_final = record.contract_id.date_end
@@ -3012,7 +3015,7 @@ class HrPayslip(models.Model):
 
             dependent_values = self.get_dependent_values_irrf(self.ano)
 
-            if self.tipo_de_folha == 'normal':
+            if self.tipo_de_folha in ['normal', 'decimo_terceiro']:
                 inss = locals[u'INSS']
             else:
                 inss = locals[u'INSS_COMPETENCIA_ATUAL']
@@ -3045,3 +3048,32 @@ class HrPayslip(models.Model):
             ))
 
         return pensao, porcentagem_pensao
+
+    def get_valor_pensao_adiantamente_decimo_terceiro(self):
+        """
+
+        :param locals:
+        :return:
+        """
+        domain = [
+            ('tipo_de_folha', 'in', ['decimo_terceiro', 'ferias']),
+            ('contract_id', '=', self.contract_id.id),
+            ('state', 'in', ['done', 'verify']),
+            ('ano', '=', self.ano),
+            ('is_simulacao', '=', False),
+            ('mes_do_ano', '<=', self.mes_do_ano),
+        ]
+        holerites = self.search(domain, order='mes_do_ano DESC')
+
+        valor = 0
+        if holerites:
+            for holerite in holerites:
+                for line in holerite.line_ids:
+                    if line.code in [
+                        'PENSAO_ALIMENTICIA',
+                    ]:
+                        if not (self.tipo_de_folha == 'ferias'
+                                and holerite.mes_do_ano == self.mes_do_ano):
+                            valor += line.total
+
+        return valor
