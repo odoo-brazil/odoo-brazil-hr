@@ -604,6 +604,10 @@ class HrPayslip(models.Model):
         string="Data do pagamento"
     )
 
+    data_pagamento_competencia = fields.Date(
+        string="Data do pagamento",
+    )
+
     valor_saldo_fgts = fields.Float(
         string="Valor do Saldo do FGTS"
     )
@@ -2189,7 +2193,7 @@ class HrPayslip(models.Model):
             # Caso nao esteja computando holerite de provisão de ferias ou
             # de decimo terceiro recuperar as regras especificas do contrato
             if not payslip.tipo_de_folha in \
-                   ['provisao_ferias', 'provisao_decimo_terceiro', 'decimo_terceiro', 'rescisao']:
+                   ['provisao_ferias', 'provisao_decimo_terceiro', 'rescisao']:
                 applied_specific_rule = payslip.get_contract_specific_rubrics(
                     contract_ids, rule_ids)
 
