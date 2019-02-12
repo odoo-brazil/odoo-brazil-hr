@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2018 ABGF <hendrix.costa@abgf.gov.br>
+# Copyright (C) 2016 KMEE (http://www.kmee.com.br)
+# Copyright (C) 2018 ABGF (http://www.abgf.gov.br)
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
+
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import time
 
@@ -19,36 +23,28 @@ NOME_LANCAMENTO = {
 
 
 class L10nBrHrPayslipAutonomo(models.Model):
-    _inherit = 'hr.payslip.autonomo'
+    _inherit = b'hr.payslip.autonomo'
 
     move_id = fields.One2many(
+        string='Accounting Entry',
         comodel_name='account.move',
         inverse_name='payslip_autonomo_id',
-        string='Accounting Entry',
     )
 
     move_lines_id = fields.One2many(
-        comodel_name='account.move.line',
         string=u'Lançamentos',
+        comodel_name='account.move.line',
         inverse_name='payslip_autonomo_id',
     )
 
     journal_id = fields.Many2one(
         comodel_name='account.journal',
         string=u"Diário",
-        default=lambda self:
-        self.env.ref('l10n_br_hr_payroll_account.payroll_account_journal'),
     )
 
     @api.multi
-    def _valor_lancamento_anterior_rubrica(self, move_id, rubrica_id):
-        for line in move_id.line_id:
-            if rubrica_id.id == line.id:
-                return line.debit, line.credit, line.period_id
-        return 0, 0, 0
-
-    @api.multi
     def _buscar_contas(self, salary_rule):
+        return False, False
         if self.tipo_de_folha == "provisao_ferias":
             return salary_rule.provisao_ferias_account_debit, salary_rule.\
                 provisao_ferias_account_credit
