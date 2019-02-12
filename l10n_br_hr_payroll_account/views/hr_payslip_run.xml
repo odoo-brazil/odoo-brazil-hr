@@ -9,12 +9,13 @@
             <field name="inherit_id" ref="l10n_br_hr_payroll.hr_payslip_run_form_view"/>
             <field name="arch" type="xml">
                 <field name="company_id" position="after">
-                    <field name="journal_id"/>
+                    <field name="account_event_template_id"/>
                 </field>
 
                 <xpath expr="//notebook" position="inside">
-                    <page string="Contabilização"><button type="object" name="processar_folha" string="Gerar contabilização"/>
-                        <field name="move_lines_id"/>
+                    <page string="Contabilização">
+                        <button type="object" name="gerar_contabilizacao_lote" string="Gerar contabilização"/>
+                        <field name="move_lines_ids"/>
                     </page>
                 </xpath>
 
