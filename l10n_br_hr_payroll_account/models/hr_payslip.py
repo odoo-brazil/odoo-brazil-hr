@@ -47,12 +47,30 @@ class L10nBrHrPayslip(models.Model):
         Gerar um dict contendo a contabilização de cada rubrica
         return { string 'CODE' : float valor}
         """
-        contabilizacao_rubricas = {}
+
+        """
+                {
+            'data':         '2019-01-01',
+            'lines':        [{'code': 'LIQUIDO', 'valor': 123},
+                             {'code': 'INSS', 'valor': 621.03}],
+            'ref':          identificação do módulo de origem
+            'model':        (opcional) model de origem
+            'res_id':       (opcional) id do registro de origem
+            'period_id'     (opcional) account.period
+            'company_id':   (opcional) res.company
+        }
+        """
+
+
+        contabilizacao_rubricas = []
 
         # Roda as Rubricas e Cria os lançamentos contábeis
         for line in self.line_ids:
             if line.salary_rule_id.gerar_contabilizacao:
-                contabilizacao_rubricas[line.salary_rule_id.code] = line.total
+                contabilizacao_rubricas.append({
+                    'code': line.salary_rule_id.code,
+                    'valor': line.total,
+                })
 
         return contabilizacao_rubricas
 
@@ -82,5 +100,21 @@ class L10nBrHrPayslip(models.Model):
 
             rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
 
-            holerite.account_event_template_id.gerar_contabilizacao(
-                rubricas_para_contabilizar)
+            contabilizar = {
+                'ref': 'PROVISAO DE 13',
+                'data':'2019-01-01',
+                'lines': rubricas_para_contabilizar,
+            }
+
+            account_move_ids = \
+                holerite.account_event_template_id.\
+                    gerar_contabilizacao(contabilizar)
+
+            # Criar os relacionamentos
+            for account_move_id in account_move_ids:
+                account_move_id.payslip_id = holerite.id
+
+            for line_id in account_move_ids.mapped('line_id'):
+                line_id.payslip_id = holerite.id
+
+

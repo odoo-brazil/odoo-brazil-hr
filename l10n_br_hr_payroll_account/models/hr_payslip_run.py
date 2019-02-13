@@ -125,7 +125,17 @@ class L10nBrHrPayslip(models.Model):
         Processa a contabilização do lote baseado nas rubricas dos holerites
         """
         for lote in self:
-            rubricas = self.gerar_rubricas_para_lancamentos_contabeis_lote()
-            lote.account_event_template_id(rubricas)
 
-        return True
+            rubricas = self.gerar_rubricas_para_lancamentos_contabeis_lote()
+
+            accout_move_ids = \
+                lote.account_event_template_id.gerar_contabilizacao(rubricas)
+
+            # Criar os relacionamentos
+            for account_move_id in accout_move_ids:
+                account_move_id.payslip_run_id = lote.id
+
+            for line in accout_move_ids.mapped('line_id'):
+                line.payslip_run_id = lote.id
+
+            return True
