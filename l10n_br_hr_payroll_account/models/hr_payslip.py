@@ -51,8 +51,11 @@ class L10nBrHrPayslip(models.Model):
         """
                 {
             'data':         '2019-01-01',
-            'lines':        [{'code': 'LIQUIDO', 'valor': 123},
-                             {'code': 'INSS', 'valor': 621.03}],
+            'lines':        [{'code': 'LIQUIDO', 'valor': 123,
+                                'historico_padrao': {'mes': '01'}},
+                             {'code': 'INSS', 'valor': 621.03}
+                                'historico_padrao': {'nome': 'Nome do lança'}},
+                            ],
             'ref':          identificação do módulo de origem
             'model':        (opcional) model de origem
             'res_id':       (opcional) id do registro de origem
@@ -70,6 +73,8 @@ class L10nBrHrPayslip(models.Model):
                 contabilizacao_rubricas.append({
                     'code': line.salary_rule_id.code,
                     'valor': line.total,
+                    # opcional para historico padrao
+                    'name': line.salary_rule_id.name,
                 })
 
         return contabilizacao_rubricas
