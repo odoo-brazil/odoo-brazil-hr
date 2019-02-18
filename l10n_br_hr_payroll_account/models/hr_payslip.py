@@ -8,6 +8,15 @@ from __future__ import absolute_import, print_function, unicode_literals
 from openerp import api, models, fields, _
 from openerp.exceptions import Warning
 
+NOME_LANCAMENTO = {
+    'normal': u'Holerite Normal - ',
+    'rescisao': u'Rescisão - ',
+    'ferias': u'Férias - ',
+    'decimo_terceiro': u'Décimo Terceiro - ',
+    'aviso_previo': u'Aviso Prévio - ',
+    'provisao_ferias': u'Provisão de Férias - ',
+    'provisao_decimo_terceiro': u'Provisão de Décimo Terceiro - ',
+}
 
 class L10nBrHrPayslip(models.Model):
     _inherit = b'hr.payslip'
@@ -106,8 +115,10 @@ class L10nBrHrPayslip(models.Model):
             rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
 
             contabilizar = {
-                'ref': 'PROVISAO DE 13',
-                'data':'2019-01-01',
+                'ref': '{} {}'.format(
+                    NOME_LANCAMENTO.get(holerite.tipo_de_folha),
+                    holerite.data_mes_ano),
+                'data': holerite.date_from,
                 'lines': rubricas_para_contabilizar,
             }
 
@@ -121,5 +132,3 @@ class L10nBrHrPayslip(models.Model):
 
             for line_id in account_move_ids.mapped('line_id'):
                 line_id.payslip_id = holerite.id
-
-
