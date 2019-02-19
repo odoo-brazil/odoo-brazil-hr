@@ -141,8 +141,8 @@ class L10nBrHrPayslip(models.Model):
             rubricas = self.gerar_rubricas_para_lancamentos_contabeis_lote()
 
             contabiliz = {
-                'data': '2019-01-01',
                 'lines': rubricas,
+                'data': '{}-{:02}-01'.format(lote.ano, lote.mes_do_ano),
                 'ref': 'Lote de {}'.format(
                     NOME_LANCAMENTO_LOTE.get(lote.tipo_de_folha)),
             }
