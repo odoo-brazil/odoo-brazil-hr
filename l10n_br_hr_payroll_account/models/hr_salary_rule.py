@@ -13,7 +13,7 @@ class HrSalaryRule(models.Model):
     _inherit = b'hr.salary.rule'
 
     gerar_contabilizacao = fields.Boolean(
-        string='Gerar Contabilizaão?',
+        string='Gerar Contabilização?',
         default='True',
         help='Indica se rubrica irá gerar contabilização',
     )
