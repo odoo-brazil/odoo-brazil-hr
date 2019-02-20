@@ -8,8 +8,8 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 from openerp import api, fields, models
 
 
-class HrContractRessarcimento(models.Model):
-    _name = b'hr.contract.ressarcimento'
+class ContractRessarcimento(models.Model):
+    _name = b'contract.ressarcimento'
     _description = 'Ressarcimentos de outros Vínculos do Contrato'
     _order = "account_period_id DESC"
 
@@ -18,7 +18,7 @@ class HrContractRessarcimento(models.Model):
             ('aberto', 'Aberto'),
             ('confirmado', 'Aguardando aprovação'),
             ('provisionado', 'Provisionado'),
-            ('aprovado','Aprovado'),
+            ('aprovado', 'Aprovado'),
         ],
         string='Situação',
         default='aberto',
@@ -27,17 +27,24 @@ class HrContractRessarcimento(models.Model):
     contract_id = fields.Many2one(
         comodel_name="hr.contract",
         string="Contrato",
+        default=lambda self: self.env.context.get('default_contract_id'),
     )
 
-    hr_contract_ressarcimento_line_ids = fields.One2many(
-        inverse_name='hr_contract_ressarcimento_id',
-        comodel_name='hr.contract.ressarcimento.line',
-        string='Ressarcimento do Contratro',
+    default_contract_id = fields.Boolean(
+        string="Contrato",
+        default=lambda self: 1 if self.env.context.get('default_contract_id')
+        else 0,
     )
 
-    hr_contract_ressarcimento_provisionado_line_ids = fields.One2many(
-        inverse_name='hr_contract_ressarcimento_provisionado_id',
-        comodel_name='hr.contract.ressarcimento.line',
+    contract_ressarcimento_line_ids = fields.One2many(
+        inverse_name='contract_ressarcimento_id',
+        comodel_name='contract.ressarcimento.line',
+        string='Ressarcimento do Contrato',
+    )
+
+    contract_ressarcimento_provisionado_line_ids = fields.One2many(
+        inverse_name='contract_ressarcimento_provisionado_id',
+        comodel_name='contract.ressarcimento.line',
         string='Ressarcimento do Contratro (provisionado)',
     )
 
@@ -90,20 +97,20 @@ class HrContractRessarcimento(models.Model):
         if self.state == 'aberto':
             if self.valor_provisionado:
                 self.account_period_id = False
-                self.hr_contract_ressarcimento_line_ids = False
+                self.contract_ressarcimento_line_ids = False
             else:
                 self.account_period_provisao_id = False
-                self.hr_contract_ressarcimento_provisionado_line_ids = False
+                self.contract_ressarcimento_provisionado_line_ids = False
 
     @api.multi
-    @api.depends('hr_contract_ressarcimento_line_ids')
+    @api.depends('contract_ressarcimento_line_ids')
     def compute_total_ressarcimento(self):
         for record in self:
             record.total = sum(
-                record.hr_contract_ressarcimento_line_ids.mapped('total'))
+                record.contract_ressarcimento_line_ids.mapped('total'))
 
             record.total_provisionado = sum(
-                record.hr_contract_ressarcimento_provisionado_line_ids
+                record.contract_ressarcimento_provisionado_line_ids
                     .mapped('total'))
 
     @api.multi
@@ -123,8 +130,8 @@ class HrContractRessarcimento(models.Model):
         Operador confirmando e submetendo para aprovação
         """
         for record in self:
-            record.state = 'confirmado'
             record.send_mail(situacao='confirmado')
+            record.state = 'confirmado'
 
     @api.multi
     def button_aprovar(self):
@@ -135,10 +142,10 @@ class HrContractRessarcimento(models.Model):
             record.aprovado_por = self.env.user.id
             if record.valor_provisionado and not record.account_period_id:
                 record.state = 'provisionado'
-                record.send_mail(situacao='aprovado')
             else:
                 record.state = 'aprovado'
-                record.send_mail(situacao='aprovado')
+
+            record.send_mail(situacao='aprovado')
 
     @api.multi
     def button_reprovar(self):
@@ -172,8 +179,8 @@ class HrContractRessarcimento(models.Model):
         mail_obj = self.env['mail.mail']
 
         template_name = \
-            'l10n_br_hr_payroll.' \
-            'email_template_hr_contract_ressarcimento_{}'.format(situacao)
+            'l10n_br_ressarcimento.' \
+            'email_template_contract_ressarcimento_{}'.format(situacao)
 
         # template para valor provisionado
         if self.valor_provisionado and not self.account_period_id \
@@ -195,18 +202,18 @@ class HrContractRessarcimento(models.Model):
         mail_obj.send(mail_id)
 
 
-class HrContractRessarcimentoLine(models.Model):
-    _name = b'hr.contract.ressarcimento.line'
+class ContractRessarcimentoLine(models.Model):
+    _name = b'contract.ressarcimento.line'
     _description = 'Linhas dos Ressarcimentos de outros Vínculos'
     _order = 'descricao'
 
-    hr_contract_ressarcimento_id = fields.Many2one(
-        comodel_name='hr.contract.ressarcimento',
+    contract_ressarcimento_id = fields.Many2one(
+        comodel_name='contract.ressarcimento',
         string='Ressarcimento do Contratro',
     )
 
-    hr_contract_ressarcimento_provisionado_id = fields.Many2one(
-        comodel_name='hr.contract.ressarcimento',
+    contract_ressarcimento_provisionado_id = fields.Many2one(
+        comodel_name='contract.ressarcimento',
         string='Ressarcimento do Contratro',
     )
 

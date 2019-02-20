@@ -5,12 +5,12 @@
 <openerp>
     <data>
 
-        <!-- Ressarcimento de Contrato hr.contract.ressarcimento -->
+        <!-- Ressarcimento de Contrato contract.ressarcimento -->
 
         <!--Visão Form -->
         <record model="ir.ui.view" id="hr_contract_ressarcimento_form_view">
             <field name="name">hr.contract.ressarcimento.form (in l10n_br_hr_payroll)</field>
-            <field name="model">hr.contract.ressarcimento</field>
+            <field name="model">contract.ressarcimento</field>
             <field name="priority" eval="200"/>
             <field name="arch" type="xml">
                 <form string="Contract" >
@@ -26,27 +26,34 @@
                             <field name="valor_provisionado" attrs="{'readonly':[('state','!=','aberto')]}" />
                         </group>
                         <group>
-                            <field name="account_period_provisao_id" options="{'no_create': 1}" attrs="{'readonly':[('state','!=','aberto')], 'required':[('valor_provisionado','=',True)], 'invisible':[('valor_provisionado','=', False)]}" />
-                            <field name="account_period_id" options="{'no_create': 1}" attrs="{'readonly':[('state','not in', ['aberto', 'provisionado'])], 'required':[('valor_provisionado','=',False)], 'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['provisionado', 'aprovado'])]}" />
-                            <field name="partner_ids" options="{'no_create': 1}" required="1" widget="many2many_tags" />
+                            <field name="default_contract_id" invisible="1"/>
+                            <field name="contract_id" attrs="{'readonly':[('default_contract_id','!=', False)]}" required="1"/>
                         </group>
-                        <newline/>
-                        <newline/>
-                        <h2 attrs="{'invisible':[('valor_provisionado','=', False)]}">Ressarcimento do contrato (provisionamento)</h2>
-                        <field name="hr_contract_ressarcimento_provisionado_line_ids" nolabel="1" attrs="{'readonly':[('state','!=','aberto')], 'required':[('valor_provisionado','=',True)], 'invisible':[('valor_provisionado','=', False)]}" widget="one2many_list" >
-                            <tree editable="bottom">
-                                <field name="descricao" />
-                                <field name="total" sum="Total de ressarcimento" />
-                            </tree>
-                        </field>
-                        <h2 attrs="{'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['confirmado', 'provisionado', 'aprovado'])]}">Ressarcimento do contrato</h2>
-                        <field name="hr_contract_ressarcimento_line_ids" nolabel="1" attrs="{'readonly':[('state','not in', ['aberto', 'provisionado'])], 'required':['|', ('valor_provisionado','=',False), ('state', '=', 'provisionado')], 'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['confirmado', 'provisionado', 'aprovado'])]}" widget="one2many_list" >
-                            <tree editable="bottom">
-                                <field name="descricao" />
-                                <field name="total" sum="Total de ressarcimento Provisionado" />
-                            </tree>
-                        </field>
-
+                        <group>
+                            <field name="account_period_provisao_id" options="{'no_create': 1}" attrs="{'readonly':[('state','!=','aberto')], 'required':[('valor_provisionado','=',True)], 'invisible':[('valor_provisionado','=', False)]}" />
+                            <field name="account_period_id" options="{'no_create': 1}" attrs="{'readonly':[('state','not in', ['aberto', 'provisionado'])], 'required':['|',('valor_provisionado','=',False), ('state','=','provisionado')], 'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['provisionado', 'aprovado'])]}" />
+                            <field name="partner_ids" options="{'no_create': 1}" required="1" widget="many2many_tags"/>
+                        </group>
+                        <notebook>
+                            <page string="Ressarcimento do contrato" attrs="{'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['confirmado', 'provisionado', 'aprovado'])]}">
+                                <h2 attrs="{'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['confirmado', 'provisionado', 'aprovado'])]}">Ressarcimento do contrato</h2>
+                                <field name="contract_ressarcimento_line_ids" nolabel="1" attrs="{'readonly':[('state','not in', ['aberto', 'provisionado'])], 'required':['|', ('valor_provisionado','=',False), ('state', '=', 'provisionado')], 'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['confirmado', 'provisionado', 'aprovado'])]}" widget="one2many_list" >
+                                    <tree editable="bottom">
+                                        <field name="descricao" />
+                                        <field name="total" sum="Total de ressarcimento Provisionado" />
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Ressarcimento do contrato (provisionamento)" attrs="{'invisible':[('valor_provisionado','=', False)]}">
+                                <h2 attrs="{'invisible':[('valor_provisionado','=', False)]}">Ressarcimento do contrato (provisionamento)</h2>
+                                <field name="contract_ressarcimento_provisionado_line_ids" nolabel="1" attrs="{'readonly':[('state','!=','aberto')], 'required':[('valor_provisionado','=',True)], 'invisible':[('valor_provisionado','=', False)]}" widget="one2many_list" >
+                                    <tree editable="bottom">
+                                        <field name="descricao" />
+                                        <field name="total" sum="Total de ressarcimento" />
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
                         <group>
                             <field name="aprovado_por" attrs="{'invisible': [('aprovado_por','=', False)]}" readonly="1"/>
                         </group>
@@ -58,12 +65,13 @@
         <!--Visão Tree -->
         <record model="ir.ui.view" id="hr_contract_ressarcimento_tree_view">
             <field name="name">hr.contract.ressarcimento.tree (in l10n_br_hr_payroll)</field>
-            <field name="model">hr.contract.ressarcimento</field>
+            <field name="model">contract.ressarcimento</field>
             <field name="arch" type="xml">
                 <tree string="Ressarcimento de Contrato">
-                    <field name="account_period_provisao_id"/>
                     <field name="account_period_id"/>
                     <field name="total"/>
+                    <field name="account_period_provisao_id"/>
+                    <field name="total_provisionado" />
                     <field name="state"/>
                 </tree>
             </field>
@@ -72,7 +80,7 @@
         <!--Action do ressarcimento do contrato-->
         <record model="ir.actions.act_window" id="hr_contract_ressarcimento_action">
             <field name="name">Ressarcimentos do Contrato</field>
-            <field name="res_model">hr.contract.ressarcimento</field>
+            <field name="res_model">contract.ressarcimento</field>
             <field name="view_type">form</field>
             <field name="view_mode">tree,form</field>
         </record>
@@ -91,11 +99,18 @@
             <field name="view_id" ref="hr_contract_ressarcimento_form_view"/>
         </record>
 
+        <!-- Menu de resarcimento em HR -->
+        <menuitem id="hr.menu_ressarcimento"
+                  parent="hr.menu_hr_root"
+                  name="Ressarcimento"
+                  sequence="3"
+        />
+
         <menuitem
             action="hr_contract_ressarcimento_action"
             id="menu_hr_contract_ressarcimento"
             name="Ressarcimentos do Contrato"
-            parent="hr.menu_hr_configuration"
+            parent="hr.menu_ressarcimento"
             sequence="99"
         />
 
