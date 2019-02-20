@@ -3,6 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from openerp import fields, models
+from openerp.addons.l10n_br_hr_payroll.models.hr_payslip import TIPO_DE_FOLHA
 
 
 class HrContractSalaryRule(models.Model):
@@ -19,6 +20,11 @@ class HrContractSalaryRule(models.Model):
         comodel_name="hr.salary.rule",
         required=True,
         string=u"Rúbrica",
+    )
+    tipo_holerite = fields.Selection(
+        string="Tipo de Holerite",
+        selection=TIPO_DE_FOLHA,
+        selection_add=[('all', 'Todos')],
     )
     date_start = fields.Date(
         string=u"Data de início",
