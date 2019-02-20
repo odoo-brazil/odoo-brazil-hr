@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2016 KMEE (http://www.kmee.com.br)
+# Copyright (C) 2018 ABGF (http://www.abgf.gov.br)
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
+
+
+from __future__ import absolute_import, print_function, unicode_literals
+
 import time
 
 from openerp import api, models, fields, _
 from openerp.exceptions import Warning
-from openerp.tools import float_compare, float_is_zero
 
 NOME_LANCAMENTO = {
     'normal': u'Holerite Normal - ',
@@ -18,53 +22,29 @@ NOME_LANCAMENTO = {
 }
 
 
-class L10nBrHrPayslip(models.Model):
-    _inherit = 'hr.payslip'
-
-    @api.multi
-    def _buscar_diario_fopag(self):
-        if self.env.context.get('params'):
-            return self.env.ref(
-                "l10n_br_hr_payroll_account.payroll_account_journal").id
-        return self.env["account.journal"]
-
-    @api.multi
-    def _buscar_lancamentos(self):
-        for payslip in self:
-            if payslip.id:
-                payslip.move_lines_id = self.env['account.move.line'].search(
-                    [
-                        ('payslip_id', '=', payslip.id)
-                    ]
-                )
+class L10nBrHrPayslipAutonomo(models.Model):
+    _inherit = b'hr.payslip.autonomo'
 
     move_id = fields.One2many(
-        comodel_name='account.move',
-        inverse_name='payslip_id',
         string='Accounting Entry',
+        comodel_name='account.move',
+        inverse_name='payslip_autonomo_id',
     )
 
     move_lines_id = fields.One2many(
-        comodel_name='account.move.line',
         string=u'Lançamentos',
-        compute=_buscar_lancamentos
+        comodel_name='account.move.line',
+        inverse_name='payslip_autonomo_id',
     )
 
     journal_id = fields.Many2one(
         comodel_name='account.journal',
         string=u"Diário",
-        default=_buscar_diario_fopag
     )
 
     @api.multi
-    def _valor_lancamento_anterior_rubrica(self, move_id, rubrica_id):
-        for line in move_id.line_id:
-            if rubrica_id.id == line.id:
-                return line.debit, line.credit, line.period_id
-        return 0, 0, 0
-
-    @api.multi
     def _buscar_contas(self, salary_rule):
+        return False, False
         if self.tipo_de_folha == "provisao_ferias":
             return salary_rule.provisao_ferias_account_debit, salary_rule.\
                 provisao_ferias_account_credit
@@ -78,7 +58,7 @@ class L10nBrHrPayslip(models.Model):
             return False, False
 
     @api.multi
-    def processar_folha(self):
+    def processar_contabilizacao_payslip(self):
         for holerite in self:
             move_obj = self.env['account.move']
             period_obj = self.env['account.period']
@@ -86,26 +66,19 @@ class L10nBrHrPayslip(models.Model):
             period_id = period_obj.find(holerite.date_to)
             contador_lancamentos = 1
 
-            if holerite.payslip_run_id:
-                raise Warning(_('Erro de Consistência!'),
-                              _('Este Holerite faz parte de um lote '
-                                'neste caso a contabilização deve ser feita '
-                                'pelo Lote!'
-                                ))
-
             if not holerite.journal_id:
-                raise Warning(_('Erro de Dados!'),
-                              _('O campo Diário neste holerite '
-                                'não foi definido, por favor escolha o '
-                                'Diário antes de calcular o Lançamento '
-                                'Contábil!'
-                                ))
+                raise Warning(
+                    _('Erro de Dados!'),
+                    _('O campo Diário neste holerite não foi definido, '
+                      'por favor escolha o Diário antes de calcular o '
+                      'Lançamento Contábil!')
+                )
 
             # Exclui os Lançamento Contábeis anteriors
             holerite.move_id.unlink()
 
             # Roda as Rubricas e Cria os lançamentos contábeis
-            for line in holerite.details_by_salary_rule_category:
+            for line in holerite.line_ids:
                 linhas = []
                 if line.total > 0:
                     conta_credito, conta_debito = False, False
@@ -121,53 +94,7 @@ class L10nBrHrPayslip(models.Model):
                             conta_credito = \
                                 line.salary_rule_id.\
                                     holerite_normal_account_credit
-                    elif holerite.tipo_de_folha == 'ferias':
-                        if line.salary_rule_id.ferias_account_debit:
-                            debito = line.total
-                            conta_debito = \
-                                line.salary_rule_id.ferias_account_debit
-                        if line.salary_rule_id.ferias_account_credit:
-                            credito = line.total
-                            conta_credito = \
-                                line.salary_rule_id.ferias_account_credit
-                    elif holerite.tipo_de_folha == 'decimo_terceiro':
-                        if line.salary_rule_id.decimo_13_account_debit:
-                            debito = line.total
-                            conta_debito = \
-                                line.salary_rule_id.decimo_13_account_debit
-                        if line.salary_rule_id.decimo_13_account_credit:
-                            credito = line.total
-                            conta_credito = \
-                                line.salary_rule_id.decimo_13_account_credit
-                    elif holerite.tipo_de_folha == 'rescisao':
-                        if line.salary_rule_id.rescisao_account_debit:
-                            debito = line.total
-                            conta_debito = \
-                                line.salary_rule_id.rescisao_account_debit
-                        if line.salary_rule_id.rescisao_account_credit:
-                            credito = line.total
-                            conta_credito = \
-                                line.salary_rule_id.rescisao_account_credit
-                    elif holerite.tipo_de_folha == 'provisao_ferias':
-                        if line.salary_rule_id.provisao_ferias_account_debit:
-                            debito = line.total
-                            conta_debito = \
-                                line.salary_rule_id.\
-                                    provisao_ferias_account_debit
-                        if line.salary_rule_id.provisao_ferias_account_credit:
-                            credito = line.total
-                            conta_credito = \
-                                line.salary_rule_id.\
-                                    provisao_ferias_account_credit
-                    elif holerite.tipo_de_folha == 'provisao_decimo_terceiro':
-                        if line.salary_rule_id.provisao_13_account_debit:
-                            debito = line.total
-                            conta_debito = \
-                                line.salary_rule_id.provisao_13_account_debit
-                        if line.salary_rule_id.provisao_13_account_credit:
-                            credito = line.total
-                            conta_credito = \
-                                line.salary_rule_id.provisao_13_account_credit
+
 
                     #
                     # Cria o Lançamento Contábil para esta Rubrica
@@ -187,7 +114,7 @@ class L10nBrHrPayslip(models.Model):
                                 'period_id': period_id.id,
                                 'debit': 0,
                                 'credit': credito,
-                                'payslip_id': holerite.id,
+                                'payslip_autonomo_id': holerite.id,
                             })
                             linhas.append(credit_line)
 
@@ -201,7 +128,7 @@ class L10nBrHrPayslip(models.Model):
                                 'period_id': period_id.id,
                                 'debit': debito,
                                 'credit': 0,
-                                'payslip_id': holerite.id,
+                                'payslip_autonomo_id': holerite.id,
                             })
                             linhas.append(debit_line)
 
@@ -228,6 +155,6 @@ class L10nBrHrPayslip(models.Model):
             'ref': slip.number,
             'journal_id': slip.journal_id.id,
             'period_id': period_id.id,
-            'payslip_id': slip.id,
+            'payslip_autonomo_id': slip.id,
         }
         return move

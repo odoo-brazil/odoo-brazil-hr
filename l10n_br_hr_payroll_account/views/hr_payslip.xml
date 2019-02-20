@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<openerp>
+    <data>
+
+         <record id="view_hr_payslip_form" model="ir.ui.view">
+            <field name="name">hr.payslip.form (in l10n_br_contabilidade_payroll)</field>
+            <field name="model">hr.payslip</field>
+            <field name="inherit_id" ref="l10n_br_hr_payroll.hr_payslip_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Contabilização" attrs="{'invisible': [('is_simulacao', '=', True)]}" groups="base.group_hr_user,base.group_hr_manager">
+
+                        <button type="object" name="processar_contabilizacao_folha" string="Gerar contabilização"/>
+
+                        <group>
+                            <field name="account_event_template_id"  />
+                            <!--<field name="account_event_template_id" options="{'no_quick_create': True, 'no_create_edit': True}" />-->
+                        </group>
+
+                        <group string="Lançamentos Contábeis">
+                            <field name="move_lines_id" nolabel="1"/>
+                        </group>
+
+                    </page>
+                </xpath>
+
+                <xpath expr="//tree[@name='tree_salary_structure']/field[@name='reference']" position="before">
+                    <field name="codigo_contabil" groups="account.group_account_user"/>
+                </xpath>
+
+            </field>
+        </record>
+
+    </data>
+</openerp>

@@ -10,6 +10,7 @@ from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrule, MONTHLY
 from lxml import etree
 from openerp import api, fields, models, exceptions, _
+from openerp.tools import float_compare
 from mako.template import Template
 
 _logger = logging.getLogger(__name__)
@@ -86,6 +87,14 @@ class HrPayslip(models.Model):
                 # Atualizar o controle de férias, o controle de férias do
                 # contrato é baseado nos holerites validados
                 holerite.contract_id.action_button_update_controle_ferias()
+
+                # Validação para confirmação
+                liquido = holerite.line_ids.filtered(
+                    lambda x: x.code == 'LIQUIDO').total
+                if liquido and float_compare(
+                        holerite.total_folha, liquido, precision_digits=2):
+                    raise exceptions.Warning(
+                        _('Rúbrica LIQUIDO com valor inválido!'))
 
                 if holerite.tipo_de_folha == 'rescisao':
                     holerite.contract_id.resignation_cause_id = \
@@ -1219,19 +1228,22 @@ class HrPayslip(models.Model):
     def get_contract_specific_rubrics(self, contract_id, rule_ids):
         contract = self.env['hr.contract'].browse(contract_id.id)
         applied_specific_rule = {}
+
         for specific_rule in contract.specific_rule_ids:
-            if self.date_from >= specific_rule.date_start:
-                if not specific_rule.date_stop or \
-                        self.date_to <= specific_rule.date_stop:
-                    
-                    rule_ids.append((specific_rule.rule_id.id, 
-                                     specific_rule.rule_id.sequence))
-                    
-                    if specific_rule.rule_id.id not in applied_specific_rule:
-                        applied_specific_rule[specific_rule.rule_id.id] = []
-                        
-                    applied_specific_rule[specific_rule.rule_id.id].append(
-                        specific_rule)
+            tipo_holerite = True if specific_rule.tipo_holerite in [self.tipo_de_folha, 'all'] else False
+            if tipo_holerite:
+                if self.date_from >= specific_rule.date_start:
+                    if not specific_rule.date_stop or \
+                            self.date_to <= specific_rule.date_stop:
+
+                        rule_ids.append((specific_rule.rule_id.id,
+                                         specific_rule.rule_id.sequence))
+
+                        if specific_rule.rule_id.id not in applied_specific_rule:
+                            applied_specific_rule[specific_rule.rule_id.id] = []
+
+                        applied_specific_rule[specific_rule.rule_id.id].append(
+                            specific_rule)
                     
         return applied_specific_rule
 
@@ -1297,9 +1309,10 @@ class HrPayslip(models.Model):
                 if medias_obj:
                     if rubrica.rule_id.code not in medias_obj.dict.keys():
                         return 0
-                return rubrica.specific_quantity * \
-                    rubrica.specific_percentual / 100 * \
-                    rubrica.specific_amount
+                return rubrica.specific_quantity * rubrica.specific_percentual\
+                    / 100 * rubrica.specific_amount, \
+                    rubrica.specific_quantity, \
+                    rubrica.specific_percentual
 
     @api.multi
     def get_desconto_ligacao_telefonica(self):
@@ -1816,6 +1829,10 @@ class HrPayslip(models.Model):
         ]
         holerite_ferias_id = self.search(
             domain, limit=1, order='date_from DESC')
+
+        # Se não localizar nenhuma férias retorna 0
+        if not holerite_ferias_id:
+            return 0
 
         # Se o mes da referencia for o mesmo das ferias encontradas,
         # retornar a rubrica de INSS_COMPETENCIA_ATUAL
@@ -2433,6 +2450,11 @@ class HrPayslip(models.Model):
                 employee = contract.employee_id
                 localdict = dict(
                     baselocaldict, employee=employee, contract=contract)
+                calculated_specifc_rule = [
+                    'PENSAO_ALIMENTICIA_PORCENTAGEM',
+                    'PENSAO_ALIMENTICIA_PORCENTAGEM_FERIAS',
+                    'PENSAO_ALIMENTICIA_PORCENTAGEM_13',
+                ]
                 for rule in obj_rule.browse(sorted_rule_ids):
                     key = rule.code + '-' + str(payslip.id)
                     localdict['result'] = None
@@ -2446,7 +2468,8 @@ class HrPayslip(models.Model):
                     #
                     # Tratamos as rubricas específicas que têm beneficiários
                     #
-                    if rule.id in applied_specific_rule:
+                    if rule.id in applied_specific_rule and \
+                            rule.code not in calculated_specifc_rule:
                         lista_rubricas_especificas = \
                             applied_specific_rule[rule.id]
 
@@ -2466,8 +2489,13 @@ class HrPayslip(models.Model):
                     if obj_rule.satisfy_condition(rule.id, localdict) \
                             and rule.id not in blacklist:
                         # compute the amount of the rule
-                        amount, qty, rate = \
-                            obj_rule.compute_rule(rule.id, localdict)
+                        if rule.id in applied_specific_rule and \
+                                rule.code not in calculated_specifc_rule:
+                            amount, qty, rate = \
+                                payslip.get_specific_rubric_value(rule.id)
+                        else:
+                            amount, qty, rate = \
+                                obj_rule.compute_rule(rule.id, localdict)
                         # Pegar Referencia que irá para o holerite
                         reference = obj_rule.get_reference_rubrica(rule.id, localdict)
 
@@ -3036,7 +3064,12 @@ class HrPayslip(models.Model):
         """
         porcentagem_pensao = 0
         for line in self.contract_id.specific_rule_ids:
-            if line.rule_id.code == 'PENSAO_ALIMENTICIA_PORCENTAGEM':
+            if line.rule_id.code in \
+                    [
+                        'PENSAO_ALIMENTICIA_PORCENTAGEM',
+                        'PENSAO_ALIMENTICIA_PORCENTAGEM_FERIAS',
+                        'PENSAO_ALIMENTICIA_PORCENTAGEM_13'
+                    ]:
                 porcentagem_pensao = line.specific_amount
                 break
 

@@ -3,13 +3,14 @@
 # Copyright (C) 2018 ABGF (http://www.abgf.gov.br)
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
+
 from __future__ import absolute_import, print_function, unicode_literals
 
-from openerp import models, fields, api
+from openerp import models, fields
 
 
-class AccountMove(models.Model):
-    _inherit = b'account.move'
+class AccountMoveLine(models.Model):
+    _inherit = b'account.move.line'
 
     payslip_id = fields.Many2one(
         comodel_name="hr.payslip",
@@ -28,16 +29,3 @@ class AccountMove(models.Model):
         string="Payslip Run",
         ondelete='cascade',
     )
-
-    @api.multi
-    def name_get(self):
-        res = []
-        for record in self:
-            if record.payslip_id or record.payslip_run_id:
-                name = record.name
-                res.append((record.id, name))
-
-            if res:
-                return res
-            else:
-                return super(AccountMove, self).name_get()
