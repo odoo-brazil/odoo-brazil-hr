@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Copyright 2019 ABGF
+     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
+
+<openerp>
+<data>
+
+    <record model="ir.ui.view" id="hr_contract_form_view">
+        <field name="name">hr.contract.form (in l10n_br_hr_payroll_account)</field>
+        <field name="model">hr.contract</field>
+        <field name="inherit_id" ref="l10n_br_hr_payroll.hr_contract_form_view"/>
+        <field name="arch" type="xml">
+            <field name="specific_quantity" position="before" >
+                <field name="codigo_contabil" />
+            </field>
+        </field>
+    </record>
+
+</data>
+</openerp>

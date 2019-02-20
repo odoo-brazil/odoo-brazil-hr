@@ -23,9 +23,13 @@
 
                     </page>
                 </xpath>
+
+                <xpath expr="//tree[@name='tree_salary_structure']/field[@name='reference']" position="before">
+                    <field name="codigo_contabil" groups="account.group_account_user"/>
+                </xpath>
+
             </field>
         </record>
 
     </data>
 </openerp>
-

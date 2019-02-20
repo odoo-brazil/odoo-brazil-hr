@@ -20,6 +20,7 @@
         'views/hr_payslip.xml',
         'views/hr_payslip_run.xml',
         'views/hr_salary_rule.xml',
+        'views/hr_contract.xml',
         # 'views/l10n_br_hr_payroll_autonomo.xml',
     ],
     'demo': [

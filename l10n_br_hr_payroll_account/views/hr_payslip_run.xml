@@ -8,14 +8,24 @@
             <field name="priority" eval="105"/>
             <field name="inherit_id" ref="l10n_br_hr_payroll.hr_payslip_run_form_view"/>
             <field name="arch" type="xml">
-                <field name="company_id" position="after">
-                    <field name="account_event_template_id"/>
-                </field>
-
                 <xpath expr="//notebook" position="inside">
                     <page string="Contabilização">
+
+                        <group>
+                            <field name="account_event_template_id"/>
+                        </group>
+
                         <button type="object" name="gerar_contabilizacao_lote" string="Gerar contabilização"/>
-                        <field name="move_lines_ids"/>
+                        <field name="move_lines_ids">
+                            <tree>
+                                <field name="name"/>
+                                <field name="account_id" />
+                                <field name="ramo_id" />
+                                <field name="debit" sum="Total Debit"/>
+                                <field name="credit" sum="Total Credit"/>
+                                <field name="state"/>
+                            </tree>
+                        </field>
                     </page>
                 </xpath>
 

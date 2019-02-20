@@ -8,6 +8,15 @@ from __future__ import absolute_import, print_function, unicode_literals
 from openerp import api, models, fields, _
 from openerp.exceptions import Warning
 
+NOME_LANCAMENTO = {
+    'normal': u'Holerite Normal - ',
+    'rescisao': u'Rescisão - ',
+    'ferias': u'Férias - ',
+    'decimo_terceiro': u'Décimo Terceiro - ',
+    'aviso_previo': u'Aviso Prévio - ',
+    'provisao_ferias': u'Provisão de Férias - ',
+    'provisao_decimo_terceiro': u'Provisão de Décimo Terceiro - ',
+}
 
 class L10nBrHrPayslip(models.Model):
     _inherit = b'hr.payslip'
@@ -36,6 +45,51 @@ class L10nBrHrPayslip(models.Model):
     )
 
     @api.multi
+    def get_payslip_lines(self, payslip_id):
+        """
+        docstring
+        """
+
+        # Holerite que esta sendo processado
+        holerite_id = self.browse(payslip_id)
+        contract_id = holerite_id.contract_id
+        salary_rule_obj = self.env['hr.salary.rule']
+        rubricas_especificas = \
+            holerite_id.get_contract_specific_rubrics(contract_id, [])
+
+        # rubricas processadas pelo holerite
+        result = super(L10nBrHrPayslip, self).get_payslip_lines(payslip_id)
+
+        # Para cada rubrica buscar o codigo contabil
+        for payslip_line in result:
+
+            rule_id = payslip_line.get('salary_rule_id')
+            hr_salary_rule_id = salary_rule_obj.browse(rule_id)
+            codigo_contabil = ''
+
+            # Se nao gerar contabilizacao pula a rubrica
+            if not hr_salary_rule_id.gerar_contabilizacao:
+                continue
+
+            if rule_id in rubricas_especificas:
+                # verificar codigo contabil definido na rubrica especifica
+                codigo_contabil = \
+                    rubricas_especificas.get(rule_id)[0].codigo_contabil
+
+            # buscar diretamente na configuracao da rubrica
+            if not codigo_contabil:
+                codigo_contabil = \
+                    salary_rule_obj.browse(rule_id).codigo_contabil
+
+            # Se nao estiver definido na rubrica utilizar o code da rubrica
+            if not codigo_contabil:
+                codigo_contabil = payslip_line.get('code')
+
+            payslip_line.update(codigo_contabil=codigo_contabil)
+
+        return result
+
+    @api.multi
     def _buscar_diario_fopag(self):
         if self.env.context.get('params'):
             return self.env.ref(
@@ -47,12 +101,35 @@ class L10nBrHrPayslip(models.Model):
         Gerar um dict contendo a contabilização de cada rubrica
         return { string 'CODE' : float valor}
         """
-        contabilizacao_rubricas = {}
+
+        """
+                {
+            'data':         '2019-01-01',
+            'lines':        [{'code': 'LIQUIDO', 'valor': 123,
+                                'historico_padrao': {'mes': '01'}},
+                             {'code': 'INSS', 'valor': 621.03}
+                                'historico_padrao': {'nome': 'Nome do lança'}},
+                            ],
+            'ref':          identificação do módulo de origem
+            'model':        (opcional) model de origem
+            'res_id':       (opcional) id do registro de origem
+            'period_id'     (opcional) account.period
+            'company_id':   (opcional) res.company
+        }
+        """
+
+
+        contabilizacao_rubricas = []
 
         # Roda as Rubricas e Cria os lançamentos contábeis
         for line in self.line_ids:
             if line.salary_rule_id.gerar_contabilizacao:
-                contabilizacao_rubricas[line.salary_rule_id.code] = line.total
+                contabilizacao_rubricas.append({
+                    'code': line.salary_rule_id.code,
+                    'valor': line.total,
+                    # opcional para historico padrao
+                    'name': line.salary_rule_id.name,
+                })
 
         return contabilizacao_rubricas
 
@@ -82,5 +159,21 @@ class L10nBrHrPayslip(models.Model):
 
             rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
 
-            holerite.account_event_template_id.gerar_contabilizacao(
-                rubricas_para_contabilizar)
+            contabilizar = {
+                'ref': '{} {}'.format(
+                    NOME_LANCAMENTO.get(holerite.tipo_de_folha),
+                    holerite.data_mes_ano),
+                'data': holerite.date_from,
+                'lines': rubricas_para_contabilizar,
+            }
+
+            account_move_ids = \
+                holerite.account_event_template_id.\
+                    gerar_contabilizacao(contabilizar)
+
+            # Criar os relacionamentos
+            for account_move_id in account_move_ids:
+                account_move_id.payslip_id = holerite.id
+
+            for line_id in account_move_ids.mapped('line_id'):
+                line_id.payslip_id = holerite.id
