@@ -163,7 +163,9 @@ def totalizadores_linhas_holerites(payslip_lines, payslip_autonomo_ids=[]):
                 #  INSS_FERIAS_DA_COMPETENCIA para que consiga pegat tb mes ant
                 if rubrica['code'] not in \
                         ['INSS_COMPETENCIA_SEGUINTE_FERIAS',
-                         'INSS_COMPETENCIA_ATUAL']:
+                         'INSS_COMPETENCIA_ATUAL',
+                         'INSS_COMPETENCIA_SEGUINTE',
+                         'INSS_FERIAS_COMPETENCIA_ANTERIOR']:
                     inss_funcionario_retido += rubrica['sum']
 
         # Totalizar O INSS da Competencia que esta em um rubrica de referencia
@@ -173,7 +175,7 @@ def totalizadores_linhas_holerites(payslip_lines, payslip_autonomo_ids=[]):
 
         if rubrica['code'] in ['BASE_FGTS', 'BASE_FGTS_13']:
                 base_fgts += rubrica['sum']
-        if rubrica['code'] in ['FGTS', 'FGTS_F_13']:
+        if rubrica['code'] in ['FGTS']:
             fgts += rubrica['sum']
 
         if rubrica['code'] in ['LIC_MATERNIDADE', 'LIC_MATERNIDADE_13']:
