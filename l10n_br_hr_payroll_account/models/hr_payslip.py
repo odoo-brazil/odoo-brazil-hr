@@ -21,27 +21,9 @@ NOME_LANCAMENTO = {
 class L10nBrHrPayslip(models.Model):
     _inherit = b'hr.payslip'
 
-    account_event_template_id = fields.Many2one(
-        string='Roteiro Contábil',
-        comodel_name='account.event.template'
-    )
-
-    move_id = fields.One2many(
-        string='Accounting Entry',
-        comodel_name='account.move',
-        inverse_name='payslip_id',
-    )
-
-    move_lines_id = fields.One2many(
-        string=u'Lançamentos',
-        comodel_name='account.move.line',
-        inverse_name='payslip_id',
-    )
-
-    journal_id = fields.Many2one(
-        comodel_name='account.journal',
-        string=u"Diário",
-        default=lambda self: self._buscar_diario_fopag(),
+    account_event_id = fields.Many2one(
+        string='Evento Contábil',
+        comodel_name='account.event'
     )
 
     @api.multi
@@ -117,20 +99,17 @@ class L10nBrHrPayslip(models.Model):
             'company_id':   (opcional) res.company
         }
         """
-
-
         contabilizacao_rubricas = []
 
         # Roda as Rubricas e Cria os lançamentos contábeis
         for line in self.line_ids:
-            if line.salary_rule_id.gerar_contabilizacao:
-                contabilizacao_rubricas.append({
+            if line.total and line.salary_rule_id.gerar_contabilizacao:
+                contabilizacao_rubricas.append((0, 0, {
                     'code': line.salary_rule_id.code,
                     'valor': line.total,
                     # opcional para historico padrao
                     'name': line.salary_rule_id.name,
-                })
-
+                }))
         return contabilizacao_rubricas
 
     @api.multi
@@ -147,33 +126,18 @@ class L10nBrHrPayslip(models.Model):
                     _('Este Holerite faz parte de um lote '
                       'neste caso a contabilização deve ser feita pelo Lote!'))
 
-            if not holerite.account_event_template_id:
-                raise Warning(
-                    _('Erro de Dados!'),
-                    _('O campo Roteiro Contábil neste holerite não foi '
-                      'definido, por favor escolha o Diário antes de calcular '
-                      'o Lançamento Contábil!'))
-
             # Exclui os Lançamento Contábeis anteriors
-            holerite.move_id.unlink()
+            holerite.account_event_id.unlink()
 
             rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
 
-            contabilizar = {
+            account_event = {
                 'ref': '{} {}'.format(
                     NOME_LANCAMENTO.get(holerite.tipo_de_folha),
                     holerite.data_mes_ano),
                 'data': holerite.date_from,
-                'lines': rubricas_para_contabilizar,
+                'account_event_line_ids': rubricas_para_contabilizar,
             }
 
-            account_move_ids = \
-                holerite.account_event_template_id.\
-                    gerar_contabilizacao(contabilizar)
-
-            # Criar os relacionamentos
-            for account_move_id in account_move_ids:
-                account_move_id.payslip_id = holerite.id
-
-            for line_id in account_move_ids.mapped('line_id'):
-                line_id.payslip_id = holerite.id
+            holerite.account_event_id = \
+                self.env['account.event'].create(account_event)

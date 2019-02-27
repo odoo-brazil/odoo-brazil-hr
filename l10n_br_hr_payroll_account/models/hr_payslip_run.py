@@ -20,76 +20,10 @@ NOME_LANCAMENTO_LOTE = {
 class L10nBrHrPayslip(models.Model):
     _inherit = b'hr.payslip.run'
 
-    account_event_template_id = fields.Many2one(
-        string='Roteiro Contábil',
-        comodel_name='account.event.template'
+    account_event_id = fields.Many2one(
+        string='Evento Contábil',
+        comodel_name='account.event'
     )
-
-    move_id = fields.One2many(
-        string='Movimentações Contábeis',
-        comodel_name='account.move',
-        inverse_name='payslip_run_id',
-    )
-
-    move_lines_ids = fields.One2many(
-        string=u'Lançamentos',
-        comodel_name='account.move.line',
-        inverse_name='payslip_run_id',
-    )
-
-    @api.multi
-    def _verificar_lancamentos_lotes_anteriores(self, tipo_folha, period_id):
-        """
-        :param tipo_folha:
-        :param period_id:
-        :return:
-        """
-        period_obj = self.env['account.period']
-
-        for payslip in self:
-
-            # Calcular o mês/ano anterior
-            mes_anterior = payslip.mes_do_ano - 1
-            ano_anterior = payslip.ano
-            if mes_anterior == 0:
-                mes_anterior = 12
-                ano_anterior -= 1
-
-            primeiro_dia_do_mes = str(
-                datetime.strptime(str(mes_anterior) + '-' +
-                                  str(ano_anterior), '%m-%Y'))
-
-            # Encontrar o Período anterior
-            periodo_anterior_id = period_obj.find(primeiro_dia_do_mes)
-
-            # Encontrar o Lote anterior
-            lote_anterior = self.env['hr.payslip.run'].search(
-                [
-                    ('mes_do_ano', '=', mes_anterior),
-                    ('ano', '=', ano_anterior),
-                    ('company_id', '=', payslip.company_id.id),
-                    ('tipo_de_folha', '=', payslip.tipo_de_folha)
-                ]
-            )
-
-            if lote_anterior:
-                move_ids = self.env['account.move'].search(
-                    [
-                        ('ref', 'like', lote_anterior.display_name),
-                        ('period_id', '=', periodo_anterior_id.id),
-                        ('payslip_run_id', '!=', False),
-                    ],
-                )
-
-                # Se for provisão de 13º e o mês anterior for Dezembro, não deve
-                # desfazer os lançamentos anteriores
-                #
-                if tipo_folha == 'provisao_13' and mes_anterior == 12:
-                    return False
-
-                return move_ids
-            else:
-                return False
 
     @api.multi
     def gerar_rubricas_para_lancamentos_contabeis_lote(self):
@@ -97,12 +31,6 @@ class L10nBrHrPayslip(models.Model):
         Gerar Lançamentos contábeis apartir do lote de holerites
         """
         self.ensure_one()
-
-        if not self.account_event_template_id:
-            raise exceptions.Warning(
-                ("Erro!"),
-                ("É preciso selecionar um Roteiro Contábil para realizar "
-                 "a contabilização!"))
 
         # Dict para totalizar todas rubricas de todos holerites
         all_rubricas = {}
@@ -116,13 +44,13 @@ class L10nBrHrPayslip(models.Model):
 
             for rubrica_holerite in rubricas_holerite:
                 # EX.: rubrica_holerite = {'code': 'INSS', 'valor': 621.03}
-                code = rubrica_holerite.get('code')
-                valor = rubrica_holerite.get('valor')
+                code = rubrica_holerite[2].get('code')
+                valor = rubrica_holerite[2].get('valor')
 
                 if code in all_rubricas:
                     # Somar rubrica do holerite ao dict totalizador
-                    valor_total = all_rubricas.get(code).get('valor') + valor
-                    all_rubricas.get(code).update(valor=valor_total)
+                    valor_total = all_rubricas.get(code)[2].get('valor') + valor
+                    all_rubricas.get(code)[2].update(valor=valor_total)
                 else:
                     all_rubricas[code] = rubrica_holerite
 
@@ -135,26 +63,16 @@ class L10nBrHrPayslip(models.Model):
         """
         for lote in self:
 
-            # Exclui os Lançamento Contábeis anteriors
-            lote.move_id.unlink()
+            # Exclui o Evento Contábbil
+            lote.account_event_id.unlink()
 
             rubricas = self.gerar_rubricas_para_lancamentos_contabeis_lote()
 
             contabiliz = {
-                'lines': rubricas,
+                'account_event_line_ids': rubricas,
                 'data': '{}-{:02}-01'.format(lote.ano, lote.mes_do_ano),
                 'ref': 'Lote de {}'.format(
                     NOME_LANCAMENTO_LOTE.get(lote.tipo_de_folha)),
             }
 
-            accout_move_ids = \
-                lote.account_event_template_id.gerar_contabilizacao(contabiliz)
-
-            # Criar os relacionamentos
-            for account_move_id in accout_move_ids:
-                account_move_id.payslip_run_id = lote.id
-
-            for line in accout_move_ids.mapped('line_id'):
-                line.payslip_run_id = lote.id
-
-            return True
+            lote.account_event_id = self.env['account.event'].create(contabiliz)

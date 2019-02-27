@@ -9,18 +9,10 @@
             <field name="arch" type="xml">
                 <xpath expr="//notebook" position="inside">
                     <page string="Contabilização" attrs="{'invisible': [('is_simulacao', '=', True)]}" groups="base.group_hr_user,base.group_hr_manager">
-
-                        <button type="object" name="processar_contabilizacao_folha" string="Gerar contabilização"/>
-
+                        <button type="object" name="processar_contabilizacao_folha" string="Gerar Evento Contábil"/>
                         <group>
-                            <field name="account_event_template_id"  />
-                            <!--<field name="account_event_template_id" options="{'no_quick_create': True, 'no_create_edit': True}" />-->
+                            <field name="account_event_id"  />
                         </group>
-
-                        <group string="Lançamentos Contábeis">
-                            <field name="move_lines_id" nolabel="1"/>
-                        </group>
-
                     </page>
                 </xpath>
 
