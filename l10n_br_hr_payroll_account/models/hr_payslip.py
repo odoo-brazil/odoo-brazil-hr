@@ -83,10 +83,7 @@ class L10nBrHrPayslip(models.Model):
         """
         Gerar um dict contendo a contabilização de cada rubrica
         return { string 'CODE' : float valor}
-        """
-
-        """
-                {
+        {
             'data':         '2019-01-01',
             'lines':        [{'code': 'LIQUIDO', 'valor': 123,
                                 'historico_padrao': {'mes': '01'}},
@@ -138,6 +135,7 @@ class L10nBrHrPayslip(models.Model):
                     holerite.data_mes_ano),
                 'data': holerite.date_from,
                 'account_event_line_ids': rubricas_para_contabilizar,
+                'origem': '{},{}'.format('hr.payslip', holerite.id),
             }
 
             holerite.account_event_id = \
