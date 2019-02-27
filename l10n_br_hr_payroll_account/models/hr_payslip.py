@@ -18,6 +18,7 @@ NOME_LANCAMENTO = {
     'provisao_decimo_terceiro': u'Provisão de Décimo Terceiro - ',
 }
 
+
 class L10nBrHrPayslip(models.Model):
     _inherit = b'hr.payslip'
 

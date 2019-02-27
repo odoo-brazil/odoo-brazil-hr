@@ -17,6 +17,7 @@ NOME_LANCAMENTO_LOTE = {
     'normal': u'Folha normal em Lote',
 }
 
+
 class L10nBrHrPayslip(models.Model):
     _inherit = b'hr.payslip.run'
 
