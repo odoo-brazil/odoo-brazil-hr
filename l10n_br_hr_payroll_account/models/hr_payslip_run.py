@@ -73,6 +73,7 @@ class L10nBrHrPayslip(models.Model):
                 'data': '{}-{:02}-01'.format(lote.ano, lote.mes_do_ano),
                 'ref': 'Lote de {}'.format(
                     NOME_LANCAMENTO_LOTE.get(lote.tipo_de_folha)),
+                'origem': '{},{}'.format('hr.payslip.run', lote.id),
             }
 
             lote.account_event_id = self.env['account.event'].create(contabiliz)
