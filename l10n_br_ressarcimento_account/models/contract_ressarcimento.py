@@ -5,8 +5,8 @@
 from openerp import api, fields, models
 
 NOME_LANCAMENTO = {
-    'provisionado': u'Ressarcimento(Provisão)',
-    'aprovado': u'Ressarcimento',
+    'provisionado': u'Ressarcimento(Provisão) - ',
+    'aprovado': u'Ressarcimento - ',
 }
 
 
@@ -46,14 +46,16 @@ class ContractRessarcimento(models.Model):
         # Roda as Rubricas e Cria os lançamentos contábeis
         for record in self:
             # se state = provisionado, pega as linhas do valor provisionado
-            line_ids = 'contract_ressarcimento_provisionado_line_ids' \
+            comp, line_ids = ('Ressarcimento(provisão)',
+                              'contract_ressarcimento_provisionado_line_ids') \
                 if record.state == 'provisionado' \
-                else 'contract_ressarcimento_line_ids'
+                else ('Ressarcimento', 'contract_ressarcimento_line_ids')
 
             for line in eval('record.'+line_ids):
                 contabilizacao_rubricas.append((0, 0, {
                     'code': line.descricao,
                     'valor': line.total,
+                    'name': '{} - {}'.format(comp, line.name)
                 }))
 
         return contabilizacao_rubricas
@@ -65,6 +67,7 @@ class ContractRessarcimento(models.Model):
         :return:
         """
         for record in self:
+            # Altera o state do Ressarcimento antes de gerar o evento contábil
             super(ContractRessarcimento, self).button_aprovar()
 
             # Exclui os Lançamento Contábeis anteriors
@@ -73,15 +76,12 @@ class ContractRessarcimento(models.Model):
             rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
 
             account_event = {
-                'ref': '{} - {} - {}'.format(
-                    NOME_LANCAMENTO.get(record.state),
-                    record.account_period_id.name,
-                    record.contract_id.employee_id.name),
-                # 'data': record.date_from,
+                'ref': NOME_LANCAMENTO.get(record.state),
+                'data': record.date_provisao if record.state == 'provisionado'
+                else record.date_ressarcimento,
                 'account_event_line_ids': rubricas_para_contabilizar,
+                'origem': '{},{}'.format('contract.ressarcimento', record.id),
             }
 
             record.account_event_id = \
                 self.env['account.event'].create(account_event)
-
-
