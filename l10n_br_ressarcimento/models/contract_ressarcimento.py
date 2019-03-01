@@ -6,11 +6,12 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 
-from openerp import api, fields, models
+from openerp import api, fields, models, _
 
 
 class ContractRessarcimento(models.Model):
     _name = b'contract.ressarcimento'
+    _inherit = ['mail.thread']
     _description = 'Ressarcimentos de outros Vínculos do Contrato'
     _order = "account_period_id DESC"
 
@@ -104,7 +105,7 @@ class ContractRessarcimento(models.Model):
         return super(ContractRessarcimento, self).create(vals)
 
     @api.onchange('valor_provisionado')
-    def _onchange_valor_provisionado(self):
+    def onchange_valor_provisionado(self):
         """
         Caso estado aberto, se for um valor provisionado,
         precisa que delete informações colocadas referente a
@@ -188,8 +189,33 @@ class ContractRessarcimento(models.Model):
         for record in self:
             record.send_mail(situacao=record.state)
 
+    def prepara_mail(self, situacao='aprovado'):
+        template_name = \
+            'l10n_br_ressarcimento.' \
+            'email_template_contract_ressarcimento_{}'.format(situacao)
+
+        # template para valor provisionado
+        if self.valor_provisionado and not self.date_ressarcimento \
+                and situacao is not 'reprovado':
+            template_name = template_name + 'p'
+
+        template = self.env.ref(template_name, False)
+        for record in self:
+            # gera template
+            vals = template.generate_email_batch(template.id, [record.id])
+            val = vals[record.id]
+
+            # Adiciona os partners a serem reportados
+            emails = record.partner_ids.filtered('email').mapped('email')
+            email_to = ','.join(emails)
+            partner_ids = record.partner_ids.mapped('id')
+            val.update(partner_ids=partner_ids)
+            val.update(email_to=email_to)
+
+        return val
+
     @api.multi
-    def send_mail(self, situacao='aprovado', reprovado=False):
+    def send_mail(self, situacao='aprovado'):
         """
         Email serão mandados em 2 momentos:
         Confirmação: após criação um ressarcimento deverá ser submetido
@@ -197,27 +223,7 @@ class ContractRessarcimento(models.Model):
         Aprovação: Email para avisar da pendencia de um ressarcimento aprovação
         """
         mail_obj = self.env['mail.mail']
-
-        template_name = \
-            'l10n_br_ressarcimento.' \
-            'email_template_contract_ressarcimento_{}'.format(situacao)
-
-        # template para valor provisionado
-        if self.valor_provisionado and not self.date_ressarcimento \
-                and not reprovado:
-            template_name = template_name + 'p'
-
-        template = self.env.ref(template_name, False)
-
-        for record in self:
-            vals = template.generate_email_batch(template.id, [record.id])
-
-        val = vals[self.id]
-
-        emails = self.partner_ids.filtered('email').mapped('email')
-        email_to = ','.join(emails)
-        val.update(email_to=email_to)
-
+        val = self.prepara_mail(situacao=situacao)
         mail_id = mail_obj.create(val)
         mail_obj.send(mail_id)
 
