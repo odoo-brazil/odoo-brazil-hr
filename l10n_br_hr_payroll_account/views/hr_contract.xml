@@ -14,6 +14,9 @@
             <field name="specific_quantity" position="before" >
                 <field name="codigo_contabil" />
             </field>
+            <field name="compor_lote" position="after" >
+                <field name="sufixo_code_account" />
+            </field>
         </field>
     </record>
 
