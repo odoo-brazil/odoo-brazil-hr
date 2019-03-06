@@ -68,6 +68,9 @@ class L10nBrHrPayslip(models.Model):
             if not codigo_contabil:
                 codigo_contabil = payslip_line.get('code')
 
+            # Adicionar o sufixo para contabilização definido no contrato
+            if contract_id.sufixo_code_account:
+                codigo_contabil += contract_id.sufixo_code_account
             payslip_line.update(codigo_contabil=codigo_contabil)
 
         return result
@@ -103,7 +106,7 @@ class L10nBrHrPayslip(models.Model):
         for line in self.line_ids:
             if line.total and line.salary_rule_id.gerar_contabilizacao:
                 contabilizacao_rubricas.append((0, 0, {
-                    'code': line.salary_rule_id.code,
+                    'code': line.codigo_contabil,
                     'valor': line.total,
                     # opcional para historico padrao
                     'name': line.salary_rule_id.name,
