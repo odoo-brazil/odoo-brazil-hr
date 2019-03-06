@@ -35,7 +35,7 @@ if len(pedidos) == 4:
             <field name="condition">True</field>
             <field name="sequence">6</field>
             <field name="code">ferias_id = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'l10n_br_hr_holiday', 'holiday_status_vacation')[1]
-pedidos_ids = self.search(cr, uid, [('employee_id', '=', obj.employee_id.id),('parent_id','=', obj.parent_id.id ),('holiday_status_id.id', '=', ferias_id),('type', '!=', 'add')], context=context)
+pedidos_ids = self.search(cr, uid, [('employee_id', '=', obj.employee_id.id),('state', 'not in', ['refuse','cancel']),('parent_id','=', obj.parent_id.id ),('holiday_status_id.id', '=', ferias_id),('type', '!=', 'add')], context=context)
 pedidos = self.browse(cr, uid, pedidos_ids, context=context)
 dias_totais = 0
 for pedido in pedidos:
