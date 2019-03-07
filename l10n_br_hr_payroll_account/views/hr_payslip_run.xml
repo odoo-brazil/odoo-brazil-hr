@@ -10,7 +10,8 @@
             <field name="arch" type="xml">
                 <xpath expr="//notebook" position="inside">
                     <page string="Contabilização">
-                        <button type="object" name="gerar_contabilizacao_lote" string="Gerar Evento Contábil"/>
+                        <button type="object" name="gerar_contabilizacao_lote" string="Gerar Evento Contábil" class="oe_highlight"/>
+                        <button type="object" name="gerar_codigo_contabilizacao" string="Gerar Código Contábil" groups="base.group_no_one"/>
                         <group>
                             <field name="account_event_id"/>
                         </group>

@@ -78,3 +78,30 @@ class L10nBrHrPayslip(models.Model):
             }
 
             lote.account_event_id = self.env['account.event'].create(contabiliz)
+
+    @api.multi
+    def gerar_codigo_contabilizacao(self):
+        """
+        Se o lote ja tiver sido processado, os códigos contabeis das rubricas
+        nao foram processados. Essa função atualiza as linhas dos holerites do
+        lote com o código contabil de cada rubrica
+        """
+        for record in self:
+            for holerite_id in record.slip_ids:
+                for line_id in holerite_id.line_ids:
+
+                    # Se nao gerar contabilizacao pula a rubrica
+                    if not line_id.salary_rule_id.gerar_contabilizacao:
+                        continue
+
+                    line_id.codigo_contabil = \
+                        line_id.salary_rule_id.codigo_contabil
+
+                    if not line_id.codigo_contabil:
+                        line_id.codigo_contabil = \
+                            line_id.salary_rule_id.code
+
+                    # Adicionar o sufixo para contabilização no contrato
+                    if line_id.slip_id.contract_id.sufixo_code_account:
+                        line_id.codigo_contabil += \
+                            line_id.slip_id.contract_id.sufixo_code_account
