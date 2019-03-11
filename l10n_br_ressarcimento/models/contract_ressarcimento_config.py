@@ -4,7 +4,7 @@
 
 from time import gmtime, strftime
 from openerp import api, fields, models, _
-from openerp.exceptions import Warning as UserError
+
 
 class ContractRessarcimentoConfig(models.Model):
     _name = b'contract.ressarcimento.config'
