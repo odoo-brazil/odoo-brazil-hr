@@ -12,6 +12,7 @@
                     <page string="Contabilização">
                         <button type="object" name="gerar_contabilizacao_lote" string="Gerar Evento Contábil" class="oe_highlight"/>
                         <button type="object" name="gerar_codigo_contabilizacao" string="Gerar Código Contábil" groups="base.group_no_one"/>
+                        <button type="object" name="verificar_fgts_holerites" string="Verificar FGTS" groups="base.group_no_one"/>
                         <group>
                             <field name="account_event_id"/>
                         </group>

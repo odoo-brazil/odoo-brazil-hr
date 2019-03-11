@@ -5,9 +5,8 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from datetime import datetime
-
-from openerp import api, models, fields, exceptions
+from openerp import api, models, fields
+from openerp.exceptions import Warning
 
 NOME_LANCAMENTO_LOTE = {
     'provisao_ferias': u'Provisão de Férias em Lote',
@@ -125,3 +124,36 @@ class L10nBrHrPayslip(models.Model):
                     if line_id.slip_id.contract_id.sufixo_code_account:
                         line_id.codigo_contabil += \
                             line_id.slip_id.contract_id.sufixo_code_account
+
+    @api.multi
+    def verificar_fgts_holerites(self):
+        """
+        """
+        for record in self:
+            invalidos = ''
+
+            for holerite_id in record.slip_ids:
+
+                fgts_total = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS').total
+
+                fgts_salario = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS_F_SALARIO').total or 0.0
+
+                fgts_salario_diretor = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS_D_SALARIO').total or 0.0
+
+                fgts_ferias = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS_F_FERIAS').total or 0.0
+
+                fgts_decimo = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS_F_13').total or 0.0
+
+                fgts_somado = fgts_salario + fgts_ferias + fgts_decimo + \
+                              fgts_salario_diretor
+
+                if round(fgts_total, 2) != round(fgts_somado, 2):
+                    invalidos += holerite_id.contract_id.display_name + '\n'
+
+            if invalidos:
+                raise Warning('FGTS inválido para:\n{}'.format(invalidos))
