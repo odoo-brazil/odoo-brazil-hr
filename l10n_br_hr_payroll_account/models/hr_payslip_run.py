@@ -14,7 +14,7 @@ NOME_LANCAMENTO_LOTE = {
     'adiantamento_13': u'Décimo Terceiro Salário em Lote',
     'decimo_terceiro': u'Décimo Terceiro Salário em Lote',
     'provisao_decimo_terceiro': u'Provisão de 13 em Lote',
-    'normal': u'Folha normal em Lote',
+    'normal': u'Folha normal',
 }
 
 
@@ -25,6 +25,26 @@ class L10nBrHrPayslip(models.Model):
         string='Evento Contábil',
         comodel_name='account.event'
     )
+
+    @api.multi
+    def close_payslip_run(self):
+        """
+        Adicionar geração do evento contábil no fechamento do Lote de holerites
+
+        """
+        self.ensure_one()
+        super(L10nBrHrPayslip, self).close_payslip_run()
+        self.gerar_contabilizacao_lote()
+
+        if self.tipo_de_folha in ['provisao_decimo_terceiro', 'provisao_ferias']:
+
+            hr_payslip_run_id = self.search([
+                ('mes_do_ano','=', self.mes_do_ano - 1),
+                ('tipo_de_folha','=', self.tipo_de_folha),
+            ])
+
+            if hr_payslip_run_id.account_event_id:
+                hr_payslip_run_id.account_event_id.button_reverter_lancamentos()
 
     @api.multi
     def gerar_rubricas_para_lancamentos_contabeis_lote(self):

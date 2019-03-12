@@ -17,6 +17,9 @@
                         </group>
                     </page>
                 </xpath>
+                <button name="close_payslip_run" position="attributes">
+                    <attribute name="confirm">Confirma o Fechamento do Lote de holerites e a geração do evento contábil dessa competência ? </attribute>
+                </button>
 
             </field>
         </record>
