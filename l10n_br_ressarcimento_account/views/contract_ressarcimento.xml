@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2019 ABGF
+     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
+
+<openerp>
+    <data>
+
+        <!-- Ressarcimento de Contrato contract.ressarcimento -->
+
+        <!--Visão Form -->
+        <record id="hr_contract_ressarcimento_form_view" model="ir.ui.view">
+            <field name="name">hr.contract.ressarcimento.form (in l10n_br_ressarcimento_account)</field>
+            <field name="model">contract.ressarcimento</field>
+            <field name="inherit_id" ref="l10n_br_ressarcimento.hr_contract_ressarcimento_form_view"/>
+            <field name="arch" type="xml">
+                <!-- Adiciona Roteiro contábil antes Rubricas de Ressarcimento -->
+                <xpath expr="//field[@name='contract_ressarcimento_line_ids']" position="before">
+                    <label for="account_event_id" string="Roteiro Contábil" invisible="1"/>
+                    <field name="account_event_id" readonly="1" invisible="1"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</openerp>

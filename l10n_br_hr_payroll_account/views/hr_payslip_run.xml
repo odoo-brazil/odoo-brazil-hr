@@ -10,24 +10,16 @@
             <field name="arch" type="xml">
                 <xpath expr="//notebook" position="inside">
                     <page string="Contabilização">
-
+                        <button type="object" name="gerar_contabilizacao_lote" string="Gerar Evento Contábil" class="oe_highlight"/>
+                        <button type="object" name="gerar_codigo_contabilizacao" string="Gerar Código Contábil" groups="base.group_no_one"/>
                         <group>
-                            <field name="account_event_template_id"/>
+                            <field name="account_event_id"/>
                         </group>
-
-                        <button type="object" name="gerar_contabilizacao_lote" string="Gerar contabilização"/>
-                        <field name="move_lines_ids">
-                            <tree>
-                                <field name="name"/>
-                                <field name="account_id" />
-                                <field name="ramo_id" />
-                                <field name="debit" sum="Total Debit"/>
-                                <field name="credit" sum="Total Credit"/>
-                                <field name="state"/>
-                            </tree>
-                        </field>
                     </page>
                 </xpath>
+                <button name="close_payslip_run" position="attributes">
+                    <attribute name="confirm">Confirma o Fechamento do Lote de holerites e a geração do evento contábil dessa competência ? </attribute>
+                </button>
 
             </field>
         </record>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2019 ABGF
+     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
+
+<openerp>
+    <data>
+
+        <!-- Configuracoes Ressarcimento de Contrato contract.ressarcimento -->
+        <record id="l10n_br_hr_contract_ressarcimento_config_form_view" model="ir.ui.view">
+            <field name="name">Contract Ressarcimento Config</field>
+            <field name="model">contract.ressarcimento.config</field>
+            <field name="arch" type="xml">
+                <form string="Configurações de Ressarcimento" class="oe_form_configuration">
+                    <header>
+                        <button string="Salvar" type="object"
+                            name="salvar_config" class="oe_highlight"/>
+                    </header>
+                    <sheet>
+                        <separator string="Alertas via e-mail" />
+                        <label for="contract_ressarcimento_config_line_ids" string="Contratos e data limite"/>
+                        <field name="contract_ressarcimento_config_line_ids" nolabel="1" widget="one2many_list">
+                            <tree editable="bottom">
+                                <field name="contract_id" />
+                                <field name="dia_limite" />
+                            </tree>
+                        </field>
+                        <br />
+                        <br />
+                        <label for="partner_ids" string="Parceiros para alertar no dia limite" />
+                        <field name="partner_ids" options="{'no_create': 1}" required="1" widget="many2many_tags"/>
+                        <group>
+                            <field name="dias_apos_provisao" required="1" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!--Action do ressarcimento do contrato-->
+        <record model="ir.actions.act_window" id="hr_contract_ressarcimento_config_action">
+            <field name="name">Ressarcimentos do Contrato Configurações</field>
+            <field name="res_model">contract.ressarcimento.config</field>
+            <field name="view_id" ref="l10n_br_hr_contract_ressarcimento_config_form_view"/>
+            <field name="res_id">1</field>
+            <field name="view_mode">form</field>
+            <field name="target">inline</field>
+        </record>
+
+        <menuitem
+            action="hr_contract_ressarcimento_config_action"
+            id="menu_hr_contract_ressarcimento_config"
+            name="Configurações"
+            parent="hr.menu_ressarcimento"
+            sequence="120"/>
+    </data>
+
+    <!-- Cron Job - verifica diariamente se existe pendencia de envio  noupdate="1" -->
+    <data noupdate="1">
+
+        <!-- cria o primeiro registro se não existir -->
+        <record id="l10n_br_hr_contract_ressarcimento_config_create" model="contract.ressarcimento.config">
+            <field name="dias_apos_provisao">10</field>
+        </record>
+
+        <record id="hr_contract_ressarcimento_config_cron" model="ir.cron">
+            <field name="name">Alerta de ressarcimento/provisionamento não incluido</field>
+            <field name="active" eval="True" />
+            <field name="user_id" ref="base.user_root" />
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field eval="True" name="doall"/>
+            <field name="model" eval="'contract.ressarcimento.config'" />
+            <field name="function" eval="'notifica_fora_prazo'" />
+        </record>
+
+    </data>
+
+</openerp>
