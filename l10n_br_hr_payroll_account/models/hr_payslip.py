@@ -30,9 +30,7 @@ class L10nBrHrPayslip(models.Model):
     @api.multi
     def get_payslip_lines(self, payslip_id):
         """
-        docstring
         """
-
         # Holerite que esta sendo processado
         holerite_id = self.browse(payslip_id)
         contract_id = holerite_id.contract_id
@@ -75,13 +73,6 @@ class L10nBrHrPayslip(models.Model):
 
         return result
 
-    @api.multi
-    def _buscar_diario_fopag(self):
-        if self.env.context.get('params'):
-            return self.env.ref(
-                "l10n_br_hr_payroll_account.payroll_account_journal").id
-        return self.env["account.journal"]
-
     def gerar_contabilizacao_rubricas(self):
         """
         Gerar um dict contendo a contabilização de cada rubrica
@@ -110,6 +101,7 @@ class L10nBrHrPayslip(models.Model):
                     'valor': line.total,
                     # opcional para historico padrao
                     'name': line.salary_rule_id.name,
+                    'hr_payslip_line_id': [(4, line.id)],
                 }))
         return contabilizacao_rubricas
 
@@ -133,10 +125,11 @@ class L10nBrHrPayslip(models.Model):
             rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
 
             account_event = {
-                'ref': '{} {}'.format(
+                'ref': '{} {} - {}'.format(
                     NOME_LANCAMENTO.get(holerite.tipo_de_folha),
+                    holerite.employee_id.name,
                     holerite.data_mes_ano),
-                'data': holerite.date_from,
+                'data': fields.Date.today(),
                 'account_event_line_ids': rubricas_para_contabilizar,
                 'origem': '{},{}'.format('hr.payslip', holerite.id),
             }

@@ -72,6 +72,10 @@ class L10nBrHrPayslip(models.Model):
                     # Somar rubrica do holerite ao dict totalizador
                     valor_total = all_rubricas.get(code)[2].get('valor') + valor
                     all_rubricas.get(code)[2].update(valor=valor_total)
+                    line_id = \
+                        rubrica_holerite[2].get('hr_payslip_line_id')[0][1]
+                    all_rubricas.get(code)[2].get(
+                        'hr_payslip_line_id').append((4, line_id))
                 else:
                     all_rubricas[code] = rubrica_holerite
 
@@ -91,7 +95,7 @@ class L10nBrHrPayslip(models.Model):
 
             contabiliz = {
                 'account_event_line_ids': rubricas,
-                'data': '{}-{:02}-01'.format(lote.ano, lote.mes_do_ano),
+                'data': fields.Date.today(),
                 'ref': 'Lote de {}'.format(
                     NOME_LANCAMENTO_LOTE.get(lote.tipo_de_folha)),
                 'origem': '{},{}'.format('hr.payslip.run', lote.id),
