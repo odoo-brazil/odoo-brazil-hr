@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright 2018 ABGF http://www.abgf.gov.br/
+    License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
+-->
+<openerp>
+    <data>
+
+        <record model="ir.ui.view" id="l10n_br_contabilidade_account_event_line_form">
+            <field name="name">l10n_br_contabilidade_account_event_line_form (in l10n_br_hr_payroll_account)</field>
+            <field name="model">account.event.line</field>
+            <field name="inherit_id" ref="l10n_br_contabilidade.l10n_br_contabilidade_account_event_line_form"/>
+            <field name="priority">10</field>
+            <field name="arch" type="xml">
+
+                <xpath expr="//notebook" position="inside">
+                    <page string="Totalizador">
+                        <field name="hr_payslip_line_id" colspan="4" nolabel="1">
+                            <tree>
+                                <field name="slip_id" />
+                                <field name="total" sum="Total"/>
+                            </tree>
+                        </field>
+                    </page>
+                </xpath>
+
+            </field>
+        </record>
+
+    </data>
+</openerp>
