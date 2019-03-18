@@ -55,10 +55,7 @@ class L10nBrHrPayslip(models.Model):
         # Dict para totalizar todas rubricas de todos holerites
         all_rubricas = {}
 
-        # Adicionar a rescisao na contabilização do lote
-        all_payslip_ids = self.slip_ids + self.payslip_rescisao_ids
-
-        for payslip in all_payslip_ids:
+        for payslip in self.slip_ids:
             # Rubricas do holerite para contabilizar
             rubricas_holerite = payslip.gerar_contabilizacao_rubricas()
 
