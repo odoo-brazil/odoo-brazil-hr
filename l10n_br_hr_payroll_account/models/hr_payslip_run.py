@@ -111,23 +111,7 @@ class L10nBrHrPayslip(models.Model):
         """
         for record in self:
             for holerite_id in record.slip_ids:
-                for line_id in holerite_id.line_ids:
-
-                    # Se nao gerar contabilizacao pula a rubrica
-                    if not line_id.salary_rule_id.gerar_contabilizacao:
-                        continue
-
-                    line_id.codigo_contabil = \
-                        line_id.salary_rule_id.codigo_contabil
-
-                    if not line_id.codigo_contabil:
-                        line_id.codigo_contabil = \
-                            line_id.salary_rule_id.code
-
-                    # Adicionar o sufixo para contabilização no contrato
-                    if line_id.slip_id.contract_id.sufixo_code_account:
-                        line_id.codigo_contabil += \
-                            line_id.slip_id.contract_id.sufixo_code_account
+                holerite_id.gerar_codigo_contabilizacao()
 
     @api.multi
     def verificar_fgts_holerites(self):
