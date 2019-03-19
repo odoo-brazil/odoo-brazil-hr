@@ -10,6 +10,7 @@
                 <xpath expr="//notebook" position="inside">
                     <page string="Contabilização" attrs="{'invisible': [('is_simulacao', '=', True)]}" groups="base.group_hr_user,base.group_hr_manager">
                         <button type="object" name="processar_contabilizacao_folha" string="Gerar Evento Contábil"/>
+                        <button string="Gerar códigos de Contabilização" name="gerar_codigo_contabilizacao" type="object" groups="base.group_no_one"/>
                         <group>
                             <field name="account_event_id"  />
                         </group>
