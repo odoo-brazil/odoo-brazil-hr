@@ -43,7 +43,6 @@
             <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
             <field name="priority" eval="105"/>
             <field name="arch" type="xml">
-
                 <!-- Altera botões -->
                 <button name="cancel_sheet" position="replace"/>
                 <button name="hr_verify_sheet" position="attributes">
@@ -56,6 +55,7 @@
                 <button name="549" position="attributes">
                     <attribute name="groups">base.group_hr_user</attribute>
                 </button>
+
                 <!-- Adiciona abas -->
                 <xpath expr="//notebook" position="replace">
                     <notebook>
@@ -227,7 +227,7 @@
                     <field name="struct_id"
                            attrs="{'readonly': [('tipo_de_folha', '!=', 'rescisao')]}"
                            domain="[('tipo_estrutura', '=', tipo_de_folha)]" />
-                    <field name="data_pagamento_competencia"/>
+                    <field name="data_pagamento_competencia" attrs="{'required' : ['|', ('tipo_de_folha', 'in', ['ferias', 'rescisao'])]}" />
                     <field name="eh_mes_comercial" groups="base.group_hr_user" />
                 </field>
                 <xpath expr="//div[@class='oe_title']" position="replace">

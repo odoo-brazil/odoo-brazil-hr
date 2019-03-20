@@ -30,9 +30,7 @@ class L10nBrHrPayslip(models.Model):
     @api.multi
     def get_payslip_lines(self, payslip_id):
         """
-        docstring
         """
-
         # Holerite que esta sendo processado
         holerite_id = self.browse(payslip_id)
         contract_id = holerite_id.contract_id
@@ -75,13 +73,6 @@ class L10nBrHrPayslip(models.Model):
 
         return result
 
-    @api.multi
-    def _buscar_diario_fopag(self):
-        if self.env.context.get('params'):
-            return self.env.ref(
-                "l10n_br_hr_payroll_account.payroll_account_journal").id
-        return self.env["account.journal"]
-
     def gerar_contabilizacao_rubricas(self):
         """
         Gerar um dict contendo a contabilização de cada rubrica
@@ -110,6 +101,7 @@ class L10nBrHrPayslip(models.Model):
                     'valor': line.total,
                     # opcional para historico padrao
                     'name': line.salary_rule_id.name,
+                    'hr_payslip_line_id': [(4, line.id)],
                 }))
         return contabilizacao_rubricas
 
@@ -133,13 +125,41 @@ class L10nBrHrPayslip(models.Model):
             rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
 
             account_event = {
-                'ref': '{} {}'.format(
+                'ref': '{} {} - {}'.format(
                     NOME_LANCAMENTO.get(holerite.tipo_de_folha),
+                    holerite.employee_id.name,
                     holerite.data_mes_ano),
-                'data': holerite.date_from,
+                'data': holerite.data_pagamento_competencia or
+                        fields.Date.today(),
                 'account_event_line_ids': rubricas_para_contabilizar,
                 'origem': '{},{}'.format('hr.payslip', holerite.id),
             }
 
             holerite.account_event_id = \
                 self.env['account.event'].create(account_event)
+
+    @api.multi
+    def gerar_codigo_contabilizacao(self):
+        """
+        Se o lote ja tiver sido processado, os códigos contabeis das rubricas
+        nao foram processados. Essa função atualiza a linha do holerite do
+        com o código contabil de cada rubrica
+        """
+        for holerite_id in self:
+            for line_id in holerite_id.line_ids:
+
+                # Se nao gerar contabilizacao pula a rubrica
+                if not line_id.salary_rule_id.gerar_contabilizacao:
+                    continue
+
+                line_id.codigo_contabil = \
+                    line_id.salary_rule_id.codigo_contabil
+
+                if not line_id.codigo_contabil:
+                    line_id.codigo_contabil = \
+                        line_id.salary_rule_id.code
+
+                # Adicionar o sufixo para contabilização no contrato
+                if line_id.slip_id.contract_id.sufixo_code_account:
+                    line_id.codigo_contabil += \
+                        line_id.slip_id.contract_id.sufixo_code_account

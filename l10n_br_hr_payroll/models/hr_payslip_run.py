@@ -50,6 +50,13 @@ class HrPayslipRun(models.Model):
          'Por favor digite outro que não se repita')
     ]
 
+    name = fields.Char(
+        string='Name',
+        compute='get_compute_name',
+        inverse='inverse_name',
+        store=True,
+    )
+
     mes_do_ano = fields.Selection(
         selection=MES_DO_ANO,
         string=u'Mês',
@@ -88,6 +95,10 @@ class HrPayslipRun(models.Model):
         rel="rel_hr_payslip_run_hr_paysip_rescisao",
         column1="slip_id",
         column2="hr_payslip_run_id",
+    )
+
+    data_de_pagamento = fields.Date(
+        string=u'Data de Pagamento',
     )
 
     @api.onchange('tipo_de_folha')
@@ -373,6 +384,35 @@ class HrPayslipRun(models.Model):
                       'Há holerite(s) não confirmados!')
                 )
             return super(HrPayslipRun, self).close_payslip_run()
+
+    @api.depends('mes_do_ano', 'ano', 'company_id', 'tipo_de_folha')
+    def get_compute_name(self):
+        """
+        """
+        for record in self:
+            name = ''
+
+            if record.tipo_de_folha:
+                name += dict(TIPO_DE_FOLHA).get(record.tipo_de_folha)
+                name += ' '
+
+            if record.mes_do_ano:
+                name += dict(MES_DO_ANO).get(record.mes_do_ano)
+                name += '/'
+
+            if record.ano:
+                name += str(record.ano)
+                name += ' - '
+
+            if record.company_id:
+                name += str(record.company_id.name)
+
+            record.name = name
+
+    def inverse_name(self):
+        """
+        """
+        pass
 
     @api.multi
     def unlink(self):

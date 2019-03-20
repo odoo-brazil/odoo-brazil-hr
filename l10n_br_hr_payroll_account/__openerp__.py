@@ -21,6 +21,7 @@
         'views/hr_payslip_run.xml',
         'views/hr_salary_rule.xml',
         'views/hr_contract.xml',
+        'views/account_event_line.xml',
         # 'views/l10n_br_hr_payroll_autonomo.xml',
     ],
     'demo': [

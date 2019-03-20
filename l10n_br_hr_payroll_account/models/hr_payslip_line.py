@@ -11,3 +11,8 @@ class HrPayslipeLine(models.Model):
     codigo_contabil = fields.Char(
         string=u'Código de Contabilização',
     )
+
+    account_event_line_id = fields.Many2one(
+        string='Linha do Evento',
+        comodel_name='account.event.line',
+    )

@@ -5,9 +5,8 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from datetime import datetime
-
-from openerp import api, models, fields, exceptions
+from openerp import api, models, fields
+from openerp.exceptions import Warning
 
 NOME_LANCAMENTO_LOTE = {
     'provisao_ferias': u'Provisão de Férias em Lote',
@@ -69,6 +68,10 @@ class L10nBrHrPayslip(models.Model):
                     # Somar rubrica do holerite ao dict totalizador
                     valor_total = all_rubricas.get(code)[2].get('valor') + valor
                     all_rubricas.get(code)[2].update(valor=valor_total)
+                    line_id = \
+                        rubrica_holerite[2].get('hr_payslip_line_id')[0][1]
+                    all_rubricas.get(code)[2].get(
+                        'hr_payslip_line_id').append((4, line_id))
                 else:
                     all_rubricas[code] = rubrica_holerite
 
@@ -88,7 +91,7 @@ class L10nBrHrPayslip(models.Model):
 
             contabiliz = {
                 'account_event_line_ids': rubricas,
-                'data': '{}-{:02}-01'.format(lote.ano, lote.mes_do_ano),
+                'data': fields.Date.today(),
                 'ref': 'Lote de {}'.format(
                     NOME_LANCAMENTO_LOTE.get(lote.tipo_de_folha)),
                 'origem': '{},{}'.format('hr.payslip.run', lote.id),
@@ -105,20 +108,68 @@ class L10nBrHrPayslip(models.Model):
         """
         for record in self:
             for holerite_id in record.slip_ids:
-                for line_id in holerite_id.line_ids:
+                holerite_id.gerar_codigo_contabilizacao()
 
-                    # Se nao gerar contabilizacao pula a rubrica
-                    if not line_id.salary_rule_id.gerar_contabilizacao:
-                        continue
+    @api.multi
+    def verificar_fgts_holerites(self):
+        """
+        """
+        for record in self:
+            invalidos = ''
 
-                    line_id.codigo_contabil = \
-                        line_id.salary_rule_id.codigo_contabil
+            for holerite_id in record.slip_ids:
 
-                    if not line_id.codigo_contabil:
-                        line_id.codigo_contabil = \
-                            line_id.salary_rule_id.code
+                fgts_total = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS').total
 
-                    # Adicionar o sufixo para contabilização no contrato
-                    if line_id.slip_id.contract_id.sufixo_code_account:
-                        line_id.codigo_contabil += \
-                            line_id.slip_id.contract_id.sufixo_code_account
+                fgts_salario = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS_F_SALARIO').total or 0.0
+
+                fgts_salario_diretor = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS_D_SALARIO').total or 0.0
+
+                fgts_ferias = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS_F_FERIAS').total or 0.0
+
+                fgts_decimo = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'FGTS_F_13').total or 0.0
+
+                fgts_somado = fgts_salario + fgts_ferias + fgts_decimo + \
+                              fgts_salario_diretor
+
+                if round(fgts_total, 2) != round(fgts_somado, 2):
+                    invalidos += holerite_id.contract_id.display_name + '\n'
+
+            if invalidos:
+                raise Warning('FGTS inválido para:\n{}'.format(invalidos))
+
+    @api.multi
+    def verificar_inss_empresa_holerites(self):
+        """
+        """
+        for record in self:
+            invalidos = ''
+
+            for holerite_id in record.slip_ids:
+
+                fgts_total = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'INSS_EMPRESA_TOTAL').total
+
+                fgts_salario = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'INSS_EMPRESA_F_FERIAS').total or 0.0
+
+                fgts_salario_diretor = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'INSS_EMPRESA_F_SALARIO').total or 0.0
+
+                inss_empresa_salario_diretor = holerite_id.line_ids.filtered(
+                    lambda x: x.code == 'INSS_EMPRESA_D_SALARIO').total or 0.0
+
+                fgts_somado = \
+                    fgts_salario + fgts_salario_diretor + \
+                    inss_empresa_salario_diretor
+
+                if round(fgts_total, 2) != round(fgts_somado, 2):
+                    invalidos += holerite_id.contract_id.display_name + '\n'
+
+            if invalidos:
+                raise Warning('INSS EMPRESA inválido para:\n{}'.format(invalidos))

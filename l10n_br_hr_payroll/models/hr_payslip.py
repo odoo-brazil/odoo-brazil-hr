@@ -5,6 +5,7 @@
 import logging
 from calendar import monthrange
 from datetime import datetime, timedelta
+import random
 
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrule, MONTHLY
@@ -766,6 +767,9 @@ class HrPayslip(models.Model):
             if self.tipo_de_folha == 'ferias' and self.is_simulacao:
                 dias_mes = 30
 
+            if self.tipo_de_folha == 'provisao_ferias':
+                dias_mes = 30
+
             result += [self.get_attendances(
                 u'Dias no Mês Atual', 20, u'DIAS_MES_COMPETENCIA_ATUAL',
                 dias_mes, 0.0, contract_id)]
@@ -1243,7 +1247,7 @@ class HrPayslip(models.Model):
                             applied_specific_rule[specific_rule.rule_id.id] = []
 
                         applied_specific_rule[specific_rule.rule_id.id].append(
-                            specific_rule)
+                                specific_rule)
                     
         return applied_specific_rule
 
@@ -1287,7 +1291,7 @@ class HrPayslip(models.Model):
 
     @api.model
     def get_specific_rubric_value(self, rubrica_id, medias_obj=False,
-                                  rubricas_especificas_calculadas=False):
+                                  rubricas_especificas_calculadas=False, references=False):
         """
         Função dísponivel para as regras de salario, que busca o valor das
         rubricas especificas cadastradas no contrato.
@@ -1302,6 +1306,12 @@ class HrPayslip(models.Model):
             if rubricas_especificas_calculadas and \
                     rubrica.id in rubricas_especificas_calculadas:
                 continue
+
+            if references and references.get(rubrica.rule_id.id):
+                if rubrica.ref and rubrica.ref in references.get(
+                        rubrica.rule_id.id):
+                    continue
+
             if rubrica.rule_id.id == rubrica_id \
                     and rubrica.date_start <= self.date_from and \
                     (not rubrica.date_stop or rubrica.date_stop >=
@@ -1312,7 +1322,8 @@ class HrPayslip(models.Model):
                 return rubrica.specific_quantity * rubrica.specific_percentual\
                     / 100 * rubrica.specific_amount, \
                     rubrica.specific_quantity, \
-                    rubrica.specific_percentual
+                    rubrica.specific_percentual, rubrica.ref
+        return 0
 
     @api.multi
     def get_desconto_ligacao_telefonica(self):
@@ -2455,8 +2466,9 @@ class HrPayslip(models.Model):
                     'PENSAO_ALIMENTICIA_PORCENTAGEM_FERIAS',
                     'PENSAO_ALIMENTICIA_PORCENTAGEM_13',
                 ]
+                references = {}
+
                 for rule in obj_rule.browse(sorted_rule_ids):
-                    key = rule.code + '-' + str(payslip.id)
                     localdict['result'] = None
                     localdict['result_qty'] = 1.0
                     localdict['result_rate'] = 100
@@ -2464,14 +2476,14 @@ class HrPayslip(models.Model):
                     localdict['reference'] = ' '
                     id_rubrica_especifica = 0
                     beneficiario_id = False
+                    ref = False
                     
                     #
                     # Tratamos as rubricas específicas que têm beneficiários
                     #
-                    if rule.id in applied_specific_rule and \
-                            rule.code not in calculated_specifc_rule:
-                        lista_rubricas_especificas = \
-                            applied_specific_rule[rule.id]
+                    if rule.id in applied_specific_rule and rule.code not in calculated_specifc_rule:
+
+                        lista_rubricas_especificas = applied_specific_rule[rule.id]
 
                         if len(lista_rubricas_especificas) > 0:
                             rubrica_especifica = lista_rubricas_especificas[0]
@@ -2481,26 +2493,37 @@ class HrPayslip(models.Model):
                                     rubrica_especifica.partner_id.id
                                 
                             del lista_rubricas_especificas[0]
-                            
-                            applied_specific_rule[rule.id] = \
-                                lista_rubricas_especificas
+
+                            # applied_specific_rule[rule.id] = \
+                            #     lista_rubricas_especificas
 
                     # check if the rule can be applied
-                    if obj_rule.satisfy_condition(rule.id, localdict) \
-                            and rule.id not in blacklist:
+                    if rule.id in applied_specific_rule or \
+                            obj_rule.satisfy_condition(rule.id, localdict):
                         # compute the amount of the rule
                         if rule.id in applied_specific_rule and \
                                 rule.code not in calculated_specifc_rule:
-                            amount, qty, rate = \
-                                payslip.get_specific_rubric_value(rule.id)
-                            if not amount:
+                            result = \
+                                payslip.get_specific_rubric_value(
+                                    rule.id, references=references)
+                            if not result:
                                 amount, qty, rate = \
                                     obj_rule.compute_rule(rule.id, localdict)
+                            else:
+                                amount, qty, rate, ref = result
+
                         else:
                             amount, qty, rate = \
                                 obj_rule.compute_rule(rule.id, localdict)
                         # Pegar Referencia que irá para o holerite
                         reference = obj_rule.get_reference_rubrica(rule.id, localdict)
+                        if ref:
+                            reference = ref
+
+                        if references.get(rule.id):
+                            references[rule.id].append(reference)
+                        else:
+                            references[rule.id] = [reference]
 
                         # se ja tiver sido calculado a media dessa rubrica,
                         # utilizar valor da media e multiplicar
@@ -2527,8 +2550,16 @@ class HrPayslip(models.Model):
                         tot_rule = Decimal(amount or 0) * Decimal(
                             qty or 0) * Decimal(rate or 0) / 100.0
                         tot_rule = tot_rule.quantize(Decimal('0.01'))
-                        localdict[rule.code] = tot_rule
-                        rules[rule.code] = rule
+                        if not localdict.get(rule.code):
+                            localdict[rule.code] = tot_rule
+                        else:
+                            localdict[random.randint(0, 1000)] = tot_rule
+                            previous_amount = 0
+
+                        if not rules.get(rule.code):
+                            rules[rule.code] = rule
+                        else:
+                            rules[random.randint(0, 1000)] = rule
 
                         # Adiciona a rubrica especifica ao localdict
                         if id_rubrica_especifica:
@@ -2547,7 +2578,7 @@ class HrPayslip(models.Model):
                                 contract.employee_id.address_home_id.id
 
                         # create/overwrite the rule in the temporary results
-                        result_dict[key] = {
+                        result_dict[random.randint(0, 10000)] = {
                             'salary_rule_id': rule.id,
                             'contract_id': contract.id,
                             'name': rule.name,
@@ -2577,8 +2608,7 @@ class HrPayslip(models.Model):
                             'reference': reference,
                             'partner_id': beneficiario_id or 1,
                         }
-                        
-                        blacklist.append(rule.id)
+
                     else:
                         rules_seq = rule._model._recursive_search_of_rules(
                             self._cr, self._uid, rule, self._context)
