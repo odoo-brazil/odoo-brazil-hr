@@ -129,7 +129,8 @@ class L10nBrHrPayslip(models.Model):
                     NOME_LANCAMENTO.get(holerite.tipo_de_folha),
                     holerite.employee_id.name,
                     holerite.data_mes_ano),
-                'data': fields.Date.today(),
+                'data': holerite.data_pagamento_competencia or
+                        fields.Date.today(),
                 'account_event_line_ids': rubricas_para_contabilizar,
                 'origem': '{},{}'.format('hr.payslip', holerite.id),
             }
