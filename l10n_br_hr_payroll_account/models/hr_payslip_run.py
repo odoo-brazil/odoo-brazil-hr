@@ -91,7 +91,7 @@ class L10nBrHrPayslip(models.Model):
 
             contabiliz = {
                 'account_event_line_ids': rubricas,
-                'data': fields.Date.today(),
+                'data': lote.data_de_pagamento or fields.Date.today(),
                 'ref': 'Lote de {}'.format(
                     NOME_LANCAMENTO_LOTE.get(lote.tipo_de_folha)),
                 'origem': '{},{}'.format('hr.payslip.run', lote.id),
