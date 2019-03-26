@@ -2497,7 +2497,7 @@ class HrPayslip(models.Model):
                     #
                     # Tratamos as rubricas específicas que têm beneficiários
                     #
-                    if rule.id in applied_specific_rule and rule.code not in calculated_specifc_rule:
+                    if rule.id in applied_specific_rule:
 
                         lista_rubricas_especificas = applied_specific_rule[rule.id]
 
