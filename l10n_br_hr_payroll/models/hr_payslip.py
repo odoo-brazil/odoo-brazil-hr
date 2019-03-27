@@ -2572,10 +2572,10 @@ class HrPayslip(models.Model):
                         else:
                             localdict[rule.code] = tot_rule
 
-                        if not rules.get(rule.code):
-                            rules[rule.code] = rule
+                        if rules.get(rule.code) and rule.category_id.code == 'PROVENTO':
+                            rules[rule.code] += rule
                         else:
-                            rules[random.randint(0, 1000)] = rule
+                            rules[rule.code] = rule
 
                         # Adiciona a rubrica especifica ao localdict
                         if id_rubrica_especifica:
@@ -2585,7 +2585,7 @@ class HrPayslip(models.Model):
                         # sum the amount for its salary category
                         localdict = _sum_salary_rule_category(
                             localdict, rule.category_id,
-                            tot_rule - previous_amount)
+                            tot_rule)
 
                         # Definir o partner que recebera o pagamento da linha
                         if not beneficiario_id and \
