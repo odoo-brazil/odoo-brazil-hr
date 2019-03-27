@@ -2497,7 +2497,7 @@ class HrPayslip(models.Model):
                     #
                     # Tratamos as rubricas específicas que têm beneficiários
                     #
-                    if rule.id in applied_specific_rule and rule.code not in calculated_specifc_rule:
+                    if rule.id in applied_specific_rule:
 
                         lista_rubricas_especificas = applied_specific_rule[rule.id]
 
@@ -2566,16 +2566,16 @@ class HrPayslip(models.Model):
                         tot_rule = Decimal(amount or 0) * Decimal(
                             qty or 0) * Decimal(rate or 0) / 100.0
                         tot_rule = tot_rule.quantize(Decimal('0.01'))
-                        if not localdict.get(rule.code):
+                        if localdict.get(rule.code) and \
+                                rule.category_id.code == 'PROVENTO':
+                            localdict[rule.code] += tot_rule
+                        else:
                             localdict[rule.code] = tot_rule
-                        else:
-                            localdict[random.randint(0, 1000)] = tot_rule
-                            previous_amount = 0
 
-                        if not rules.get(rule.code):
-                            rules[rule.code] = rule
+                        if rules.get(rule.code) and rule.category_id.code == 'PROVENTO':
+                            rules[rule.code] += rule
                         else:
-                            rules[random.randint(0, 1000)] = rule
+                            rules[rule.code] = rule
 
                         # Adiciona a rubrica especifica ao localdict
                         if id_rubrica_especifica:
@@ -2585,7 +2585,7 @@ class HrPayslip(models.Model):
                         # sum the amount for its salary category
                         localdict = _sum_salary_rule_category(
                             localdict, rule.category_id,
-                            tot_rule - previous_amount)
+                            tot_rule)
 
                         # Definir o partner que recebera o pagamento da linha
                         if not beneficiario_id and \
