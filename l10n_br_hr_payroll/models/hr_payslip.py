@@ -670,7 +670,6 @@ class HrPayslip(models.Model):
     )
     mtv_deslig = fields.Char(
         string='Motivo Desligamento',
-        required=True,
     )
     valor_pgto_aviso_previo_indenizado = fields.Float(
         string='Aviso Prévio Indenizado',
