@@ -1245,10 +1245,13 @@ class L10nBrSefip(models.Model):
         if folha.tipo_de_folha == 'decimo_terceiro':
             return result
 
-        # Em rescisoes A rubrica de base de FGTS totaliza o salario + 13_salario
-        # Para a SEFIP deverá ser enviado apenas o SALARIO
+        # Em rescisoes A rubrica de base de FGTS totaliza o SALARIO e o
+        # 13_salario. Para a SEFIP essa informações vão em campos separados.
+        # Nesse caso buscaremos a rubrica BASE_INSS por ser uma totalizadora de
+        # proventos. Ex.: casos como diferença salarial do mês anterior paga em
+        # CCT, que deverão ser informadas na SEFIP
         if folha.tipo_de_folha == 'rescisao':
-            return self._valor_rubrica(folha.line_ids, 'SALARIO')
+            return self._valor_rubrica(folha.line_ids, 'BASE_INSS')
 
         #
         # Para diretores buscar a base do INSS, pois a
@@ -1278,12 +1281,6 @@ class L10nBrSefip(models.Model):
                          mapped('total'))
 
         return result
-
-        # Categorias Obrigatórias in ('05', '11', '13', '14', '15', '16',
-        # '17', '18', '22', '23', '24', '25')
-        #
-        # Categorias opcionais in ('01', '02', '03', '04', '06', '07', '12',
-        # '19', '20', '21', '26')
 
     def _trabalhador_remun_13(self, folha):
         """ Registro 30. Item 17
