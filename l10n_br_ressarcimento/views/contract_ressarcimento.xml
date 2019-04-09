@@ -18,6 +18,7 @@
                         <button string="Submeter para Aprovação" name="button_confirm" type="object" class="oe_highlight" attrs="{'invisible':[('state', 'in', ['confirmado', 'aprovado'])]}"/>
                         <button string="Aprovar e Enviar email" name="button_aprovar" groups="base.group_hr_superintendente" type="object" class="oe_highlight" attrs="{'invisible':[('state', 'not in', ['provisionado','confirmado'])]}"/>
                         <button string="Não aprovar" name="button_reprovar" type="object" class="oe_highlight" groups="base.group_hr_superintendente" attrs="{'invisible':[('state', '!=', 'confirmado')]}"/>
+                        <button string="Reenviar email" name="button_send_mail" type="object" class="oe_highlight" attrs="{'invisible':[('state', '=', 'aberto')]}"/>
                         <field name="state" widget="statusbar" statusbar_visible="aberto,confirmado,provisionado,aprovado" statusbar_colors='{"aberto":"red","provisionado":"red","confirmado":"blue"}'/>
                     </header>
                     <sheet>
@@ -35,6 +36,7 @@
                         <notebook>
                             <page string="Ressarcimento do contrato" attrs="{'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['confirmado', 'provisionado', 'aprovado'])]}">
                                 <group>
+                                    <field name="aprovado_por" attrs="{'invisible':[('aprovado_por', '=', False)]}" readonly="True" />
                                     <field name="date_ressarcimento" attrs="{'readonly':[('state','not in', ['aberto', 'provisionado'])], 'required':['|',('valor_provisionado','=',False), ('state','=','provisionado')]}" />
                                 </group>
                                 <field name="contract_ressarcimento_line_ids" nolabel="1" attrs="{'readonly':[('state','not in', ['aberto', 'provisionado'])], 'required':['|', ('valor_provisionado','=',False), ('state', '=', 'provisionado')], 'invisible':[('valor_provisionado','=', True), ('state', 'not in', ['confirmado', 'provisionado', 'aprovado'])]}" widget="one2many_list" >
@@ -47,6 +49,7 @@
                             </page>
                             <page string="Ressarcimento do contrato (provisionamento)" attrs="{'invisible':[('valor_provisionado','=', False)]}">
                                 <group>
+                                    <field name="provisao_aprovado_por" attrs="{'invisible':[('provisao_aprovado_por', '=', False)]}" readonly="True" />
                                     <field name="date_provisao" attrs="{'readonly':[('state','!=','aberto')], 'required':[('valor_provisionado','=',True)]}" />
                                 </group>
                                 <field name="contract_ressarcimento_provisionado_line_ids" nolabel="1" attrs="{'readonly':[('state','!=','aberto')], 'required':[('valor_provisionado','=',True)]}" widget="one2many_list" >
