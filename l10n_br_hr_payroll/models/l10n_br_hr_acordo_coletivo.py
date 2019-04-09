@@ -53,13 +53,11 @@ class L10nBrHrAcordoColetivo(models.Model):
     valor_reajuste_salarial = fields.Float(
         string='Valor Reajuste(%)',
     )
-    diferenca_salarial_id = fields.Many2one(
-        string=u'Rúbrica Diferença Salarial',
-        comodel_name='hr.salary.rule',
-    )
-    diferenca_ferias_id = fields.Many2one(
-        string=u'Rúbrica Diferença Férias',
-        comodel_name='hr.salary.rule',
+
+    rubrica_ids = fields.One2many(
+        string=u'Rúbricas',
+        comodel_name='l10n.br.hr.acordo.coletivo.rubricas',
+        inverse_name='acordo_coletivo_id',
     )
 
     periodo_ids = fields.One2many(
@@ -70,7 +68,7 @@ class L10nBrHrAcordoColetivo(models.Model):
 
     diferenca_periodo_ids = fields.One2many(
         string=u'Diferenças nos períodos',
-        comodel_name='l10n.br.hr.acordo.coletivo.line',
+        comodel_name='hr.contract.salary.rule',
         inverse_name='acordo_coletivo_id'
     )
 
@@ -94,6 +92,15 @@ class L10nBrHrAcordoColetivo(models.Model):
             record.periodo_ids = [(6, 0, periodos.ids)]
 
     @api.multi
+    def _get_dicionario_rubricas(self):
+        rubricas = {}
+        for rubrica in self.rubrica_ids:
+            rubricas[rubrica.rubrica_holerite_id.id] = \
+                rubrica.rubrica_diferenca_id.id
+
+        return rubricas
+
+    @api.multi
     def _get_diferencas_retroativas(self):
         for record in self:
 
@@ -105,6 +112,8 @@ class L10nBrHrAcordoColetivo(models.Model):
             contract_ids = self.env['hr.contract'].search(
                 [('date_end', '=', False)])
 
+            rubricas = record._get_dicionario_rubricas()
+
             for contrato in contract_ids:
                 for periodo in record.periodo_ids:
                     payslip_ids = self.env['hr.payslip'].search(
@@ -115,25 +124,33 @@ class L10nBrHrAcordoColetivo(models.Model):
                     )
 
                     for payslip in payslip_ids:
-                        vals = {}
-                        valor_bruto = payslip.mapped('line_ids').filtered(
-                            lambda l: l.salary_rule_id.code == 'BRUTO'
-                        ).total
-                        valor_diferenca = (valor_bruto * (1 + (record.valor_reajuste_salarial/100))) - valor_bruto
-                        vals = {
-                            'contract_id': contrato.id,
-                            'holerite_id': payslip.id,
-                            'period_id': periodo.id,
-                            'valor': valor_diferenca,
-                            'acordo_coletivo_id': record.id,
-                        }
+                        for line in payslip.line_ids:
+                            if rubricas.get(line.salary_rule_id.id):
+                                record._gerar_linha_acordo_coletivo(
+                                    contrato, line, periodo,
+                                    record.competencia_pagamento,
+                                    rubricas[line.salary_rule_id.id]
+                                )
 
-                        if payslip.tipo_de_folha == 'normal':
-                            vals['rubrica_diferenca_id'] = record.diferenca_salarial_id.id
-                        else:
-                            vals['rubrica_diferenca_id'] = record.diferenca_ferias_id.id
+    def _gerar_linha_acordo_coletivo(
+            self, contrato, line, periodo, competencia_pagamento, rubrica_id):
+        valor_bruto = line.total
+        porcentagem = 1 + (self.valor_reajuste_salarial / 100)
+        valor_diferenca = (valor_bruto * porcentagem) - valor_bruto
+        vals = {
+            'contract_id': contrato.id,
+            'rule_id': rubrica_id,
+            'tipo_holerite': 'normal',
+            'date_start': competencia_pagamento.date_start,
+            'date_stop': competencia_pagamento.date_stop,
+            'ref': '{}-{}'.format(periodo.code[3:], periodo.code[:2]),
+            'specific_quantity': 1,
+            'specific_percentual': 100,
+            'specific_amount': valor_diferenca,
+            'acordo_coletivo_id': self.id,
+        }
 
-                        self.env['l10n.br.hr.acordo.coletivo.line'].create(vals)
+        self.env['hr.contract.salary.rule'].create(vals)
 
     @api.multi
     def buscar_periodos_retroativos(self):
@@ -146,27 +163,16 @@ class L10nBrHrAcordoColetivo(models.Model):
             record._get_diferencas_retroativas()
 
 
-class L10nBrHrAcordoColetivoLine(models.Model):
-    _name = 'l10n.br.hr.acordo.coletivo.line'
+class L10nBrHrAcordoColetivoRubrias(models.Model):
+    _name = 'l10n.br.hr.acordo.coletivo.rubricas'
 
-    contract_id = fields.Many2one(
-        string='Contrato',
-        comodel_name='hr.contract',
-    )
-    holerite_id = fields.Many2one(
-        string='Holerite',
-        comodel_name='hr.payslip',
-    )
-    period_id = fields.Many2one(
-        string='Periodo',
-        comodel_name='account.period',
-    )
-    rubrica_diferenca_id = fields.Many2one(
-        string='Rúbrica',
+    rubrica_holerite_id = fields.Many2one(
+        string=u'Rúbrica do Holerite',
         comodel_name='hr.salary.rule',
     )
-    valor = fields.Float(
-        string='Valor',
+    rubrica_diferenca_id = fields.Many2one(
+        string=u'Rúbrica da Diferença',
+        comodel_name='hr.salary.rule',
     )
     acordo_coletivo_id = fields.Many2one(
         string='Acordo Coletivo',
