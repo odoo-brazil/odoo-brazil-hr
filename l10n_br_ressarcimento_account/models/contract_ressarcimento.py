@@ -13,8 +13,14 @@ NOME_LANCAMENTO = {
 class ContractRessarcimento(models.Model):
     _inherit = b'contract.ressarcimento'
 
-    account_event_id = fields.Many2one(
-        string='Evento Contábil',
+    account_event_provisao_id = fields.Many2one(
+        string=u'Evento Contábil Provisão',
+        comodel_name='account.event',
+        ondelete='restrict',
+    )
+
+    account_event_definitivo_id = fields.Many2one(
+        string=u'Evento Contábil Definitivo',
         comodel_name='account.event',
         ondelete='restrict',
     )
@@ -63,6 +69,7 @@ class ContractRessarcimento(models.Model):
     @api.multi
     def button_aprovar(self):
         """
+        Gera evento contábil quando aprovado.
 
         :return:
         """
@@ -70,18 +77,33 @@ class ContractRessarcimento(models.Model):
             # Altera o state do Ressarcimento antes de gerar o evento contábil
             super(ContractRessarcimento, self).button_aprovar()
 
-            # Exclui os Lançamento Contábeis anteriors
-            record.account_event_id = False
+            if not record.account_event_provisao_id:
+                rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
 
-            rubricas_para_contabilizar = self.gerar_contabilizacao_rubricas()
+                account_event = {
+                    'ref': NOME_LANCAMENTO.get(record.state),
+                    'data': record.date_provisao,
+                    'account_event_line_ids': rubricas_para_contabilizar,
+                    'origem': '{},{}'.format(
+                        'contract.ressarcimento', record.id),
+                }
 
-            account_event = {
-                'ref': NOME_LANCAMENTO.get(record.state),
-                'data': record.date_provisao if record.state == 'provisionado'
-                else record.date_ressarcimento,
-                'account_event_line_ids': rubricas_para_contabilizar,
-                'origem': '{},{}'.format('contract.ressarcimento', record.id),
-            }
+                record.account_event_provisao_id = \
+                    self.env['account.event'].create(account_event)
+            else:
+                # Reverte o evento contábil gerado a partir da provisão
+                record.account_event_provisao_id.button_reverter_lancamentos()
 
-            record.account_event_id = \
-                self.env['account.event'].create(account_event)
+                rubricas_para_contabilizar = \
+                    self.gerar_contabilizacao_rubricas()
+
+                account_event = {
+                    'ref': NOME_LANCAMENTO.get(record.state),
+                    'data': record.date_ressarcimento,
+                    'account_event_line_ids': rubricas_para_contabilizar,
+                    'origem': '{},{}'.format(
+                        'contract.ressarcimento', record.id),
+                }
+
+                record.account_event_definitivo_id = \
+                    self.env['account.event'].create(account_event)
