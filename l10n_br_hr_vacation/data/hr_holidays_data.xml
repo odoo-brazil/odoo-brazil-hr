@@ -22,7 +22,7 @@
             <field name="condition">True</field>
             <field name="sequence">1</field>
             <field name="code">ferias_id = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'l10n_br_hr_holiday', 'holiday_status_vacation')[1]
-pedidos = self.search(cr, uid, [('employee_id', '=', obj.employee_id.id),('parent_id','=', obj.parent_id.id ),('holiday_status_id.id', '=', ferias_id),('type', '=', 'remove')], context=context)
+pedidos = self.search(cr, uid, [('employee_id', '=', obj.employee_id.id),('parent_id','=', obj.parent_id.id ),('holiday_status_id.id', '=', ferias_id),('state', 'not in', ['refuse','cancel']),('type', '=', 'remove')], context=context)
 if len(pedidos) == 4:
     raise Warning("Você não pode registar mais de 3 pedidos de ferias por período aquisitivo, você ja registrou %s" %  (len(pedidos) - 1))
             </field>
